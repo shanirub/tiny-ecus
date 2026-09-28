@@ -4,10 +4,10 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Run a detailed planning pass for Phase 0 (Foundations): pick and pin the ESP-IDF version, choose the repo/component layout, work out how one repo builds for both chip targets, and write the hardware bring-up checklist.
+Phase 0 work item A: install ESP-IDF v6.1 into `~/esp/esp-idf-v6.1` and write `docs/dev-setup.md`.
 
 ## Current Phase
-Phase 0 (top-level roadmap approved 2026-09-28; Phase 0 not yet detailed)
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); work item A in progress
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -31,11 +31,14 @@ Phase 0 (top-level roadmap approved 2026-09-28; Phase 0 not yet detailed)
 ## Phases
 
 ### Phase 0: Foundations
-- [ ] Detailed planning pass for this phase
-- [ ] Pin an ESP-IDF version and set up the repo skeleton
-- [ ] Build and flash both targets (ESP32-C3, and the ESP32 on the CAM board)
-- [ ] Hardware bring-up as parts arrive: set each buck to 5 V and measure before connecting; check cells and transceivers
-- **Exit:** one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM.
+Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
+- [x] Detailed planning pass (approved 2026-09-28)
+- [ ] A. Install ESP-IDF v6.1 natively; write `docs/dev-setup.md`
+- [ ] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds
+- [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
+- [ ] D. CI: GitHub Actions build of both projects
+- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells)
+- **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push.
 - **Status:** in_progress
 
 ### Phase 1: One wheel node on the bench
@@ -93,7 +96,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 2. Which CAN bitrate? 500 kbit/s is assumed. (Phase 2)
 3. Which clock-sync algorithm? (Phase 4)
 4. Which node measures battery voltage? (Phase 5)
-5. Which ESP-IDF version to pin? (Phase 0)
+5. ~~Which ESP-IDF version to pin?~~ Resolved: v6.1 (see Decisions).
 
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
@@ -112,6 +115,12 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Gateway sends setpoints; each wheel node closes its own speed loop | Keeps the control loop local and CAN traffic low; matches the ECU model |
 | One firmware image for all wheel nodes; identity in NVS (assumed) | Avoids four builds; to be confirmed in Phase 3 |
 | Top-level roadmap: phases 0–7 as above | Approved 2026-09-28 |
+| ESP-IDF **v6.1**, allowing 6.1.x patches | Current release. The new TWAI driver (`esp_driver_twai`) has the same API in 5.5 and 6.1, so the choice was about avoiding a later 5→6 migration |
+| Use the **new** TWAI driver (`esp_twai.h`/`esp_twai_onchip.h`), never the legacy `driver/twai.h` | Legacy is deprecated in 6.1, and the two must not be mixed |
+| Native IDF install per machine; the component-manager `idf` constraint enforces the version at build time | Easiest flashing; version drift across machines fails fast |
+| Two IDF projects plus shared `components/`, target locked via `sdkconfig.defaults` | Different chips and apps; a clean clone builds without `set-target` |
+| CI: GitHub Actions, `espressif/idf:v6.1` container, build only | Free for public repos on standard runners; no artifacts, to avoid storage quota |
+| Phase detail plans live in separate `phase-N-*.md` files next to `task_plan.md` | Keeps the top of `task_plan.md` (what the hooks inject) short |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

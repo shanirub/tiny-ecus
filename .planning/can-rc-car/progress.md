@@ -17,7 +17,16 @@
   - Git repo initialized (`main`) and pushed to public GitHub repo `shanirub/tiny-ecus`.
 
 ### Phase 0: Foundations
-- **Status:** in_progress (detailed planning not yet started)
+- **Status:** in_progress (plan approved 2026-09-28; work item A started)
+- Actions taken:
+  - Checked the local toolchain: IDF v5.5.5 and a master checkout are installed, v6.1 is not; docker, podman and pulseview are present; user is in `dialout`.
+  - Compared TWAI drivers in v5.5.5 and v6.1: new-driver API identical; legacy deprecated in 6.1.
+  - Confirmed GitHub Actions is free for public repos, the `espressif/idf:v6.1` image exists, and the target can be locked in `sdkconfig.defaults`.
+  - User decisions: IDF v6.1, native install + version check, build-only CI (free).
+  - Wrote the Phase 0 detailed plan.
+- Files created/modified:
+  - `.planning/can-rc-car/phase-0-foundations.md` (new)
+  - `.planning/can-rc-car/task_plan.md`, `findings.md` (updated)
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
