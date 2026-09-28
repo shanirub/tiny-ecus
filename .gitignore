@@ -1,0 +1,9 @@
+# Claude Code per-machine settings
+.claude/settings.local.json
+
+# planning-with-files runtime state (machine/session-local)
+.planning/**/.stop_blocks
+.planning/**/.gate_last_ledger
+.planning/**/.nonce
+.planning/**/.attestation
+.planning/**/ledger-*.jsonl
