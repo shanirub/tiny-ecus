@@ -17,7 +17,7 @@
   - Git repo initialized (`main`) and pushed to public GitHub repo `shanirub/tiny-ecus`.
 
 ### Phase 0: Foundations
-- **Status:** in_progress (plan approved 2026-09-28; work item A started)
+- **Status:** in_progress (plan approved 2026-09-28; A done, B next)
 - Actions taken:
   - Checked the local toolchain: IDF v5.5.5 and a master checkout are installed, v6.1 is not; docker, podman and pulseview are present; user is in `dialout`.
   - Compared TWAI drivers in v5.5.5 and v6.1: new-driver API identical; legacy deprecated in 6.1.
@@ -27,11 +27,15 @@
 - Files created/modified:
   - `.planning/can-rc-car/phase-0-foundations.md` (new)
   - `.planning/can-rc-car/task_plan.md`, `findings.md` (updated)
+- Work item A (done):
+  - Shallow-cloned `v6.1` into `~/esp/esp-idf-v6.1` (733 MB) and ran `./install.sh esp32,esp32c3` (exit 0).
+  - Added `alias idf61='. ~/esp/esp-idf-v6.1/export.sh'` to `~/.zshrc`, next to the existing `idf55`.
+  - Wrote `docs/dev-setup.md` (prerequisites, install, alias, serial ports, build/flash/monitor, flashing fallbacks).
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
-|      |       |          |        |        |
+| IDF v6.1 install | `. export.sh && idf.py --version` | `ESP-IDF v6.1` | `ESP-IDF v6.1`; xtensa-esp32-elf-gcc and riscv32-esp-elf-gcc esp-15.2.0_20251204; Python 3.14.7 | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

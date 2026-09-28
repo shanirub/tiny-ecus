@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; work item A in progress
+Status: **approved 2026-09-28**; A done, B next
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.

@@ -35,6 +35,9 @@ Technical notes (from general knowledge, verify when relevant):
   - Both versions support RX frame timestamps (`timestamp_resolution_hz`), which is relevant to Phase 4 clock sync.
 - **GitHub Actions** (docs.github.com, product-billing/github-actions): "free for self-hosted runners and for public repositories that use standard GitHub-hosted runners." Larger runners are always billed. Artifact storage counts against the account's plan quota, and cache storage above 10 GB per repo is billed. So: standard runners only, and don't upload build artifacts.
 
+- **IDF v6.x install methods** (from `~/esp/esp-idf-v6.1/docs/en/get-started/`): the default since v6.0 is **EIM** (ESP-IDF Installation Manager, available from an Espressif DNF repo). `git clone` + `install.sh` is still documented as "legacy" in `linux-macos-setup-legacy.rst`, with no removal notice. We use the legacy route, which matches the existing installs on this desktop. The legacy RPM prerequisites line is `git wget flex bison gperf python3 cmake ninja-build ccache dfu-util libusbx`; the doc says `yum` / CentOS, and on Fedora the same packages install with `dnf`.
+- **Shell convention on this desktop:** `~/.zshrc:120` has `alias idf55='. ~/esp/esp-idf-v5.5.5/export.sh'`, so the new alias follows it as `idf61`.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

@@ -4,10 +4,10 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 0 work item A: install ESP-IDF v6.1 into `~/esp/esp-idf-v6.1` and write `docs/dev-setup.md`.
+Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); work item A in progress
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -33,7 +33,7 @@ Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); work item A in pro
 ### Phase 0: Foundations
 Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [x] Detailed planning pass (approved 2026-09-28)
-- [ ] A. Install ESP-IDF v6.1 natively; write `docs/dev-setup.md`
+- [x] A. Install ESP-IDF v6.1 natively; write `docs/dev-setup.md` (done 2026-09-28)
 - [ ] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
