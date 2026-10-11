@@ -32,6 +32,13 @@
   - Added `alias idf61='. ~/esp/esp-idf-v6.1/export.sh'` to `~/.zshrc`, next to the existing `idf55`.
   - Wrote `docs/dev-setup.md` (prerequisites, install, alias, serial ports, build/flash/monitor, flashing fallbacks).
 
+## Session: 2026-10-10
+- All AliExpress parts have arrived. The two 18650 cells are still in transit and expected this week.
+- Until the cells arrive, power comes from the user's bench power supply.
+- Phase 0 item E (hardware bring-up) is now unblocked except for E.4 (cells). E.2 and E.3 need no firmware; E.1 needs item B first.
+- Synced `phase-0-foundations.md` item A text with what was actually done (shallow clone, `idf61` alias); noted that the `dev-setup.md` version-fail claim awaits test C.2.
+- Updated the parts list status. No code work this session; the user resumes with item B around 2026-10-11/12.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|

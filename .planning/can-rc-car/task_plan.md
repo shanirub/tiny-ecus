@@ -4,10 +4,11 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
+Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds. User plans to resume around 2026-10-11/12.
+In parallel (no firmware needed): E.2 (CAN adapter termination, multimeter) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending)
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -37,7 +38,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
-- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells)
+- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push.
 - **Status:** in_progress
 

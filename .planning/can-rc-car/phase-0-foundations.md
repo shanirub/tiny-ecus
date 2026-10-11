@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done, B next
+Status: **approved 2026-09-28**; A done, B next. Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -37,9 +37,9 @@ docs/
 ## Work items
 
 ### A. Toolchain (this desktop, then any other machine)
-1. Install IDF v6.1 next to the existing ones: `git clone -b v6.1 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.1`, then `./install.sh esp32,esp32c3`.
+1. Install IDF v6.1 next to the existing ones: `git clone -b v6.1 --depth 1 --recursive --shallow-submodules https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.1`, then `./install.sh esp32,esp32c3`. (Done as a shallow clone.)
 2. Leave `~/esp/esp-idf-v5.5.5` and the `master` checkout untouched.
-3. Add a shell helper (for example `get_idf61`) that sources `~/esp/esp-idf-v6.1/export.sh`.
+3. Add a shell helper that sources `~/esp/esp-idf-v6.1/export.sh`. (Done as `alias idf61=...` in `~/.zshrc`.)
 4. Write `docs/dev-setup.md` with these steps, plus build/flash/monitor commands and the serial-port permissions note (`dialout` group).
 
 ### B. Repo skeleton
@@ -61,14 +61,14 @@ docs/
 ### E. Hardware bring-up (as parts arrive; not a blocker for the exit criterion)
 1. **ESP32-C3 boards:** flash the hello-world on each of the 4 plus spares. Label the physical boards (FL/FR/RL/RR/spare) and record which ones fail.
 2. **CAN adapters (SN65HVD230):** unpowered, measure CANH–CANL resistance on each. About 120 Ω means onboard termination is fitted. Record which boards have it; only the two end nodes should keep it.
-3. **MP1584 bucks:** before connecting anything, measure the output at no load, then with a load resistor. Confirm 5.0 V ±0.1 V, and adjust if the modules are trimmable.
+3. **MP1584 bucks:** feed from the bench PSU at ~7.4–8.4 V with a current limit (~0.5 A) until the cells arrive. Before connecting anything, measure the output at no load, then with a load resistor. Confirm 5.0 V ±0.1 V, and adjust if the modules are trimmable.
 4. **18650 cells (when bought):** measure each cell before inserting (matched pair within ~0.05 V). Do one charge cycle on the 2S board and confirm about 8.4 V at the end.
 5. Log every measurement in `progress.md` under Test Results.
 
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
 - The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
-- The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this.
+- The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this. `docs/dev-setup.md` already states it fails; fix that doc if C.2 shows otherwise.
 - Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.
 - The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).
 
