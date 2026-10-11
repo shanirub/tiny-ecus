@@ -46,6 +46,7 @@
 - F covers the teardown, motor and encoder bench tests, encoder pinout and counts-per-rev, the fit check, and mounting 4 motors. The 5th motor is the Phase 1 bench spare.
 - Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`.
 - Recorded the motor listing specs (12 PPR, 1:90, 3–12 V; maker Kongxiang/Nulllab) in `findings.md`. No datasheet was found online. Added the expected counts per revolution to F.4, and the winding-resistance check plus an 8.4 V run to F.2.
+- Added the powered encoder run to F.4: no-load speed from f_A at 6 V and 8.4 V, and the left/right direction convention. It needs no MCU or firmware: the bench PSU drives the motor, a separate 3.3 V source powers the encoder, and the logic analyzer (or a multimeter Hz mode) reads A and B.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

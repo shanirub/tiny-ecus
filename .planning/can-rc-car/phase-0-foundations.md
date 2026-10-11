@@ -92,6 +92,16 @@ Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done be
    - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups: note it.
    - On the bench spare, count the edges per output-shaft revolution (mark the shaft and turn it exactly once). This is the counts-per-rev figure Phase 1 needs for speed calculation. Record it.
    - Expected, if the listing's "12 PPR" is per channel at the motor shaft: 1080 rising edges on A, or 4320 edges across A and B. A result of 12 or 48 means the PPR is quoted at the output shaft. See `findings.md`.
+   - **Powered run, no MCU and no firmware.** Wiring:
+     - Motor M+/M− from the bench PSU, current-limited.
+     - Encoder VCC/GND at 3.3 V from a second source. Use a second PSU channel, or the 3V3 pin of any C3 board on USB (its firmware doesn't matter; no GPIOs are used). With a single channel, run motor and encoder together at 3.3 V: that still gives counts and direction, but not the maximum speed.
+     - Logic analyzer channels on A and B, analyzer GND to encoder GND. The motor supply ground doesn't need tying in.
+     - Sample at ≥ 1 MHz. Channel A is expected to run at a few kHz at 8.4 V; that's an estimate, since the real rpm is unknown.
+   - **No-load speed.** At 6 V and at 8.4 V, measure f_A with the PulseView cursors or an edge count over a fixed window (sigrok's "timing" decoder may help; unverified). A multimeter Hz mode on A works too.
+     - Motor rpm = f_A / 12 × 60; output rpm = motor rpm / 90.
+     - The 8.4 V figure is the wheel's top speed, which caps the Phase 1 setpoint range. It also cross-checks the hand-turn counts-per-rev.
+   - **Direction convention.** For each polarity (M+ to PSU + versus reversed), record which way the output shaft turns (seen from the shaft end) and which channel leads (A or B).
+     - Left and right motors are mounted mirrored, so "forward" is opposite polarity on the two sides. Record which polarity and which leading channel mean forward for left-side and for right-side motors. Phase 1 firmware uses this.
 5. **Mechanical fit check.**
    - Do the new motors fit the old mounts? Check the holes, the extra length from the encoder PCB, and clearance for the cable.
    - Do the metal D-shafts fit the wheels, and do the wheels stay on?
@@ -103,7 +113,7 @@ Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done be
    - Leave the motor and encoder leads unterminated; don't wire them to drivers or nodes yet.
    - Fit the wheels.
 
-**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout and counts-per-rev are recorded; and every fit problem has a decided fix.
+**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout, counts-per-rev, no-load speed at 6 V and 8.4 V, and the left/right direction convention are recorded; and every fit problem has a decided fix.
 
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
