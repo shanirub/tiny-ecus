@@ -39,6 +39,14 @@
 - Synced `phase-0-foundations.md` item A text with what was actually done (shallow clone, `idf61` alias); noted that the `dev-setup.md` version-fail claim awaits test C.2.
 - Updated the parts list status. No code work this session; the user resumes with item B around 2026-10-11/12.
 
+## Session: 2026-10-11
+- The user asked whether to start mechanical work on the old car (remove the drive board and the AA holder, swap in the encoder motors).
+- Decided: do the mechanical prep now; wire no electronics into the chassis yet.
+- Added this as Phase 0 work item F rather than a separate "Phase 0.5", because it runs alongside items B–D and isn't a sequential gate.
+- F covers the teardown, motor and encoder bench tests, encoder pinout and counts-per-rev, the fit check, and mounting 4 motors. The 5th motor is the Phase 1 bench spare.
+- Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`.
+- Recorded the motor listing specs (12 PPR, 1:90, 3–12 V; maker Kongxiang/Nulllab) in `findings.md`. No datasheet was found online. Added the expected counts per revolution to F.4, and the winding-resistance check plus an 8.4 V run to F.2.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|

@@ -5,7 +5,7 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 
 ## Next Step
 Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds. User plans to resume around 2026-10-11/12.
-In parallel (no firmware needed): E.2 (CAN adapter termination, multimeter) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
+In parallel (no firmware needed): item F (old-car teardown, motor and encoder bench tests, mechanical fit, mounting 4 motors), E.2 (CAN adapter termination, multimeter) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
 
 ## Current Phase
 Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending)
@@ -39,10 +39,12 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
 - [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime
-- **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push.
+- [ ] F. Chassis prep + motor/encoder bench tests: teardown, test all 5 motors and encoders, encoder pinout and counts/rev, fit check, mount 4 motors (mechanical only; added 2026-10-11)
+- **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - **Status:** in_progress
 
 ### Phase 1: One wheel node on the bench
+- [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [ ] DRV8833 PWM via LEDC and encoder counting via PCNT
 - [ ] Speed measurement, then a PI speed controller
 - [ ] Commands over USB serial (temporary)
@@ -70,6 +72,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - **Status:** pending
 
 ### Phase 5: Power system + chassis integration
+- [ ] Motors are already mounted (Phase 0 F); this phase does the electrical integration
 - [ ] Battery chain: 2S holder with PCM → fuse → switch → 5 V buck logic rail and motor rail, with bulk and motor caps
 - [ ] Measure stall and start current
 - [ ] Battery voltage through a divider into one node's ADC; low-battery shutdown on top of the PCM hardware cutoff
@@ -121,6 +124,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Native IDF install per machine; the component-manager `idf` constraint enforces the version at build time | Easiest flashing; version drift across machines fails fast |
 | Two IDF projects plus shared `components/`, target locked via `sdkconfig.defaults` | Different chips and apps; a clean clone builds without `set-target` |
 | CI: GitHub Actions, `espressif/idf:v6.1` container, build only | Free for public repos on standard runners; no artifacts, to avoid storage quota |
+| Mechanical chassis prep pulled forward into Phase 0 (item F); no electronics in the chassis until Phases 1–3 settle wiring | Surfaces fit problems early, while a reorder is cheap; avoids rework of an unplanned harness (2026-10-11) |
 | Phase detail plans live in separate `phase-N-*.md` files next to `task_plan.md` | Keeps the top of `task_plan.md` (what the hooks inject) short |
 
 ## Errors Encountered

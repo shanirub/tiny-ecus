@@ -16,6 +16,8 @@ Toolchain, repo skeleton and hardware are ready for Phase 1.
 | Target locked per project via `CONFIG_IDF_TARGET` in `sdkconfig.defaults` | Verified: IDF v6.1 `tools/cmake/targets.cmake` reads the target from `sdkconfig.defaults`, so a fresh clone builds the right chip without running `set-target`. |
 | Commit `sdkconfig.defaults` and `dependencies.lock`; gitignore `sdkconfig`, `sdkconfig.old`, `build/`, `managed_components/` | The defaults hold intent, the lock file makes managed components reproducible, and the rest is generated. |
 | **CI:** GitHub Actions, `espressif/idf:v6.1` container (tag verified on Docker Hub), matrix over both projects, build only, no artifact upload | Free on public repos with standard runners. Artifact storage would count against quota. |
+| Chassis teardown, motor swap and motor/encoder bench tests are pulled forward into Phase 0 as item F (added 2026-10-11) | Mechanical fit (mounts, shafts, battery space) is the riskiest hardware unknown, and a reorder takes weeks. Only mechanical work happens now: no electronics are wired into the chassis until Phases 1–3 settle pinout and harness. |
+| Of the 5 encoder motors, 4 go in the chassis and the spare stays on the bench for Phase 1 | Phase 1 needs one easily reachable motor; the chassis motors don't have to be removed again. |
 | A tiny shared component (`components/tiny_common`) used by both hello-worlds | Proves the shared-component plumbing in Phase 0 rather than discovering problems in Phase 2. It prints a boot banner with project, app version (IDF derives it from `git describe`), chip, and IDF version. |
 
 ## Planned repo layout
@@ -65,12 +67,52 @@ docs/
 4. **18650 cells (when bought):** measure each cell before inserting (matched pair within ~0.05 V). Do one charge cycle on the 2S board and confirm about 8.4 V at the end.
 5. Log every measurement in `progress.md` under Test Results.
 
+### F. Chassis prep + motor/encoder bench tests (added 2026-10-11; no firmware needed)
+Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done before Phase 1 starts. Log every result in `progress.md` under Test Results.
+1. **Teardown of the old car.**
+   - Take the AA batteries out first.
+   - Before desoldering anything, photograph and note the old wiring: motor polarity per side, and any suppression caps across the motor terminals.
+   - Remove the old motor drive board and the AA holder.
+   - Keep the old motors and board in a labeled bag, as a reference and a fallback.
+2. **Motor bench test, all 5 new motors.**
+   - Label them M1–M5.
+   - Run each from the bench PSU at about 6 V, current limit about 1 A (the spec stall current is 0.82 A), in both directions. Use short runs and don't hold a stall.
+   - Record the no-load current per motor and note any grinding or roughness.
+   - First measure the winding resistance R of each motor: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V.
+   - Also do a short run at 8.4 V, the full-charge 2S voltage the motors will see through the DRV8833.
+   - Pick the 4 best for the chassis; the remaining one is the bench spare.
+3. **Encoder pinout.**
+   - Identify the 6-wire cable pinout (M+, M−, encoder VCC, GND, A, B) from the seller listing and the encoder PCB silkscreen; these cables aren't standardized.
+   - Confirm VCC and GND with the multimeter before powering.
+   - Record the pinout in `findings.md`.
+4. **Encoder signal check**, on each motor before it is mounted.
+   - Power the encoder at 3.3 V, current limit about 0.1 A, with the motor leads unpowered.
+   - Connect A and B to the logic analyzer (PulseView) and turn the output shaft by hand.
+   - Expect two clean square waves 90° apart (quadrature). Reversing the direction swaps which one leads.
+   - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups: note it.
+   - On the bench spare, count the edges per output-shaft revolution (mark the shaft and turn it exactly once). This is the counts-per-rev figure Phase 1 needs for speed calculation. Record it.
+   - Expected, if the listing's "12 PPR" is per channel at the motor shaft: 1080 rising edges on A, or 4320 edges across A and B. A result of 12 or 48 means the PPR is quoted at the output shaft. See `findings.md`.
+5. **Mechanical fit check.**
+   - Do the new motors fit the old mounts? Check the holes, the extra length from the encoder PCB, and clearance for the cable.
+   - Do the metal D-shafts fit the wheels, and do the wheels stay on?
+   - Does the 2S 18650 holder fit where the AA holder was?
+   - Is there room for the KCD11 switch (10×15 mm cutout) and the fuse holder?
+   - For any misfit, decide a workaround or a reorder.
+6. **Mount the 4 chosen motors** as FL/FR/RL/RR and record which M-number went where.
+   - Solder a 100 nF cap across each motor's terminals.
+   - Leave the motor and encoder leads unterminated; don't wire them to drivers or nodes yet.
+   - Fit the wheels.
+
+**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout and counts-per-rev are recorded; and every fit problem has a decided fix.
+
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
 - The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
+- The new encoder motors fit the old chassis mounts and wheels (checked in F.5).
+- The encoder outputs are push-pull at VCC level, with no pull-ups needed (checked in F.4).
 - The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this. `docs/dev-setup.md` already states it fails; fix that doc if C.2 shows otherwise.
 - Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.
 - The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).
 
 ## Out of scope for Phase 0
-Motor, encoder, CAN traffic and any protocol code (Phases 1–3). Pin allocation beyond the onboard LEDs.
+Motor, encoder, CAN traffic and any protocol code (Phases 1–3). Pin allocation beyond the onboard LEDs. Wiring any electronics into the chassis (item F covers only mechanical work and motor caps).

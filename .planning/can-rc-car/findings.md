@@ -38,6 +38,16 @@ Technical notes (from general knowledge, verify when relevant):
 - **IDF v6.x install methods** (from `~/esp/esp-idf-v6.1/docs/en/get-started/`): the default since v6.0 is **EIM** (ESP-IDF Installation Manager, available from an Espressif DNF repo). `git clone` + `install.sh` is still documented as "legacy" in `linux-macos-setup-legacy.rst`, with no removal notice. We use the legacy route, which matches the existing installs on this desktop. The legacy RPM prerequisites line is `git wget flex bison gperf python3 cmake ninja-build ccache dfu-util libusbx`; the doc says `yum` / CentOS, and on Fedora the same packages install with `dnf`.
 - **Shell convention on this desktop:** `~/.zshrc:120` has `alias idf55='. ~/esp/esp-idf-v5.5.5/export.sh'`, so the new alias follows it as `idf61`.
 
+### Encoder motor specs (2026-10-11, from the user's AliExpress listing)
+- Listing text: "TT encoder motor, 12PPR hall encoder, high torque 1:90 gearbox, metal shaft dc geared motor, dc 3-12v". Manufacturer: Kongxiang Lab Tech ("Nulllab").
+- Not stated in the listing: the voltage at which the 0.82 A stall current applies, the encoder supply range, the output type (push-pull or open-collector) and the cable pinout.
+- A web search found no Nulllab datasheet. Similar TT encoder motors (DFRobot FIT0450) have conflicting PPR figures and a wrong pinout on their wiki, so measure rather than trust listings.
+- Expected resolution, if "12 PPR" means pulses per motor-shaft revolution per channel:
+  - 12 × 90 = 1080 rising edges on channel A per output-shaft revolution.
+  - 4320 counts per output revolution with 4× quadrature decoding (both edges on both channels).
+  - F.4 measures this. If the result is 12 or 48, the PPR is quoted at the output shaft instead.
+- Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 
