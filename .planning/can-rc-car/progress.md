@@ -56,12 +56,18 @@
 - Reordered F.2 so the winding-resistance measurement (unpowered) comes before the powered runs.
 - Planning-file cleanup: removed the stale "resume around 2026-10-11/12" from the Next Step; linked the current-budget risk to the F.2 stall estimate.
 - Files modified: `progress.md`, `task_plan.md`, `phase-0-foundations.md`, `findings.md`.
+- F.1 teardown done. Before photos in `docs/images/` (`before teardown up.webp`, `before teardown bottom.webp`), plus CAN adapter front/back photos. Old drive board (Keyes L298N V2) and old battery holder removed; the old MCU-with-camera board and its BT antenna stay on the chassis for now. The new 2S holder hasn't been tried yet.
+- Trimmed item F. F.2 keeps winding resistance and one 6 V spin per motor and drops the 8.4 V and reverse runs. F.4 is now a 3.3 V encoder check; counts/rev, no-load speed and direction convention move to Phase 1 (firmware measures them), with an optional hand count kept as a no-firmware reference. E.3 deferred until something first connects to a buck output.
+- F.5 flagged as the most likely F item to fail: the photo suggests only ~10 mm between each old motor's back end and the next gearbox (rough estimate), and the encoder adds length there.
+- Photos re-encoded to 1280 px WebP (q80): 1.0 MB to 0.46 MB for the 4 files. The CAN adapter front photo shows the terminator: SMD "121" next to the "120R" label.
+- Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`, `findings.md`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | IDF v6.1 install | `. export.sh && idf.py --version` | `ESP-IDF v6.1` | `ESP-IDF v6.1`; xtensa-esp32-elf-gcc and riscv32-esp-elf-gcc esp-15.2.0_20251204; Python 3.14.7 | pass |
 | E.2 CAN adapter termination (2026-10-14) | Unpowered, CANH–CANL resistance on each of the 5 SN65HVD230 adapters | ~120 Ω where termination is fitted | 118–120 Ω on all 5: every adapter has a 120 Ω terminator fitted | pass (fixed SMD terminators, no jumper; 3 to remove in Phase 3) |
+| F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

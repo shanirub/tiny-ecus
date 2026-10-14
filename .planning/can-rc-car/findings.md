@@ -45,7 +45,7 @@ Technical notes (from general knowledge, verify when relevant):
 - Expected resolution, if "12 PPR" means pulses per motor-shaft revolution per channel:
   - 12 × 90 = 1080 rising edges on channel A per output-shaft revolution.
   - 4320 counts per output revolution with 4× quadrature decoding (both edges on both channels).
-  - F.4 measures this. If the result is 12 or 48, the PPR is quoted at the output shaft instead.
+  - Phase 1 firmware measures this (optional no-firmware hand count in F.4). If the result is 12 or 48, the PPR is quoted at the output shaft instead.
 - Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
 
 ### CAN adapter termination (E.2, 2026-10-14)
@@ -53,7 +53,14 @@ Technical notes (from general knowledge, verify when relevant):
 - A correct bus has exactly 2 terminators, about 60 Ω total. All 5 together would be about 24 Ω, which overloads the transceiver drivers and shrinks the differential signal.
 - These boards have no termination jumper and no solder bridge on the back.
 - The front 2-pin header connects directly to CANH and CANL (checked by continuity). It is a second bus connector, useful for daisy-chaining the harness, and is not related to termination.
-- So the terminator is a fixed SMD resistor, likely marked "121" or "1200" on the front. It isn't located yet: in Phase 3, find the part whose ends read about 120 Ω and connect to CANH/CANL, then lift one end on the 3 non-end adapters.
+- So the terminator is a fixed SMD resistor. Located from `docs/images/can adaptor front.webp`: the part marked "121" on the front, bottom edge, next to the "120R" silkscreen label. In Phase 3, confirm its ends read about 120 Ω, then lift one end on the 3 non-end adapters.
+
+### Old car (F.1 teardown, 2026-10-14)
+- Photos: `docs/images/before teardown up.webp` (top) and `docs/images/before teardown bottom.webp` (bottom).
+- Drive board: Keyes L298N V2 with screw terminals and an onboard buck. Removed.
+- Motors: 4 yellow TT motors; the two on each side appear wired in parallel through the centre hole. Per-terminal polarity and suppression caps aren't visible in the photos.
+- Fit concern (rough estimate from the bottom photo, scaled from a ~70 mm TT motor): about 10 mm between each motor's back end and the next motor's gearbox. The encoder motors are longer at that end. F.5 checks it.
+- Still on the chassis: the old MCU-with-camera board and its BT antenna.
 
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.

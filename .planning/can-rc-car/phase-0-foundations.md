@@ -63,49 +63,39 @@ docs/
 ### E. Hardware bring-up (as parts arrive; not a blocker for the exit criterion)
 1. **ESP32-C3 boards:** flash the hello-world on each of the 4 plus spares. Label the physical boards (FL/FR/RL/RR/spare) and record which ones fail.
 2. **CAN adapters (SN65HVD230):** (done 2026-10-14: all 5 measure 118–120 Ω, so all have a terminator fitted. It is a fixed SMD part, not jumper-selectable; 3 come off in Phase 3.) Unpowered, measure CANH–CANL resistance on each. About 120 Ω means onboard termination is fitted. Record which boards have it; only the two end nodes should keep it.
-3. **MP1584 bucks:** feed from the bench PSU at ~7.4–8.4 V with a current limit (~0.5 A) until the cells arrive. Before connecting anything, measure the output at no load, then with a load resistor. Confirm 5.0 V ±0.1 V, and adjust if the modules are trimmable.
+3. **MP1584 bucks:** deferred (2026-10-14). Until Phases 3–5 every board runs from USB, so nothing connects to a buck output yet. Rule: check each buck before anything is connected to its output. MP1584 modules often ship with the trim pot at an arbitrary setting, and one set high would destroy a C3. Method: feed from the bench PSU at ~7.4–8.4 V with a current limit (~0.5 A). Measure the output at no load, then with a load resistor: 100 Ω draws 50 mA and dissipates 0.25 W, so use a ½ W part or two 220 Ω ¼ W in parallel. Confirm 5.0 V ±0.1 V; trim if the module allows it. About 2 minutes per module.
 4. **18650 cells (when bought):** measure each cell before inserting (matched pair within ~0.05 V). Do one charge cycle on the 2S board and confirm about 8.4 V at the end.
 5. Log every measurement in `progress.md` under Test Results.
 
 ### F. Chassis prep + motor/encoder bench tests (added 2026-10-11; no firmware needed)
 Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done before Phase 1 starts. Log every result in `progress.md` under Test Results.
-1. **Teardown of the old car.**
-   - Take the AA batteries out first.
-   - Before desoldering anything, photograph and note the old wiring: motor polarity per side, and any suppression caps across the motor terminals.
-   - Remove the old motor drive board and the AA holder.
-   - Keep the old motors and board in a labeled bag, as a reference and a fallback.
+Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (counts per rev, no-load speed, direction convention). What stays here either protects hardware or must happen before mounting.
+
+1. **Teardown of the old car.** (done 2026-10-14)
+   - Before photos: `docs/images/before teardown up.webp` and `docs/images/before teardown bottom.webp`.
+   - The old drive board (Keyes L298N V2, screw terminals) and the old battery holder are removed. The old MCU-with-camera board and its BT antenna are still on the chassis for now.
+   - The two motors on each side appear to be wired in parallel through the centre hole. The photos don't show per-terminal polarity or suppression caps; not needed, since the motors are being replaced.
 2. **Motor bench test, all 5 new motors.**
    - Label them M1–M5.
-   - Measure the winding resistance R of each motor, unpowered: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V.
-   - Run each from the bench PSU at about 6 V, current limit about 1 A (the spec stall current is 0.82 A), in both directions. Use short runs and don't hold a stall.
-   - Record the no-load current per motor and note any grinding or roughness.
-   - Also do a short run at 8.4 V, the full-charge 2S voltage the motors will see through the DRV8833.
+   - Measure the winding resistance R of each motor, unpowered: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V. This is the only Phase 0 input to the current-budget risk.
+   - Spin each briefly from the bench PSU at about 6 V, current limit about 1 A, one direction. Record the no-load current and note any grinding or roughness. Don't hold a stall.
    - Pick the 4 best for the chassis; the remaining one is the bench spare.
+   - Dropped (2026-10-14): the 8.4 V run and the second direction. Low value; Phase 1 runs the motor both ways at full PWM anyway.
 3. **Encoder pinout.**
    - Identify the 6-wire cable pinout (M+, M−, encoder VCC, GND, A, B) from the seller listing and the encoder PCB silkscreen; these cables aren't standardized.
    - Confirm VCC and GND with the multimeter before powering.
    - Record the pinout in `findings.md`.
-4. **Encoder signal check**, on each motor before it is mounted.
+4. **Encoder 3.3 V check.** Some Hall sensors need more than 3.3 V; if these do, every wheel node needs level shifting or a different encoder supply, which changes the wiring plan.
    - Power the encoder at 3.3 V, current limit about 0.1 A, with the motor leads unpowered.
    - Connect A and B to the logic analyzer (PulseView) and turn the output shaft by hand.
    - Expect two clean square waves 90° apart (quadrature). Reversing the direction swaps which one leads.
-   - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups: note it.
-   - On the bench spare, count the edges per output-shaft revolution (mark the shaft and turn it exactly once). This is the counts-per-rev figure Phase 1 needs for speed calculation. Record it.
-   - Expected, if the listing's "12 PPR" is per channel at the motor shaft: 1080 rising edges on A, or 4320 edges across A and B. A result of 12 or 48 means the PPR is quoted at the output shaft. See `findings.md`.
-   - **Powered run, no MCU and no firmware.** Wiring:
-     - Motor M+/M− from the bench PSU, current-limited.
-     - Encoder VCC/GND at 3.3 V from a second source. Use a second PSU channel, or the 3V3 pin of any C3 board on USB (its firmware doesn't matter; no GPIOs are used). With a single channel, run motor and encoder together at 3.3 V: that still gives counts and direction, but not the maximum speed.
-     - Logic analyzer channels on A and B, analyzer GND to encoder GND. The motor supply ground doesn't need tying in.
-     - Sample at ≥ 1 MHz. Channel A is expected to run at a few kHz at 8.4 V; that's an estimate, since the real rpm is unknown.
-   - **No-load speed.** At 6 V and at 8.4 V, measure f_A with the PulseView cursors or an edge count over a fixed window (sigrok's "timing" decoder may help; unverified). A multimeter Hz mode on A works too.
-     - Motor rpm = f_A / 12 × 60; output rpm = motor rpm / 90.
-     - The 8.4 V figure is the wheel's top speed, which caps the Phase 1 setpoint range. It also cross-checks the hand-turn counts-per-rev.
-   - **Direction convention.** For each polarity (M+ to PSU + versus reversed), record which way the output shaft turns (seen from the shaft end) and which channel leads (A or B).
-     - Left and right motors are mounted mirrored, so "forward" is opposite polarity on the two sides. Record which polarity and which leading channel mean forward for left-side and for right-side motors. Phase 1 firmware uses this.
-5. **Mechanical fit check.**
+   - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
+   - One motor answers the 3.3 V question. Repeat it on the other 4 before mounting: that only saves taking a motor back out later, and takes about a minute each.
+   - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them with PCNT. Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
+5. **Mechanical fit check.** The most likely F item to fail: from the bottom photo, the gap between each old motor's back end and the next motor's gearbox is roughly 10 mm (estimate, scaled from a ~70 mm TT motor). The encoder adds length at that end.
    - Do the new motors fit the old mounts? Check the holes, the extra length from the encoder PCB, and clearance for the cable.
    - Do the metal D-shafts fit the wheels, and do the wheels stay on?
-   - Does the 2S 18650 holder fit where the AA holder was?
+   - Does the 2S 18650 holder fit where the AA holder was? (The old holder is removed; the new one hasn't been tried yet.)
    - Is there room for the KCD11 switch (10×15 mm cutout) and the fuse holder?
    - For any misfit, decide a workaround or a reorder.
 6. **Mount the 4 chosen motors** as FL/FR/RL/RR and record which M-number went where.
@@ -113,7 +103,7 @@ Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done be
    - Leave the motor and encoder leads unterminated; don't wire them to drivers or nodes yet.
    - Fit the wheels.
 
-**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout, counts-per-rev, no-load speed at 6 V and 8.4 V, and the left/right direction convention are recorded; and every fit problem has a decided fix.
+**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout and each motor's winding resistance and 6 V no-load current are recorded; and every fit problem has a decided fix.
 
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.

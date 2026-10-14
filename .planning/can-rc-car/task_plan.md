@@ -5,10 +5,10 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 
 ## Next Step
 Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
-In parallel (no firmware needed): item F (old-car teardown, motor and encoder bench tests, mechanical fit, mounting 4 motors) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
+In parallel (no firmware needed): item F, next F.5 fit check (teardown F.1 done), then F.2–F.4 (motor resistance and 6 V spin, encoder pinout, encoder 3.3 V check) and F.6 mounting. E.3 (bucks) is deferred until something first connects to a buck output.
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 done 2026-10-14
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 and F.1 (teardown) done 2026-10-14; F scope trimmed the same day
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -38,14 +38,15 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
-- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated)
-- [ ] F. Chassis prep + motor/encoder bench tests: teardown, test all 5 motors and encoders, encoder pinout and counts/rev, fit check, mount 4 motors (mechanical only; added 2026-10-11)
+- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
+- [ ] F. Chassis prep + motor/encoder bench tests: teardown (done 2026-10-14), motor resistance and 6 V spin, encoder pinout, encoder 3.3 V check, fit check, mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - **Status:** in_progress
 
 ### Phase 1: One wheel node on the bench
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [ ] DRV8833 PWM via LEDC and encoder counting via PCNT
+- [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (expect 1080 on A or 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [ ] Commands over USB serial (temporary)
 - **Learning:** embedded control. **Exit:** the wheel holds a commanded speed under finger-drag load and reports actual speed.
@@ -61,7 +62,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 
 ### Phase 3: Protocol spec + four nodes
 - [ ] Write the spec: message catalog, ID/priority allocation, node addressing, error and bus-off handling
-- [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
+- [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor marked "121", beside the "120R" silkscreen label, with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
 - [ ] Four wheel nodes plus the gateway on a bench harness, all on one firmware image with node identity in NVS
 - **Learning:** protocol design, failure detection. **Exit:** skid-steer commands drive all four wheels correctly, and losing any single node stops the whole car.
 - **Status:** pending
@@ -126,6 +127,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Two IDF projects plus shared `components/`, target locked via `sdkconfig.defaults` | Different chips and apps; a clean clone builds without `set-target` |
 | CI: GitHub Actions, `espressif/idf:v6.1` container, build only | Free for public repos on standard runners; no artifacts, to avoid storage quota |
 | Mechanical chassis prep pulled forward into Phase 0 (item F); no electronics in the chassis until Phases 1–3 settle wiring | Surfaces fit problems early, while a reorder is cheap; avoids rework of an unplanned harness (2026-10-11) |
+| Phase 0 F trimmed: counts/rev, no-load speed and direction convention move to Phase 1 (measured by firmware); F.2 drops the 8.4 V and reverse runs; E.3 deferred until first buck use | Keep in Phase 0 only what protects hardware or must precede mounting; Phase 1 measuring them is a good PCNT exercise. Cost: no independent no-firmware reference, unless the optional hand count is done (2026-10-14) |
 | Phase detail plans live in separate `phase-N-*.md` files next to `task_plan.md` | Keeps the top of `task_plan.md` (what the hooks inject) short |
 
 ## Errors Encountered
