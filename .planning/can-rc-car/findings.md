@@ -47,6 +47,14 @@ Technical notes (from general knowledge, verify when relevant):
   - 4320 counts per output revolution with 4× quadrature decoding (both edges on both channels).
   - Phase 1 firmware measures this (optional no-firmware hand count in F.4). If the result is 12 or 48, the PPR is quoted at the output shaft instead.
 - Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
+- Sound (2026-10-14, 2 motors): gearbox whine with a periodic "wow-wow", the same on both motors, so a trait of this gearbox, not a fault. Source gear stage not identified. Phase 1: expect a small periodic speed ripple in the encoder data (possibly once per output turn); don't mistake it for a firmware or controller bug.
+- Measured (2026-10-14): R ≈ 3.0 Ω and 3.1 Ω on the first two motors (3.2 / 3.3 Ω read, 0.2 Ω leads). Stall ≈ 2.0 A at 6 V, ≈ 2.8 A at 8.4 V; 4 motors stalled ≈ 11 A. The listing's 0.82 A doesn't fit V/R at any listed voltage. Caveats: two motors so far; an ohmmeter's tiny test current can overstate brush resistance, so the real stall current may be somewhat higher.
+
+### Encoder connector pinout (F.3, 2026-10-14)
+- Encoder PCB silkscreen "HallEncoder"; pins left to right: `+  GND  A  B  V  -`.
+- `+`/`-` (outer pins) are the motor terminals M+/M−; confirmed by ohmmeter (they read the ~3 Ω winding). `V`/`GND` are the encoder supply and `A`/`B` the quadrature outputs (inferred from the silkscreen; F.4 confirms). The motor power and the encoder share the one 6-pin cable.
+- Cable colors: `+` = red (outer), `-` = black (outer). The cable has a second red wire on an inner pin (probably `V`), so never pick the motor pair by color alone. Inner pin colors (blue, green, yellow, red) not yet mapped to labels.
+- The cable's far end is individual female Dupont housings; male-to-male jumpers in them give clip-able test points.
 
 ### CAN adapter termination (E.2, 2026-10-14)
 - All 5 SN65HVD230 adapters measure 118–120 Ω between CANH and CANL, so each has a 120 Ω terminator fitted.

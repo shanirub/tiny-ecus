@@ -75,11 +75,12 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Before photos: `docs/images/before teardown up.webp` and `docs/images/before teardown bottom.webp`.
    - The old drive board (Keyes L298N V2, screw terminals) and the old battery holder are removed. The old MCU-with-camera board and its BT antenna are still on the chassis for now.
    - The two motors on each side appear to be wired in parallel through the centre hole. The photos don't show per-terminal polarity or suppression caps; not needed, since the motors are being replaced.
-2. **Motor bench test, all 5 new motors.**
+2. **Motor bench test, all 5 new motors.** (2 of 5 done 2026-10-14: both mounted motors, R ≈ 3.0 / 3.1 Ω, no-load 0.098 / 0.100 A at 6 V; see `progress.md`)
    - Label them M1–M5.
    - Measure the winding resistance R of each motor, unpowered: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V. This is the only Phase 0 input to the current-budget risk.
    - Spin each briefly from the bench PSU at about 6 V, current limit about 1 A, one direction. Record the no-load current and note any grinding or roughness. Don't hold a stall.
    - Pick the 4 best for the chassis; the remaining one is the bench spare.
+   - Reduced for the remaining 3 motors (2026-10-14): the first two matched closely, so ~3 Ω and ~0.1 A are taken as the model's typical values and their resistance measurement is skipped. Each still gets a quick 6 V spin before it is mounted, to catch a defective unit: expect about 0.1 A in CV, with no grinding. A clearly different current or sound makes that motor the bench spare.
    - Dropped (2026-10-14): the 8.4 V run and the second direction. Low value; Phase 1 runs the motor both ways at full PWM anyway.
 3. **Encoder pinout.**
    - Identify the 6-wire cable pinout (M+, M−, encoder VCC, GND, A, B) from the seller listing and the encoder PCB silkscreen; these cables aren't standardized.
@@ -92,7 +93,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
    - One motor answers the 3.3 V question. Repeat it on the other 4 before mounting: that only saves taking a motor back out later, and takes about a minute each.
    - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them with PCNT. Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
-5. **Mechanical fit check.** The most likely F item to fail: from the bottom photo, the gap between each old motor's back end and the next motor's gearbox is roughly 10 mm (estimate, scaled from a ~70 mm TT motor). The encoder adds length at that end.
+5. **Mechanical fit check.** (motor fit passed 2026-10-14: the two mounted motors fit the old mounts with about 1 mm between one's encoder end and the next gearbox, and no rubbing at 6 V even when pressed together. Wheels, 2S holder, switch and fuse holder still to check.) The most likely F item to fail: from the bottom photo, the gap between each old motor's back end and the next motor's gearbox is roughly 10 mm (estimate, scaled from a ~70 mm TT motor). The encoder adds length at that end.
    - Do the new motors fit the old mounts? Check the holes, the extra length from the encoder PCB, and clearance for the cable.
    - Do the metal D-shafts fit the wheels, and do the wheels stay on?
    - Does the 2S 18650 holder fit where the AA holder was? (The old holder is removed; the new one hasn't been tried yet.)
@@ -103,7 +104,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Leave the motor and encoder leads unterminated; don't wire them to drivers or nodes yet.
    - Fit the wheels.
 
-**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout and each motor's winding resistance and 6 V no-load current are recorded; and every fit problem has a decided fix.
+**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout is recorded, plus the winding resistance of 2 motors and each motor's 6 V no-load spin result; and every fit problem has a decided fix.
 
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.

@@ -62,11 +62,23 @@
 - Photos re-encoded to 1280 px WebP (q80): 1.0 MB to 0.46 MB for the 4 files. The CAN adapter front photo shows the terminator: SMD "121" next to the "120R" label.
 - Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`, `findings.md`.
 
+- F.3 pinout confirmed on the first motor: silkscreen `+ GND A B V -`; red = `+`, black = `-` (outer pins). Cable has a second red wire on an inner pin.
+- F.2 winding R: first motor ≈ 3.0 Ω, second ≈ 3.1 Ω, far below the ~7–15 Ω assumed. Stall ≈ 2.8 A per motor at 8.4 V, ≈ 11 A for 4. Current-budget risk updated in `task_plan.md`.
+- F.2 first motor 6 V spin: CV at 6.00 V, no-load 0.098 A; second mounted motor 0.100 A, a close match. No-load current is ~5 % of the ~2 A stall estimate, as expected for a small brushed motor.
+- F.5 first look: encoder motors fit the old mounts, about 1 mm between one motor's encoder end and the next gearbox. No rubbing during the 6 V spin, including with the motors pressed together. Sound: gearbox whine with a periodic "wow-wow", the same on both chassis-mounted motors tested so far. Judged harmless; not traced to a gear stage (optional shaft-flag test skipped).
+
+- Remaining 3 motors: skip the resistance measurement (the first two agree), but give each a 6 V spin before mounting, to catch a defective unit. Plan updated in `phase-0-foundations.md` F.2 and in the Next Step.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | IDF v6.1 install | `. export.sh && idf.py --version` | `ESP-IDF v6.1` | `ESP-IDF v6.1`; xtensa-esp32-elf-gcc and riscv32-esp-elf-gcc esp-15.2.0_20251204; Python 3.14.7 | pass |
 | E.2 CAN adapter termination (2026-10-14) | Unpowered, CANH–CANL resistance on each of the 5 SN65HVD230 adapters | ~120 Ω where termination is fitted | 118–120 Ω on all 5: every adapter has a 120 Ω terminator fitted | pass (fixed SMD terminators, no jumper; 3 to remove in Phase 3) |
+| F.3 encoder pinout (2026-10-14) | Silkscreen + ohmmeter on first motor | Motor pair identifiable | `+ GND A B V -`; red = `+`, black = `-`; `+`↔`-` reads the winding | pass (inner colors not yet mapped) |
+| F.2 winding R, first motor (2026-10-14) | Ohmmeter 200 Ω range across `+`/`-` via cable and jumpers | 7–15 Ω (guess) | 3.2 Ω read − 0.2 Ω leads = 3.0 Ω | recorded; lowest-over-positions not yet done; stall far above listing |
+| F.2 winding R, second motor (2026-10-14) | Ohmmeter 200 Ω range across `+`/`-` via cable and jumpers | ~3 Ω (matches first motor) | 3.3 Ω read − 0.2 Ω leads = 3.1 Ω | recorded |
+| F.2 6 V no-load spin, first motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; CV, 6.00 V, 0.098 A (0.5 W) | pass (no rubbing; periodic gearbox "wow", same on both mounted motors, harmless) |
+| F.2 6 V no-load spin, second motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; 0.100 A | pass (no rubbing; same periodic gearbox "wow") |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
 ## Error Log
