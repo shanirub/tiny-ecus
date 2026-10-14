@@ -4,11 +4,11 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds. User plans to resume around 2026-10-11/12.
-In parallel (no firmware needed): item F (old-car teardown, motor and encoder bench tests, mechanical fit, mounting 4 motors), E.2 (CAN adapter termination, multimeter) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
+Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
+In parallel (no firmware needed): item F (old-car teardown, motor and encoder bench tests, mechanical fit, mounting 4 motors) and E.3 (bucks, fed from the bench PSU at ~7.4–8.4 V, current-limited).
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending)
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 done 2026-10-14
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -38,7 +38,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
-- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime
+- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated)
 - [ ] F. Chassis prep + motor/encoder bench tests: teardown, test all 5 motors and encoders, encoder pinout and counts/rev, fit check, mount 4 motors (mechanical only; added 2026-10-11)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - **Status:** in_progress
@@ -61,6 +61,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 
 ### Phase 3: Protocol spec + four nodes
 - [ ] Write the spec: message catalog, ID/priority allocation, node addressing, error and bus-off handling
+- [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
 - [ ] Four wheel nodes plus the gateway on a bench harness, all on one firmware image with node identity in NVS
 - **Learning:** protocol design, failure detection. **Exit:** skid-steer commands drive all four wheels correctly, and losing any single node stops the whole car.
 - **Status:** pending
@@ -105,7 +106,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
 - **Gateway overload:** camera + WiFi + CAN + UART on one ESP32. Measure in Phase 7.
-- **Current budget:** 4 × 0.82 A stall ≈ 3.3 A, above the PCM's 3 A continuous rating. A 5 A fuse is the planned fallback, but the PCM limit is also a factor.
+- **Current budget:** 4 × 0.82 A stall ≈ 3.3 A, above the PCM's 3 A continuous rating. A 5 A fuse is the planned fallback, but the PCM limit is also a factor. The voltage the 0.82 A applies at is unknown; Phase 0 F.2 measures winding resistance to estimate stall current at 8.4 V.
 - **ESP-IDF TWAI API:** it has changed across IDF versions. Verify against the pinned version before writing code.
 
 ## Decisions Made

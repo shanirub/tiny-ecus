@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done, B next. Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
+Status: **approved 2026-09-28**; A done, B next; E.2 done 2026-10-14. Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -62,7 +62,7 @@ docs/
 
 ### E. Hardware bring-up (as parts arrive; not a blocker for the exit criterion)
 1. **ESP32-C3 boards:** flash the hello-world on each of the 4 plus spares. Label the physical boards (FL/FR/RL/RR/spare) and record which ones fail.
-2. **CAN adapters (SN65HVD230):** unpowered, measure CANH–CANL resistance on each. About 120 Ω means onboard termination is fitted. Record which boards have it; only the two end nodes should keep it.
+2. **CAN adapters (SN65HVD230):** (done 2026-10-14: all 5 measure 118–120 Ω, so all have a terminator fitted. It is a fixed SMD part, not jumper-selectable; 3 come off in Phase 3.) Unpowered, measure CANH–CANL resistance on each. About 120 Ω means onboard termination is fitted. Record which boards have it; only the two end nodes should keep it.
 3. **MP1584 bucks:** feed from the bench PSU at ~7.4–8.4 V with a current limit (~0.5 A) until the cells arrive. Before connecting anything, measure the output at no load, then with a load resistor. Confirm 5.0 V ±0.1 V, and adjust if the modules are trimmable.
 4. **18650 cells (when bought):** measure each cell before inserting (matched pair within ~0.05 V). Do one charge cycle on the 2S board and confirm about 8.4 V at the end.
 5. Log every measurement in `progress.md` under Test Results.
@@ -76,9 +76,9 @@ Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done be
    - Keep the old motors and board in a labeled bag, as a reference and a fallback.
 2. **Motor bench test, all 5 new motors.**
    - Label them M1–M5.
+   - Measure the winding resistance R of each motor, unpowered: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V.
    - Run each from the bench PSU at about 6 V, current limit about 1 A (the spec stall current is 0.82 A), in both directions. Use short runs and don't hold a stall.
    - Record the no-load current per motor and note any grinding or roughness.
-   - First measure the winding resistance R of each motor: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V.
    - Also do a short run at 8.4 V, the full-charge 2S voltage the motors will see through the DRV8833.
    - Pick the 4 best for the chassis; the remaining one is the bench spare.
 3. **Encoder pinout.**

@@ -48,6 +48,13 @@ Technical notes (from general knowledge, verify when relevant):
   - F.4 measures this. If the result is 12 or 48, the PPR is quoted at the output shaft instead.
 - Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
 
+### CAN adapter termination (E.2, 2026-10-14)
+- All 5 SN65HVD230 adapters measure 118–120 Ω between CANH and CANL, so each has a 120 Ω terminator fitted.
+- A correct bus has exactly 2 terminators, about 60 Ω total. All 5 together would be about 24 Ω, which overloads the transceiver drivers and shrinks the differential signal.
+- These boards have no termination jumper and no solder bridge on the back.
+- The front 2-pin header connects directly to CANH and CANL (checked by continuity). It is a second bus connector, useful for daisy-chaining the harness, and is not related to termination.
+- So the terminator is a fixed SMD resistor, likely marked "121" or "1200" on the front. It isn't located yet: in Phase 3, find the part whose ends read about 120 Ω and connect to CANH/CANL, then lift one end on the 3 non-end adapters.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 
