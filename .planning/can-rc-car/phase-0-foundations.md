@@ -75,7 +75,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Before photos: `docs/images/before teardown up.webp` and `docs/images/before teardown bottom.webp`.
    - The old drive board (Keyes L298N V2, screw terminals) and the old battery holder are removed. The old MCU-with-camera board and its BT antenna are still on the chassis for now.
    - The two motors on each side appear to be wired in parallel through the centre hole. The photos don't show per-terminal polarity or suppression caps; not needed, since the motors are being replaced.
-2. **Motor bench test, all 5 new motors.** (2 of 5 done 2026-10-14: both mounted motors, R ≈ 3.0 / 3.1 Ω, no-load 0.098 / 0.100 A at 6 V; see `progress.md`)
+2. **Motor bench test, all 5 new motors.** (done: 2026-10-14 both mounted motors, R ≈ 3.0 / 3.1 Ω, no-load 0.098 / 0.100 A at 6 V; 2026-10-15 the other 3 spun at 6 V, all ~0.1 A, none faulty; see `progress.md`)
    - Label them M1–M5.
    - Measure the winding resistance R of each motor, unpowered: zero the multimeter leads, then take the lowest reading over several shaft positions. The stall current is about V / R. The listing doesn't say which voltage the 0.82 A stall rating is for: R ≈ 7 Ω means about 6 V, R ≈ 15 Ω means about 12 V. This is the only Phase 0 input to the current-budget risk.
    - Spin each briefly from the bench PSU at about 6 V, current limit about 1 A, one direction. Record the no-load current and note any grinding or roughness. Don't hold a stall.

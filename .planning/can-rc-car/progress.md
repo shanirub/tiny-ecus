@@ -69,6 +69,12 @@
 
 - Remaining 3 motors: skip the resistance measurement (the first two agree), but give each a 6 V spin before mounting, to catch a defective unit. Plan updated in `phase-0-foundations.md` F.2 and in the Next Step.
 
+## Session: 2026-10-15
+- F.2 done: the remaining 3 motors each got a 6 V spin. All settle at about 0.1 A no-load, like the first two. Two showed about 0.3 A briefly at start before dropping to 0.1 A: inrush (no back-EMF at standstill), normal. The true inrush peak is likely higher; the PSU display samples too slowly to catch it. All 3 have the same periodic gearbox "wow". No faulty motor, so any of the 3 can be the bench spare.
+- PSU power readout: 0.7 W on two motors and 0.6 W on the third, consistent with 6 V × ~0.1 A. (The display pads with leading zeros, "000.7 W", which was first misread as 0.007 W.)
+- Added `docs/architecture.md`: power chain, CAN topology and wheel-node diagrams; linked from `task_plan.md`.
+- Files modified: `progress.md`, `task_plan.md`, `phase-0-foundations.md`; added `docs/architecture.md`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -79,6 +85,7 @@
 | F.2 winding R, second motor (2026-10-14) | Ohmmeter 200 Ω range across `+`/`-` via cable and jumpers | ~3 Ω (matches first motor) | 3.3 Ω read − 0.2 Ω leads = 3.1 Ω | recorded |
 | F.2 6 V no-load spin, first motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; CV, 6.00 V, 0.098 A (0.5 W) | pass (no rubbing; periodic gearbox "wow", same on both mounted motors, harmless) |
 | F.2 6 V no-load spin, second motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; 0.100 A | pass (no rubbing; same periodic gearbox "wow") |
+| F.2 6 V no-load spin, remaining 3 motors (2026-10-15) | Bench PSU 6 V, 1 A limit, across `+`/`-` | ~0.1 A in CV, no grinding | All 3 settle at ~0.1 A (0.6–0.7 W); 2 show ~0.3 A briefly at start (inrush); same periodic gearbox "wow" | pass (no faulty motor) |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
 ## Error Log
