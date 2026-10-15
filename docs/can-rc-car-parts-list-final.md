@@ -24,6 +24,12 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 | --- | --- | --- | --- |
 | 18650 Li-ion cells | 2, matched | Vape shop (in customs as of 2026-10-15, hopefully the week of 2026-10-19; bench PSU until then) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
 | 5 V USB-C charger, ≥ 2 A | 1 | Probably already owned | Powers the charger board |
+| WAGO 221-415 (5-port) | 2 | Electrical supply shop | Central motor-power split, + and − (wiring option D, 2026-10-15) |
+| WAGO 221-413 (3-port) | 3 (1 owned) | Electrical supply shop | One + and one − per side pod |
+| Silicone stranded wire, 22 AWG, red + black | ~2 m each | Electronics shop | Motor power branches, buck input |
+| Silicone stranded wire, 20 AWG, red + black | ~0.5 m each | Electronics shop | Battery trunk |
+| JST-XH 4-pin pigtail pairs (male + female) | pack of 5–10 | Electronics shop | Bus cable: 5 V, GND, CANH, CANL; 2 needed + spares |
+| Half-size breadboards | 2, if not owned | Electronics shop | One per side pod, bench phases |
 
 ## Already owned
 
@@ -32,7 +38,7 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 | ESP32-C3 Super Mini | 4 + spares | One per wheel node |
 | CAN transceiver adapters | 5 | 4 wheel nodes + ESP32-CAM; keep 120 Ω only on the two end nodes |
 | ESP32-CAM + expansion board | 1 | Camera and WiFi gateway |
-| RC car chassis + wheels | 1 | Check the new metal shafts fit the wheels |
+| 2-deck acrylic 4WD chassis kit + wheels | 1 | Chosen 2026-10-15, mounted flipped (motors underneath); the first chassis is dropped. Check the new metal shafts fit the wheels |
 | Single-color LEDs | assorted | Corner lights, driven by each wheel node |
 | Basic stash: resistors, capacitors, wire, connectors | assorted | Includes LED resistors, 470 µF bulk caps (≥ 16 V), 100 nF motor caps |
 | Multimeter | 1 | Buck output, cell voltages, current draw |

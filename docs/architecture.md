@@ -62,7 +62,7 @@ The target system as planned. Items marked *(TBD)* are decided in the phase name
    [120 Ω removed]       [120 Ω removed]       [120 Ω removed]       [120 Ω kept: bus end]
         │                     │                     │                     │
      FL node               FR node               RL node               RR node
-                                        (bus order and end node TBD, Phase 3)
+                                        (wiring layout: option D, gateway → left pod → right pod, tentative; confirmed in Phase 3. See docs/design/wiring-options.html)
 ```
 
 Exactly two terminators are fitted, one at each physical end of the bus. With the bus unpowered, CANH–CANL measures about 60 Ω.

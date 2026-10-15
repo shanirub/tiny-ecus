@@ -5,10 +5,10 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 
 ## Next Step
 Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
-In parallel (no firmware needed): item F. Done so far: F.1 teardown, F.3 pinout (wire colors mapped 2026-10-15, same on all 5), motor fit (2 motors mounted, no rubbing), F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty). Next: the F.4 encoder 3.3 V check, the rest of F.5 (wheels, 2S holder, switch, fuse holder), and F.6 (caps, wheels). E.3 (bucks) is deferred until something first connects to a buck output.
+In parallel (no firmware needed): item F. Done so far: F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty), F.3 pinout (wire colors mapped 2026-10-15, same on all 5). Chassis switched 2026-10-15 to the wider 2-deck kit, so F.1, F.5 and F.6 restart on it. Next: the F.4 encoder 3.3 V check, F.1 teardown of the 2-deck chassis, then F.5 on it (flipped-mount test fit, middle gap, wheels, 2S holder, switch, fuse holder) and F.6. E.3 (bucks) is deferred until something first connects to a buck output.
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 and F.1 (teardown) done 2026-10-14; F.5 partly done the same day (2 motors mounted); F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 done 2026-10-14; F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15; chassis switched to the 2-deck kit 2026-10-15 (F.1/F.5/F.6 restart on it)
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -40,7 +40,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
 - [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
-- [ ] F. Chassis prep + motor/encoder bench tests: teardown (done 2026-10-14), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout (done 2026-10-15), encoder 3.3 V check, fit check (motor fit passed 2026-10-14), mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
+- [ ] F. Chassis prep + motor/encoder bench tests: teardown (2-deck chassis; first chassis done 2026-10-14, then dropped), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout (done 2026-10-15), encoder 3.3 V check, fit check, mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - **Status:** in_progress
 
@@ -76,6 +76,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 
 ### Phase 5: Power system + chassis integration
 - [ ] Motors are already mounted (Phase 0 F); this phase does the electrical integration
+- [ ] Move from bench breadboards to soldered wiring: each side pod (option D) on a perfboard, the C3 in female headers (socketed), plug-in connectors (JST-type) between modules, heat shrink and tie-downs at every joint; motor power on heavier wire with soldered or screw-terminal joints
 - [ ] Battery chain: 2S holder with PCM → fuse → switch → 5 V buck logic rail and motor rail, with bulk and motor caps
 - [ ] Measure stall and start current
 - [ ] Battery voltage through a divider into one node's ADC; low-battery shutdown on top of the PCM hardware cutoff
@@ -130,6 +131,9 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Mechanical chassis prep pulled forward into Phase 0 (item F); no electronics in the chassis until Phases 1–3 settle wiring | Surfaces fit problems early, while a reorder is cheap; avoids rework of an unplanned harness (2026-10-11) |
 | Phase 0 F trimmed: counts/rev, no-load speed and direction convention move to Phase 1 (measured by firmware); F.2 drops the 8.4 V and reverse runs; E.3 deferred until first buck use | Keep in Phase 0 only what protects hardware or must precede mounting; Phase 1 measuring them is a good PCNT exercise. Cost: no independent no-firmware reference, unless the optional hand count is done (2026-10-14) |
 | Phase detail plans live in separate `phase-N-*.md` files next to `task_plan.md` | Keeps the top of `task_plan.md` (what the hooks inject) short |
+| Switch to the wider 2-deck acrylic 4WD kit, flipped: motors on the underside, the whole top face for electronics (2026-10-15) | Wider, many more holes and slots, standoffs for a second deck; flipping raises ground clearance. Cost: the 2 motors mounted on the first chassis come off; F.1/F.5/F.6 restart (mechanical only) |
+| Wiring: breadboards on the bench for Phases 1–4 (PSU powered); soldered perfboard per pod from Phase 5 (2026-10-15; "per node" revised to "per pod" by the layout decision below) | Breadboards suit the rewiring of the bench phases. Vibration and battery current start in Phase 5, where loose jumpers would cause intermittent faults. Motor power never goes through breadboard strips (contacts ~1 A, stall ~2.8 A). Soldered nodes keep the C3 socketed and modules on connectors so a node stays replaceable |
+| Wiring layout: option D, two side pods (left FL+RL, right FR+RR) between the wheels, wired the option B way: a 4-wire bus cable (5 V, GND, CANH, CANL; JST-XH) gateway → left pod → right pod, and a motor power star from a central WAGO pair to a WAGO 221-413 on each pod (2026-10-15) | Only 2 boards, which fits the space limit; short motor cables; the same harness carries over from bench to car. Motor current stays off breadboard strips. Bus order is tentative until Phase 3. Fallback if the F.5 middle gap is too small: option C, a stripboard backplane on the upper deck. Options, cable list and wire types: `docs/design/wiring-options.html` |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

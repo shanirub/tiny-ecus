@@ -1,0 +1,506 @@
+<title>tiny-ecus Wiring Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: one reading column like a lab notebook; each option = heading, schematic plate, pros/cons, then a comparison table. */
+:root {
+  --bg: #f3f6f6;
+  --paper: #ffffff;
+  --fg: #1b2427;
+  --muted: #5a6a70;
+  --line: #b9c6ca;
+  --accent: #0f6f7a;
+  --vbat: #c43c3c;
+  --gnd: #2b3438;
+  --v5: #c27a12;
+  --canh: #1f7a4d;
+  --canl: #6a4bb0;
+  --sig: #7d8b90;
+  --chip: #e8eff0;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171a; --paper: #182125; --fg: #e3eaec; --muted: #9aaab0; --line: #3a4a50; --accent: #5cc3cd;
+  --vbat: #ef6b6b; --gnd: #cfd8db; --v5: #e8a640; --canh: #4fc489; --canl: #a98cf0; --sig: #8a9aa0; --chip: #22303a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11171a; --paper: #182125; --fg: #e3eaec; --muted: #9aaab0; --line: #3a4a50; --accent: #5cc3cd;
+  --vbat: #ef6b6b; --gnd: #cfd8db; --v5: #e8a640; --canh: #4fc489; --canl: #a98cf0; --sig: #8a9aa0; --chip: #22303a;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 880px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font-family: var(--mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+section { display: grid; gap: 14px; }
+.lede { color: var(--muted); }
+.fig { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; padding: 8px; }
+.fig svg { display: block; width: 100%; min-width: 660px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pc > div { min-width: 0; }
+.pc h3 { font-size: .95rem; font-family: var(--mono); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.pc .pro h3 { color: var(--canh); }
+.pc .con h3 { color: var(--vbat); }
+ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 620px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--mono); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); white-space: nowrap; }
+.note { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; }
+.tag { font-family: var(--mono); font-size: .75rem; padding: 1px 7px; border-radius: 10px; background: var(--chip); color: var(--fg); white-space: nowrap; }
+code { font-family: var(--mono); font-size: .9em; }
+a { color: var(--accent); }
+.src { font-size: .85rem; color: var(--muted); }
+@media (max-width: 600px) { .pc { grid-template-columns: 1fr; } h1 { font-size: 1.8rem; } }
+/* SVG classes */
+svg text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+svg text.s { font-size: 10.5px; fill: var(--muted); }
+svg text.b { font-weight: 600; }
+svg .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+svg .chip { fill: var(--chip); stroke: var(--line); stroke-width: 1; }
+svg .board { fill: var(--chip); stroke: var(--muted); stroke-width: 1.5; }
+svg .w { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+svg .thin { stroke-width: 1.6; }
+svg .vbat { stroke: var(--vbat); } svg .gnd { stroke: var(--gnd); } svg .v5 { stroke: var(--v5); }
+svg .canh { stroke: var(--canh); } svg .canl { stroke: var(--canl); } svg .sig { stroke: var(--sig); }
+svg .dash { stroke-dasharray: 5 4; }
+svg .fvbat { fill: var(--vbat); } svg .fgnd { fill: var(--gnd); }
+svg .motor { fill: var(--paper); stroke: var(--fg); stroke-width: 1.5; }
+svg .wago { fill: var(--paper); stroke: var(--v5); stroke-width: 2; }
+svg .term { fill: var(--accent); }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:12px">
+  <div class="eyebrow">tiny-ecus · Phase 0 → 5 · wiring · decided: option D</div>
+  <h1>Four ways to wire the wheel nodes</h1>
+  <p class="lede">The problem: every wheel node needs motor power, logic power, ground and the CAN pair from a shared source. That is 4 nodes × 6 shared connections, plus about 11 local wires per node. Below are four ways to organise it. A short primer on wire thickness comes first, because it decides which wire goes where.</p>
+</header>
+
+<section>
+  <div class="eyebrow">Primer</div>
+  <h2>Wire thickness: only two places care</h2>
+  <p>Thin wire has more resistance, so it gets warm and loses voltage when a lot of current flows. Voltage does not matter here; current does. In this car almost every wire carries milliamps, and only the motor power path carries amps. So you need three kinds of wire, not a catalogue.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Wire job</th><th>Current (approx.)</th><th>Wire</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Signals: PWM, encoder A/B, CAN TX/RX, CANH/CANL, LEDs</td><td class="num">mA</td><td>Any, incl. Dupont jumpers (26–28 AWG)</td><td>Thickness irrelevant; connection quality matters.</td></tr>
+      <tr><td>Logic power per node (5 V, 3V3)</td><td class="num">&lt; 0.2 A</td><td>Dupont is fine; 22–24 AWG for a chain</td><td>C3 without WiFi draws little; estimate, measure in Phase 1.</td></tr>
+      <tr><td>Motor branch: one DRV8833 + motor</td><td class="num">0.1 A run, ~2.8 A stall</td><td>22 AWG</td><td>Short runs; rated ~3–5 A in practice.</td></tr>
+      <tr><td>Battery trunk: pack → fuse → switch → split</td><td class="num">up to the fuse (3–5 A)</td><td>20 AWG (18 AWG if unsure)</td><td>Carries all four motors at once.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Rule of thumb figures from distributor tables; sources disagree, so these lean conservative. WAGO 221 takes 24–12 AWG with 11 mm stripped, so feed it 22 AWG or thicker, never a bare Dupont jumper.</p>
+</section>
+
+<!-- ================= OPTION A ================= -->
+<section>
+  <div class="eyebrow">Option A · bench only</div>
+  <h2>One big breadboard backbone</h2>
+  <p>All four nodes sit on one or two full-size breadboards. The two rail pairs carry the power: top for motor VBAT/GND, bottom for 5 V/GND. A spare row pair carries CANH/CANL. Motor cables plug straight in.</p>
+  <div class="fig"><svg viewBox="0 0 760 360" role="img" aria-label="Option A: four nodes on one long breadboard with power rails">
+    <!-- motors -->
+    <g>
+      <rect class="motor" x="185" y="12" width="70" height="30" rx="6"/><text x="220" y="32" text-anchor="middle">FL</text>
+      <rect class="motor" x="330" y="12" width="70" height="30" rx="6"/><text x="365" y="32" text-anchor="middle">FR</text>
+      <rect class="motor" x="475" y="12" width="70" height="30" rx="6"/><text x="510" y="32" text-anchor="middle">RL</text>
+      <rect class="motor" x="620" y="12" width="70" height="30" rx="6"/><text x="655" y="32" text-anchor="middle">RR</text>
+    </g>
+    <!-- PSU -->
+    <rect class="box" x="8" y="110" width="104" height="130" rx="6"/>
+    <text x="60" y="132" text-anchor="middle" class="b">Bench PSU</text>
+    <text x="60" y="150" text-anchor="middle" class="s">VBAT 6–8.4 V</text>
+    <text x="60" y="164" text-anchor="middle" class="s">limit ≤ 1 A</text>
+    <text x="60" y="200" text-anchor="middle" class="s">+ buck or USB</text>
+    <text x="60" y="214" text-anchor="middle" class="s">for 5 V</text>
+    <!-- breadboard -->
+    <rect class="board" x="140" y="60" width="610" height="240" rx="8"/>
+    <line class="w vbat" x1="150" y1="76" x2="740" y2="76"/>
+    <line class="w gnd" x1="150" y1="90" x2="740" y2="90"/>
+    <line class="w v5" x1="150" y1="270" x2="740" y2="270"/>
+    <line class="w gnd" x1="150" y1="284" x2="740" y2="284"/>
+    <line class="w sig dash thin" x1="150" y1="178" x2="740" y2="178"/>
+    <text x="745" y="174" text-anchor="end" class="s">centre channel</text>
+    <!-- CAN row pair -->
+    <line class="w canh thin" x1="160" y1="236" x2="730" y2="236"/>
+    <line class="w canl thin" x1="160" y1="246" x2="730" y2="246"/>
+    <!-- PSU feeds -->
+    <path class="w vbat" d="M112 130 H130 V76 H150"/>
+    <path class="w gnd" d="M112 150 H124 V90 H150"/>
+    <path class="w v5" d="M112 205 H130 V270 H150"/>
+    <path class="w gnd" d="M112 222 H124 V284 H150"/>
+    <!-- GND bond -->
+    <path class="w gnd thin dash" d="M146 90 V284"/>
+    <text x="150" y="320" class="s">GND rails bonded at one point (left end)</text>
+    <!-- nodes -->
+    <g>
+      <g transform="translate(170,0)">
+        <rect class="chip" x="0" y="110" width="44" height="58" rx="3"/><text x="22" y="143" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="52" y="110" width="44" height="40" rx="3"/><text x="74" y="134" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="22" y="192" width="50" height="34" rx="3"/><text x="47" y="213" text-anchor="middle" class="s">CAN</text>
+        <line class="w vbat thin" x1="80" y1="76" x2="80" y2="110"/><line class="w gnd thin" x1="90" y1="90" x2="90" y2="110"/>
+        <line class="w v5 thin" x1="10" y1="168" x2="10" y2="270"/>
+        <line class="w canh thin" x1="40" y1="226" x2="40" y2="236"/><line class="w canl thin" x1="54" y1="226" x2="54" y2="246"/>
+        <path class="w sig thin" d="M50 42 V76"/><path class="w sig thin" d="M50 42 V100 H30 V110"/>
+      </g>
+      <g transform="translate(315,0)">
+        <rect class="chip" x="0" y="110" width="44" height="58" rx="3"/><text x="22" y="143" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="52" y="110" width="44" height="40" rx="3"/><text x="74" y="134" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="22" y="192" width="50" height="34" rx="3"/><text x="47" y="213" text-anchor="middle" class="s">CAN</text>
+        <line class="w vbat thin" x1="80" y1="76" x2="80" y2="110"/><line class="w gnd thin" x1="90" y1="90" x2="90" y2="110"/>
+        <line class="w v5 thin" x1="10" y1="168" x2="10" y2="270"/>
+        <line class="w canh thin" x1="40" y1="226" x2="40" y2="236"/><line class="w canl thin" x1="54" y1="226" x2="54" y2="246"/>
+        <path class="w sig thin" d="M50 42 V100 H30 V110"/>
+      </g>
+      <g transform="translate(460,0)">
+        <rect class="chip" x="0" y="110" width="44" height="58" rx="3"/><text x="22" y="143" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="52" y="110" width="44" height="40" rx="3"/><text x="74" y="134" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="22" y="192" width="50" height="34" rx="3"/><text x="47" y="213" text-anchor="middle" class="s">CAN</text>
+        <line class="w vbat thin" x1="80" y1="76" x2="80" y2="110"/><line class="w gnd thin" x1="90" y1="90" x2="90" y2="110"/>
+        <line class="w v5 thin" x1="10" y1="168" x2="10" y2="270"/>
+        <line class="w canh thin" x1="40" y1="226" x2="40" y2="236"/><line class="w canl thin" x1="54" y1="226" x2="54" y2="246"/>
+        <path class="w sig thin" d="M50 42 V100 H30 V110"/>
+      </g>
+      <g transform="translate(605,0)">
+        <rect class="chip" x="0" y="110" width="44" height="58" rx="3"/><text x="22" y="143" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="52" y="110" width="44" height="40" rx="3"/><text x="74" y="134" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="22" y="192" width="50" height="34" rx="3"/><text x="47" y="213" text-anchor="middle" class="s">CAN</text>
+        <line class="w vbat thin" x1="80" y1="76" x2="80" y2="110"/><line class="w gnd thin" x1="90" y1="90" x2="90" y2="110"/>
+        <line class="w v5 thin" x1="10" y1="168" x2="10" y2="270"/>
+        <line class="w canh thin" x1="40" y1="226" x2="40" y2="236"/><line class="w canl thin" x1="54" y1="226" x2="54" y2="246"/>
+        <path class="w sig thin" d="M50 42 V100 H30 V110"/>
+      </g>
+    </g>
+    <text x="445" y="342" text-anchor="middle" class="s">grey = 6-wire motor cable (motor ± to DRV, encoder to C3) · each C3 keeps its own 3V3</text>
+  </svg></div>
+  <div class="legend"><span><i style="background:var(--vbat)"></i>motor VBAT</span><span><i style="background:var(--gnd)"></i>GND</span><span><i style="background:var(--v5)"></i>5 V logic</span><span><i style="background:var(--canh)"></i>CANH</span><span><i style="background:var(--canl)"></i>CANL</span><span><i style="background:var(--sig)"></i>motor cable / signals</span></div>
+  <div class="pc">
+    <div class="pro"><h3>Good</h3><ul>
+      <li>Fastest to start; no new parts beyond the boards.</li>
+      <li>Power and CAN wiring nearly disappear: short hops to the rails.</li>
+      <li>Everything visible and probeable in one place.</li>
+    </ul></div>
+    <div class="con"><h3>Watch</h3><ul>
+      <li>Bench only: motor power on rails is fine only under the PSU limit (≤ 1 A).</li>
+      <li>Probably needs two full-size boards (~75–80 rows for 4 nodes vs 63).</li>
+      <li>Skips the real CAN harness; Phase 5 starts the wiring from zero.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= OPTION B ================= -->
+<section>
+  <div class="eyebrow">Option B · bench and car</div>
+  <h2>Bus cable plus a power star</h2>
+  <p>The automotive and drone approach. One 4-wire cable (5 V, GND, CANH, CANL) is daisy-chained from node to node with small locking connectors. Drones use exactly this with the DroneCAN 4-pin cable. Motor power goes separately as a star from two WAGO blocks, one short 22 AWG pair per motor driver. Each node is its own small board.</p>
+  <div class="fig"><svg viewBox="0 0 760 380" role="img" aria-label="Option B: daisy-chained 4-wire CAN plus 5 V cable and star motor power from WAGO blocks">
+    <!-- source -->
+    <rect class="box" x="8" y="22" width="120" height="76" rx="6"/>
+    <text x="68" y="44" text-anchor="middle" class="b">PSU / 2S pack</text>
+    <text x="68" y="62" text-anchor="middle" class="s">fuse + switch</text>
+    <text x="68" y="78" text-anchor="middle" class="s">(Phase 5)</text>
+    <!-- WAGOs -->
+    <rect class="wago" x="190" y="18" width="84" height="30" rx="5"/><text x="232" y="38" text-anchor="middle" class="s">WAGO +</text>
+    <rect class="wago" x="190" y="62" width="84" height="30" rx="5"/><text x="232" y="82" text-anchor="middle" class="s">WAGO −</text>
+    <path class="w vbat" d="M128 40 H190"/>
+    <path class="w gnd" d="M128 80 H190"/>
+    <text x="158" y="34" text-anchor="middle" class="s">20 AWG</text>
+    <!-- buck -->
+    <rect class="box" x="8" y="236" width="90" height="56" rx="6"/>
+    <text x="53" y="260" text-anchor="middle" class="b">Buck</text><text x="53" y="276" text-anchor="middle" class="s">5 V</text>
+    <path class="w vbat thin" d="M40 98 V236"/>
+    <!-- gateway -->
+    <rect class="box" x="118" y="236" width="104" height="56" rx="6"/>
+    <text x="170" y="258" text-anchor="middle" class="b">Gateway</text><text x="170" y="274" text-anchor="middle" class="s">ESP32-CAM</text>
+    <circle class="term" cx="210" cy="286" r="5"/>
+    <path class="w v5 thin" d="M98 262 H118"/>
+    <!-- nodes -->
+    <g>
+      <rect class="box" x="262" y="226" width="100" height="76" rx="6"/><text x="312" y="250" text-anchor="middle" class="b">FL node</text><text x="312" y="268" text-anchor="middle" class="s">C3·DRV·CAN</text>
+      <rect class="box" x="384" y="226" width="100" height="76" rx="6"/><text x="434" y="250" text-anchor="middle" class="b">FR node</text><text x="434" y="268" text-anchor="middle" class="s">C3·DRV·CAN</text>
+      <rect class="box" x="506" y="226" width="100" height="76" rx="6"/><text x="556" y="250" text-anchor="middle" class="b">RL node</text><text x="556" y="268" text-anchor="middle" class="s">C3·DRV·CAN</text>
+      <rect class="box" x="628" y="226" width="100" height="76" rx="6"/><text x="678" y="250" text-anchor="middle" class="b">RR node</text><text x="678" y="268" text-anchor="middle" class="s">C3·DRV·CAN</text>
+      <circle class="term" cx="716" cy="292" r="5"/>
+    </g>
+    <!-- chain bundles -->
+    <g>
+      <path class="w v5 thin" d="M222 282 H262"/><path class="w gnd thin" d="M222 287 H262"/><path class="w canh thin" d="M222 292 H262"/><path class="w canl thin" d="M222 297 H262"/>
+      <path class="w v5 thin" d="M362 282 H384"/><path class="w gnd thin" d="M362 287 H384"/><path class="w canh thin" d="M362 292 H384"/><path class="w canl thin" d="M362 297 H384"/>
+      <path class="w v5 thin" d="M484 282 H506"/><path class="w gnd thin" d="M484 287 H506"/><path class="w canh thin" d="M484 292 H506"/><path class="w canl thin" d="M484 297 H506"/>
+      <path class="w v5 thin" d="M606 282 H628"/><path class="w gnd thin" d="M606 287 H628"/><path class="w canh thin" d="M606 292 H628"/><path class="w canl thin" d="M606 297 H628"/>
+    </g>
+    <text x="440" y="326" text-anchor="middle" class="s">one 4-wire cable per hop: 5 V · GND · CANH · CANL (JST-XH or Dupont 4-pin, IN and OUT per node)</text>
+    <text x="440" y="342" text-anchor="middle" class="s">● = 120 Ω kept only at the two bus ends</text>
+    <!-- star -->
+    <path class="w vbat thin" d="M274 30 H300 V226"/>
+    <path class="w vbat thin" d="M274 30 H422 V226"/>
+    <path class="w vbat thin" d="M274 30 H544 V226"/>
+    <path class="w vbat thin" d="M274 30 H666 V226"/>
+    <path class="w gnd thin" d="M274 76 H324 V226"/>
+    <path class="w gnd thin" d="M274 76 H446 V226"/>
+    <path class="w gnd thin" d="M274 76 H568 V226"/>
+    <path class="w gnd thin" d="M274 76 H690 V226"/>
+    <text x="500" y="112" text-anchor="middle" class="s">star: one 22 AWG pair per motor driver</text>
+    <!-- gnd bond -->
+    <path class="w gnd thin dash" d="M232 92 V180 H70 V236"/>
+    <text x="150" y="174" text-anchor="middle" class="s">buck GND to WAGO −</text>
+    <!-- motors -->
+    <rect class="motor" x="290" y="150" width="44" height="26" rx="5"/><text x="312" y="168" text-anchor="middle" class="s">M</text>
+    <rect class="motor" x="412" y="150" width="44" height="26" rx="5"/><text x="434" y="168" text-anchor="middle" class="s">M</text>
+    <rect class="motor" x="534" y="150" width="44" height="26" rx="5"/><text x="556" y="168" text-anchor="middle" class="s">M</text>
+    <rect class="motor" x="656" y="150" width="44" height="26" rx="5"/><text x="678" y="168" text-anchor="middle" class="s">M</text>
+    <path class="w sig thin" d="M312 176 V226"/><path class="w sig thin" d="M434 176 V226"/><path class="w sig thin" d="M556 176 V226"/><path class="w sig thin" d="M678 176 V226"/>
+  </svg></div>
+  <div class="pc">
+    <div class="pro"><h3>Good</h3><ul>
+      <li>Same wiring on the bench and in the car; Phase 5 only swaps breadboard for perfboard inside each node.</li>
+      <li>Each node has 3 external plugs: bus in, bus out, motor power. Unplug a node and carry it to the desk.</li>
+      <li>Correct CAN topology (line with short stubs): this is the Phase 3 learning.</li>
+      <li>Star power: each branch carries only its own motor.</li>
+    </ul></div>
+    <div class="con"><h3>Watch</h3><ul>
+      <li>Needs connectors and either a crimp tool or pre-crimped XH leads.</li>
+      <li>4 small boards on the bench; on the car they need 4 mounting spots.</li>
+      <li>XH is 2.5 mm pitch, close to but not exactly 0.1"; fine for 4 pins on perfboard.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= OPTION C ================= -->
+<section>
+  <div class="eyebrow">Option C · solder once, plug in modules</div>
+  <h2>Backplane board</h2>
+  <p>Like a PC motherboard: one stripboard (copper strips along each row) with four identical node slots made of female headers. The C3, DRV8833 and CAN module of each node plug into their slot. Power and CAN run along the board as copper strips, so there are no loose power or bus wires at all. Motor cables plug into a 6-pin header at each slot.</p>
+  <div class="fig"><svg viewBox="0 0 760 330" role="img" aria-label="Option C: one stripboard backplane with copper strips for power and CAN and four plug-in node slots">
+    <rect class="box" x="8" y="120" width="104" height="80" rx="6"/>
+    <text x="60" y="144" text-anchor="middle" class="b">Pack / PSU</text>
+    <text x="60" y="162" text-anchor="middle" class="s">fuse · switch</text>
+    <text x="60" y="178" text-anchor="middle" class="s">buck 5 V</text>
+    <rect class="board" x="140" y="56" width="610" height="230" rx="8"/>
+    <text x="150" y="276" class="s">stripboard backplane</text>
+    <!-- strips -->
+    <line class="w vbat" x1="150" y1="210" x2="740" y2="210"/>
+    <line class="w gnd" x1="150" y1="222" x2="740" y2="222"/>
+    <line class="w v5" x1="150" y1="234" x2="740" y2="234"/>
+    <line class="w canh" x1="150" y1="246" x2="740" y2="246"/>
+    <line class="w canl" x1="150" y1="258" x2="740" y2="258"/>
+    <text x="745" y="214" text-anchor="end" class="s">VBAT</text>
+    <!-- entry -->
+    <path class="w vbat" d="M112 140 H132 V210 H150"/>
+    <path class="w gnd" d="M112 158 H126 V222 H150"/>
+    <path class="w v5" d="M112 178 H120 V234 H150"/>
+    <rect class="wago" x="122" y="196" width="16" height="70" rx="3"/>
+    <text x="130" y="306" text-anchor="middle" class="s">screw terminal entry</text>
+    <!-- slots -->
+    <g>
+      <g transform="translate(175,0)">
+        <rect class="chip dash" x="0" y="80" width="120" height="110" rx="4" style="stroke-dasharray:4 3"/>
+        <rect class="chip" x="8" y="96" width="40" height="64" rx="3"/><text x="28" y="132" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="56" y="96" width="56" height="34" rx="3"/><text x="84" y="117" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="56" y="138" width="56" height="34" rx="3"/><text x="84" y="159" text-anchor="middle" class="s">CAN</text>
+        <rect class="fgnd" x="30" y="60" width="60" height="10" rx="2"/>
+        <text x="60" y="52" text-anchor="middle" class="s">6-pin motor</text>
+        <line class="w sig thin" x1="60" y1="20" x2="60" y2="60"/>
+        <text x="60" y="16" text-anchor="middle">FL</text>
+      </g>
+      <g transform="translate(320,0)">
+        <rect class="chip" x="0" y="80" width="120" height="110" rx="4" style="stroke-dasharray:4 3"/>
+        <rect class="chip" x="8" y="96" width="40" height="64" rx="3"/><text x="28" y="132" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="56" y="96" width="56" height="34" rx="3"/><text x="84" y="117" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="56" y="138" width="56" height="34" rx="3"/><text x="84" y="159" text-anchor="middle" class="s">CAN</text>
+        <rect class="fgnd" x="30" y="60" width="60" height="10" rx="2"/>
+        <line class="w sig thin" x1="60" y1="20" x2="60" y2="60"/>
+        <text x="60" y="16" text-anchor="middle">FR</text>
+      </g>
+      <g transform="translate(465,0)">
+        <rect class="chip" x="0" y="80" width="120" height="110" rx="4" style="stroke-dasharray:4 3"/>
+        <rect class="chip" x="8" y="96" width="40" height="64" rx="3"/><text x="28" y="132" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="56" y="96" width="56" height="34" rx="3"/><text x="84" y="117" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="56" y="138" width="56" height="34" rx="3"/><text x="84" y="159" text-anchor="middle" class="s">CAN</text>
+        <rect class="fgnd" x="30" y="60" width="60" height="10" rx="2"/>
+        <line class="w sig thin" x1="60" y1="20" x2="60" y2="60"/>
+        <text x="60" y="16" text-anchor="middle">RL</text>
+      </g>
+      <g transform="translate(610,0)">
+        <rect class="chip" x="0" y="80" width="120" height="110" rx="4" style="stroke-dasharray:4 3"/>
+        <rect class="chip" x="8" y="96" width="40" height="64" rx="3"/><text x="28" y="132" text-anchor="middle" class="s">C3</text>
+        <rect class="chip" x="56" y="96" width="56" height="34" rx="3"/><text x="84" y="117" text-anchor="middle" class="s">DRV</text>
+        <rect class="chip" x="56" y="138" width="56" height="34" rx="3"/><text x="84" y="159" text-anchor="middle" class="s">CAN</text>
+        <rect class="fgnd" x="30" y="60" width="60" height="10" rx="2"/>
+        <line class="w sig thin" x1="60" y1="20" x2="60" y2="60"/>
+        <text x="60" y="16" text-anchor="middle">RR</text>
+      </g>
+    </g>
+    <text x="445" y="306" text-anchor="middle" class="s">dashed = female-header slot; modules plug in and pull out · gateway joins the CAN strips at one end</text>
+  </svg></div>
+  <div class="pc">
+    <div class="pro"><h3>Good</h3><ul>
+      <li>Fewest loose wires of all; very robust against vibration.</li>
+      <li>Modules stay replaceable: they sit in sockets.</li>
+      <li>Compact: one board on the upper deck.</li>
+    </ul></div>
+    <div class="con"><h3>Watch</h3><ul>
+      <li>Soldering up front, before the pin choices of Phases 1–3 are known; a pin change means cutting strips and rewiring.</li>
+      <li>VBAT strip carries all four motors: check strip width or add a 20 AWG wire along it.</li>
+      <li>Nodes are central, so motor cables run from each corner to the middle. The 6-wire cables may be too short.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= OPTION D ================= -->
+<section>
+  <div class="eyebrow">Option D · a placement variant of B</div>
+  <h2>Two side pods</h2>
+  <p>Group the two nodes of each side on one board: a left pod (FL + RL) between the left wheels and a right pod (FR + RR) between the right wheels. Inside a pod the two nodes share 5 V, GND and CAN by a few short wires; between pods there is one 4-wire bus cable and one power pair. Seen from above on the flipped chassis:</p>
+  <div class="fig"><svg viewBox="0 0 760 420" role="img" aria-label="Option D: chassis top view with a left and right pod, gateway at the front, battery at the rear">
+    <rect class="box" x="230" y="20" width="300" height="380" rx="34"/>
+    <text x="380" y="414" text-anchor="middle" class="s">chassis, top view (front up)</text>
+    <!-- wheels -->
+    <rect class="fgnd" x="200" y="60" width="26" height="86" rx="6"/><rect class="fgnd" x="534" y="60" width="26" height="86" rx="6"/>
+    <rect class="fgnd" x="200" y="274" width="26" height="86" rx="6"/><rect class="fgnd" x="534" y="274" width="26" height="86" rx="6"/>
+    <text x="190" y="106" text-anchor="end">FL</text><text x="570" y="106">FR</text>
+    <text x="190" y="320" text-anchor="end">RL</text><text x="570" y="320">RR</text>
+    <!-- motors (under deck) -->
+    <rect class="motor dash" x="236" y="88" width="80" height="30" rx="5" style="stroke-dasharray:4 3"/>
+    <rect class="motor dash" x="444" y="88" width="80" height="30" rx="5" style="stroke-dasharray:4 3"/>
+    <rect class="motor dash" x="236" y="302" width="80" height="30" rx="5" style="stroke-dasharray:4 3"/>
+    <rect class="motor dash" x="444" y="302" width="80" height="30" rx="5" style="stroke-dasharray:4 3"/>
+    <text x="380" y="108" text-anchor="middle" class="s">motors under deck</text>
+    <!-- pods -->
+    <rect class="board" x="244" y="146" width="96" height="132" rx="6"/>
+    <text x="292" y="168" text-anchor="middle" class="b">Left pod</text>
+    <text x="292" y="186" text-anchor="middle" class="s">FL node</text>
+    <text x="292" y="200" text-anchor="middle" class="s">RL node</text>
+    <rect class="board" x="420" y="146" width="96" height="132" rx="6"/>
+    <text x="468" y="168" text-anchor="middle" class="b">Right pod</text>
+    <text x="468" y="186" text-anchor="middle" class="s">FR node</text>
+    <text x="468" y="200" text-anchor="middle" class="s">RR node</text>
+    <!-- gateway -->
+    <rect class="box" x="340" y="30" width="80" height="44" rx="6"/>
+    <text x="380" y="50" text-anchor="middle" class="b">Gateway</text><text x="380" y="66" text-anchor="middle" class="s">ESP32-CAM</text>
+    <!-- battery -->
+    <rect class="box" x="330" y="340" width="100" height="44" rx="6"/>
+    <text x="380" y="358" text-anchor="middle" class="b">2S pack</text><text x="380" y="374" text-anchor="middle" class="s">fuse · switch</text>
+    <rect class="wago" x="356" y="262" width="48" height="26" rx="4"/><text x="380" y="279" text-anchor="middle" class="s">WAGO</text>
+    <rect class="box" x="356" y="214" width="48" height="26" rx="4"/><text x="380" y="231" text-anchor="middle" class="s">buck</text>
+    <path class="w vbat" d="M380 340 V288"/>
+    <path class="w vbat thin" d="M356 274 H340"/><path class="w vbat thin" d="M404 274 H420"/>
+    <path class="w v5 thin" d="M380 214 V188"/>
+    <!-- bus chain -->
+    <path class="w canh thin" d="M362 74 V120 H306 V146"/><path class="w canl thin" d="M368 74 V126 H312 V146"/>
+    <path class="w canh thin" d="M340 176 H420"/><path class="w canl thin" d="M340 182 H420"/><path class="w v5 thin" d="M340 188 H420"/>
+    <circle class="term" cx="380" cy="80" r="4"/><circle class="term" cx="508" cy="270" r="5"/>
+    <!-- motor cables -->
+    <path class="w sig thin" d="M276 118 V146"/><path class="w sig thin" d="M276 302 V278"/>
+    <path class="w sig thin" d="M484 118 V146"/><path class="w sig thin" d="M484 302 V278"/>
+    <!-- notes -->
+    <text x="600" y="170" class="s">bus: gateway →</text>
+    <text x="600" y="184" class="s">left pod → right pod</text>
+    <text x="600" y="210" class="s">power: WAGO →</text>
+    <text x="600" y="224" class="s">one pair per pod</text>
+    <text x="600" y="250" class="s">● 120 Ω at gateway</text>
+    <text x="600" y="264" class="s">  and right pod</text>
+    <text x="20" y="200" class="s">motor cables:</text>
+    <text x="20" y="214" class="s">corner → own pod,</text>
+    <text x="20" y="228" class="s">very short</text>
+  </svg></div>
+  <div class="pc">
+    <div class="pro"><h3>Good</h3><ul>
+      <li>Only 2 boards: fits the "no room for 4 mini breadboards" constraint.</li>
+      <li>Short motor cables; nodes sit next to their wheels, close to the ECU idea.</li>
+      <li>Fewer bus hops (gateway → left → right) than four separate nodes.</li>
+    </ul></div>
+    <div class="con"><h3>Watch</h3><ul>
+      <li>Two nodes share a board, so swapping one means handling both.</li>
+      <li>Space between the wheels depends on the middle-gap measurement (F.5).</li>
+      <li>A half-size breadboard per pod is tight; check with real modules.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Side by side</div>
+  <h2>Comparison</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>A · Backbone</th><th>B · Bus + star</th><th>C · Backplane</th><th>D · Side pods</th></tr></thead>
+    <tbody>
+      <tr><td>Boards</td><td>1–2 full-size</td><td>4 small</td><td>1 stripboard</td><td>2 half-size</td></tr>
+      <tr><td>Loose power/bus wires</td><td>very few (rail hops)</td><td>4 bus hops + 4 power pairs</td><td>none</td><td>1 bus hop + 2 power pairs (+ gateway hop)</td></tr>
+      <tr><td>Bench → car carry-over</td><td>none; redo in Phase 5</td><td>full</td><td>full</td><td>full</td></tr>
+      <tr><td>Soldering needed</td><td>from Phase 5</td><td>from Phase 5 (inside nodes)</td><td>up front</td><td>from Phase 5 (inside pods)</td></tr>
+      <tr><td>Fits on the chassis</td><td>no (bench only)</td><td>needs 4 spots</td><td>yes, one board</td><td>yes, between wheels (check F.5)</td></tr>
+      <tr><td>Real CAN harness (Phase 3 learning)</td><td>no</td><td>yes</td><td>partly (strips)</td><td>yes</td></tr>
+      <tr><td>New parts</td><td>breadboards</td><td>XH connectors/leads, 2–3 WAGO</td><td>stripboard, female headers, terminal</td><td>2 half breadboards, XH leads, 1–2 WAGO</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="eyebrow">Decision · 2026-10-15</div>
+  <h2>Chosen: D, two side pods, wired the B way</h2>
+  <p>D answers the space problem, keeps motor cables short, and still uses B's two good ideas: the 4-wire bus cable and the power star. It also carries over from bench to car without a rebuild. If the middle gap in F.5 leaves no room for pods between the wheels, fall back to C on the upper deck.</p>
+  <p>Assumptions behind the counts below: one H-bridge per motor, one corner LED per node, bus order gateway → left pod → right pod (Phase 3 confirms it). Motor power enters each pod at a small WAGO 221-413 (in, driver 1, driver 2), so it never runs along a breadboard strip.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Bill of cables</div>
+  <h2>What D needs, cable by cable</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Cable</th><th class="num">Qty</th><th>Wire type</th><th>Length</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Battery trunk: pack + → fuse → switch → WAGO +, pack − → WAGO − (bench: PSU leads instead)</td><td class="num">3 pieces</td><td>20 AWG silicone stranded, red/black</td><td>10–15 cm</td></tr>
+      <tr><td>2</td><td>Central WAGO → pod WAGO (motor power)</td><td class="num">2 pairs</td><td>22 AWG silicone stranded, red/black</td><td>~10 cm</td></tr>
+      <tr><td>3</td><td>Pod WAGO → DRV8833 VM/GND</td><td class="num">4 pairs</td><td>22 AWG silicone stranded</td><td>3–5 cm</td></tr>
+      <tr><td>4</td><td>Central WAGO → buck input</td><td class="num">1 pair</td><td>22 AWG silicone stranded</td><td>~5 cm</td></tr>
+      <tr><td>5</td><td>Buck 5 V output → left pod 5 V/GND</td><td class="num">1 pair</td><td>22–24 AWG stranded, or a 2-pin XH lead</td><td>5–10 cm</td></tr>
+      <tr><td>6</td><td>Bus cable (5 V, GND, CANH, CANL): gateway → left pod, left pod → right pod</td><td class="num">2</td><td>4-pin JST-XH lead, CANH/CANL twisted</td><td>10–20 cm</td></tr>
+      <tr><td>7</td><td>Motor cable, motor → its pod</td><td class="num">4</td><td>supplied with the motor (6 wires)</td><td>as supplied</td></tr>
+      <tr><td>8</td><td>Corner LED leads</td><td class="num">4 pairs</td><td>Dupont jumpers or 26 AWG</td><td>5–10 cm</td></tr>
+      <tr><td>9</td><td>Battery monitor: VBAT divider → one node's ADC (Phase 5)</td><td class="num">1</td><td>Dupont or 26 AWG</td><td>short</td></tr>
+      <tr><td>10</td><td>On-pod jumpers: C3 ↔ driver, transceiver, encoder pins, LED, rails</td><td class="num">≈ 15 per node</td><td>Dupont or solid-core breadboard wire</td><td>1–5 cm</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Row 10 is an estimate until GPIOs are assigned in Phase 1. WAGO count: 2 × 221-415 at the centre (+ and −; the spare port can hold the 470 µF bulk cap) and 4 × 221-413 at the pods (one 221-413 already on hand).</p>
+</section>
+
+<section>
+  <div class="eyebrow">Wire types</div>
+  <h2>Not everything is a Dupont wire</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Type</th><th>What it is</th><th>Use it for</th><th>Avoid for</th></tr></thead>
+    <tbody>
+      <tr><td>Dupont jumper</td><td>Thin (26–28 AWG) stranded wire with 2.54 mm pin or socket ends, M-M / M-F / F-F</td><td>Signals and low-current logic on the bench</td><td>Motor current; anything that vibrates (friction fit, works loose)</td></tr>
+      <tr><td>Solid-core hookup wire</td><td>One solid copper core, usually 22 AWG; sold as pre-cut, pre-bent breadboard kits</td><td>Neat, flat breadboard links that never move</td><td>Anything that flexes (the core cracks)</td></tr>
+      <tr><td>Stranded hookup wire</td><td>Many fine strands; silicone insulation stays soft and survives soldering heat (PVC melts)</td><td>Power runs and anything that moves; ends go into WAGOs, solder or crimps</td><td>Pushing bare into a breadboard (strands fray)</td></tr>
+      <tr><td>JST-XH lead</td><td>Pre-crimped wires in a keyed, latching 2.5 mm plug, rated 3 A; sold as male/female pigtail pairs by pin count</td><td>Board-to-board cables that must not fall out or go in backwards</td><td>Battery trunk current above 3 A</td></tr>
+      <tr><td>Twisted pair</td><td>Two wires twisted together (a drill twists them evenly)</td><td>CANH/CANL, so noise hits both wires alike and cancels</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">AWG (American Wire Gauge): a bigger number means a thinner wire. 20 AWG is thicker than 22, which is thicker than 26.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Sources</div>
+  <ul class="src">
+    <li>WAGO 221-415 conductor range and strip length: <a href="https://www.rlocman.es/datasheet/data.html?di=537187">datasheet mirror</a>, <a href="https://my.element14.com/wago/221-415/terminal-block-pluggable-5pos/dp/2534734">element14</a></li>
+    <li>Wire ampacity rules of thumb: <a href="https://www.portlandiaelectric.supply/pages/22-awg-wire-ampacity-uses-specs-pes-supply">PES Supply 22 AWG</a>, <a href="https://forum.allaboutcircuits.com/threads/amps-on-awg-chart.166343/post-1468316">All About Circuits</a></li>
+    <li>Breadboard and jumper ratings: <a href="https://shop.eater.net/products/bb830-breadboard">BB830</a>, <a href="https://forum.digilent.com/topic/23412-340-002-1/">Digilent forum</a>, <a href="https://protostack.com.au/shop/cables/200mm-female-to-female-jumpers-without-housing-ribbon-of-40/">jumper listing</a></li>
+    <li>JST XH ratings: <a href="https://www.digikey.be/en/resources/datasheets/jst/xh-connector">DigiKey XH datasheet</a></li>
+    <li>DroneCAN 4-pin daisy chain: <a href="https://docs.arkelectron.com/knowledge-base/knowledge-base/can-bus">ARK Electronics CAN bus guide</a></li>
+    <li>DRV8833 parallel mode: <a href="https://www.ti.com/document-viewer/lit/html/SLVSAR1E/application_and_implementation">TI datasheet, application section</a></li>
+  </ul>
+</section>
+
+</div>

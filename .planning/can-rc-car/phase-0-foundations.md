@@ -71,7 +71,9 @@ docs/
 Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done before Phase 1 starts. Log every result in `progress.md` under Test Results.
 Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (counts per rev, no-load speed, direction convention). What stays here either protects hardware or must happen before mounting.
 
-1. **Teardown of the old car.** (done 2026-10-14)
+1. **Teardown.** Chassis switched 2026-10-15 (see below); the first chassis teardown stays as history.
+   - **2-deck chassis (current):** before photo `docs/images/2-deck chassis before teardown.webp`. Remove all old parts (yellow TT motors, optical encoder discs, NodeMCU board, boost/buck modules, 18650 holder, switch). Keep the brass standoffs and the upper plate if it still exists. The chassis is mounted flipped: motors on the underside, the whole top face for electronics.
+   - **First chassis (done 2026-10-14, then dropped):**
    - Before photos: `docs/images/before teardown up.webp` and `docs/images/before teardown bottom.webp`.
    - The old drive board (Keyes L298N V2, screw terminals) and the old battery holder are removed. The old MCU-with-camera board and its BT antenna are still on the chassis for now.
    - The two motors on each side appear to be wired in parallel through the centre hole. The photos don't show per-terminal polarity or suppression caps; not needed, since the motors are being replaced.
@@ -94,7 +96,10 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
    - One motor answers the 3.3 V question. Repeat it on the other 4 before mounting: that only saves taking a motor back out later, and takes about a minute each.
    - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them with PCNT. Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
-5. **Mechanical fit check.** (motor fit passed 2026-10-14: the two mounted motors fit the old mounts with about 1 mm between one's encoder end and the next gearbox, and no rubbing at 6 V even when pressed together. Wheels, 2S holder, switch and fuse holder still to check.) The most likely F item to fail: from the bottom photo, the gap between each old motor's back end and the next motor's gearbox is roughly 10 mm (estimate, scaled from a ~70 mm TT motor). The encoder adds length at that end.
+5. **Mechanical fit check, on the 2-deck chassis.** (On the first chassis the motor fit passed on 2026-10-14 with about 1 mm to spare; that chassis is dropped, so this restarts.)
+   - Flipped mounting: test-fit one acrylic T-bracket from the underside before stripping everything.
+   - Middle gap: the motors face each other with the encoder ends toward the middle. From the photo the gap between front and rear motor ends is roughly 12 mm (estimate, scaled from a ~65 mm wheel); the encoder used ~9 mm on the first chassis, and the 6-pin connector plus its cable bend need room too. Measure it.
+   - Pod space (wiring option D, decided 2026-10-15): on the top face, check that a half-size breadboard fits along each side between the wheels, with room in the middle for the central WAGO pair and the buck. If not, fall back to option C (see `docs/design/wiring-options.html`).
    - Do the new motors fit the old mounts? Check the holes, the extra length from the encoder PCB, and clearance for the cable.
    - Do the metal D-shafts fit the wheels, and do the wheels stay on?
    - Does the 2S 18650 holder fit where the AA holder was? (The old holder is removed; the new one hasn't been tried yet.)
@@ -110,7 +115,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
 - The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
-- The new encoder motors fit the old chassis mounts and wheels (checked in F.5; mounts confirmed 2026-10-14, wheels not yet).
+- The new encoder motors fit the 2-deck chassis mounts (flipped) and the wheels (checked in F.5).
 - The encoder outputs are push-pull at VCC level, with no pull-ups needed (checked in F.4).
 - The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this. `docs/dev-setup.md` already states it fails; fix that doc if C.2 shows otherwise.
 - Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.

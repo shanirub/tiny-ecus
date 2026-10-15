@@ -81,6 +81,20 @@ Technical notes (from general knowledge, verify when relevant):
 - Fit concern (rough estimate from the bottom photo, scaled from a ~70 mm TT motor): about 10 mm between each motor's back end and the next motor's gearbox. The encoder motors are longer at that end. Resolved 2026-10-14 (F.5): the encoder motors fit with about 1 mm to spare and don't rub.
 - Still on the chassis: the old MCU-with-camera board and its BT antenna.
 
+### 2-deck chassis (2026-10-15)
+- Photo: `docs/images/2-deck chassis before teardown.webp` (from an earlier, unrelated car project; none of its parts are reused).
+- Common 2-deck acrylic 4WD kit: wider than the first chassis, many holes and slots, four brass standoffs for an upper plate. Motors mount with acrylic T-brackets through deck slots; front and rear motors face each other, gearboxes outward.
+- Plan: mount it flipped, motors underneath and the whole top for electronics; ground clearance rises by roughly 20 mm (estimate).
+- Fit risk: the middle gap between motor ends is roughly 12 mm from the photo (scale estimate); measure it with the encoder and connector in mind (F.5).
+
+### Wiring research (2026-10-15, web; secondary sources unless noted)
+- **WAGO 221-415:** 0.2–4 mm² solid/stranded, 0.14–4 mm² fine-stranded (24–12 AWG), strip 11 mm (element14 / datasheet mirror). Typical Dupont jumpers (26–28 AWG) are below that range.
+- **Wire current (practical, short runs in a small vehicle):** sources disagree because they mix "chassis wiring" and "power transmission" tables. Conservative working figures: 26 AWG ≈ 1 A, 24 AWG ≈ 2 A (jumper listings), 22 AWG ≈ 3–5 A, 20 AWG ≈ 5–7 A, 18 AWG ≈ 10+ A. Treat as rules of thumb, not specs.
+- **Breadboards:** BB830-style spec ≈ 36 V / 2 A per contact, 21–26 AWG insertion; practical advice ≈ 1 A per contact.
+- **DRV8833 parallel mode:** TI datasheet (SLVSAR1E) application section: both H-bridges can be paralleled (inputs and outputs tied) for about double the current; internal dead time prevents cross-conduction between bridges. Third-party: 1.5 A RMS / 2 A peak per bridge, ~3 A RMS / 4 A peak paralleled (verify against the TI PDF).
+- **JST XH:** 2.5 mm pitch (not 2.54; fits 0.1" perfboard acceptably for small pin counts), 3 A with 22 AWG, wire 22–30 AWG. Pre-crimped leads are easy to buy.
+- **DroneCAN convention:** 4-pin JST-GH (1.25 mm) daisy-chain cable carrying 5 V, CAN_H, CAN_L, GND; devices have two connectors (in/out); termination only at the two ends (~60 Ω check). Validates the "power + CAN in one 4-wire chain" idea. GH needs a fine crimp tool or pre-made cables; XH is more hobby-friendly.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

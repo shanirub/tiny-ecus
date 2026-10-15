@@ -77,6 +77,11 @@
 - F.3 done (after a power cut lost the earlier session): inner wire colors read visually at the connector, GND yellow, A green, B blue, V red (second red). Same color order on all 5 motors. Recorded in `findings.md`.
 - Files modified: `findings.md`, `progress.md`, `phase-0-foundations.md`, `task_plan.md`.
 - 18650 cells: still not arrived, in customs; hopefully the week of 2026-10-19. The only part still missing; the bench PSU stands in until then.
+- Decided: switch to the wider 2-deck acrylic chassis (photo in `docs/images/`), mounted flipped with motors underneath. The 2 motors on the first chassis come off; F.1/F.5/F.6 restart on the new one.
+- Decided: breadboards on the bench for Phases 1–4; soldered perfboard per node (socketed C3, connectors, heat shrink) from Phase 5. Added a Phase 5 item.
+- Files modified: `task_plan.md`, `phase-0-foundations.md`, `findings.md`, `progress.md`; added the chassis photo.
+- Wiring research: 4 options written up with diagrams (A one-breadboard backbone, B 4-wire bus cable + power star, C stripboard backplane, D two side pods). Suggestion: D layout with B's cabling; C as fallback. Page: https://claude.ai/artifact/1grV3WivA4evrorcrMcqnv.
+- Wiring decided: option D (two side pods, B-style bus cable and power star); recorded in `task_plan.md` Decisions. Page moved into the repo as `docs/design/wiring-options.html`, with a bill of cables and a wire-type guide added. Research notes in `findings.md`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
