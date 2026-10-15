@@ -74,13 +74,16 @@
 - PSU power readout: 0.7 W on two motors and 0.6 W on the third, consistent with 6 V × ~0.1 A. (The display pads with leading zeros, "000.7 W", which was first misread as 0.007 W.)
 - Added `docs/architecture.md`: power chain, CAN topology and wheel-node diagrams; linked from `task_plan.md`.
 - Files modified: `progress.md`, `task_plan.md`, `phase-0-foundations.md`; added `docs/architecture.md`.
+- F.3 done (after a power cut lost the earlier session): inner wire colors read visually at the connector, GND yellow, A green, B blue, V red (second red). Same color order on all 5 motors. Recorded in `findings.md`.
+- Files modified: `findings.md`, `progress.md`, `phase-0-foundations.md`, `task_plan.md`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | IDF v6.1 install | `. export.sh && idf.py --version` | `ESP-IDF v6.1` | `ESP-IDF v6.1`; xtensa-esp32-elf-gcc and riscv32-esp-elf-gcc esp-15.2.0_20251204; Python 3.14.7 | pass |
 | E.2 CAN adapter termination (2026-10-14) | Unpowered, CANH–CANL resistance on each of the 5 SN65HVD230 adapters | ~120 Ω where termination is fitted | 118–120 Ω on all 5: every adapter has a 120 Ω terminator fitted | pass (fixed SMD terminators, no jumper; 3 to remove in Phase 3) |
-| F.3 encoder pinout (2026-10-14) | Silkscreen + ohmmeter on first motor | Motor pair identifiable | `+ GND A B V -`; red = `+`, black = `-`; `+`↔`-` reads the winding | pass (inner colors not yet mapped) |
+| F.3 encoder pinout (2026-10-14) | Silkscreen + ohmmeter on first motor | Motor pair identifiable | `+ GND A B V -`; red = `+`, black = `-`; `+`↔`-` reads the winding | pass (inner colors mapped 2026-10-15, next row) |
+| F.3 inner wire colors, all 5 motors (2026-10-15) | Visual check of wire order at the PCB connector against the silkscreen | Same order on all motors | GND = yellow, A = green, B = blue, V = red (inner); `+` red / `-` black outer; identical on all 5 | pass |
 | F.2 winding R, first motor (2026-10-14) | Ohmmeter 200 Ω range across `+`/`-` via cable and jumpers | 7–15 Ω (guess) | 3.2 Ω read − 0.2 Ω leads = 3.0 Ω | recorded; lowest-over-positions not yet done; stall far above listing |
 | F.2 winding R, second motor (2026-10-14) | Ohmmeter 200 Ω range across `+`/`-` via cable and jumpers | ~3 Ω (matches first motor) | 3.3 Ω read − 0.2 Ω leads = 3.1 Ω | recorded |
 | F.2 6 V no-load spin, first motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; CV, 6.00 V, 0.098 A (0.5 W) | pass (no rubbing; periodic gearbox "wow", same on both mounted motors, harmless) |

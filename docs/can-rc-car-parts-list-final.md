@@ -8,7 +8,7 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 
 | Part | Qty | Seller | Notes |
 | --- | --- | --- | --- |
-| TT encoder motor, all-metal (black) | 5 (4 + spare) | Nulllab Choice Store | 3–12 V, 0.82 A stall, 1:90, Hall A/B encoder; encoder on 3.3 V |
+| TT encoder motor, all-metal (black) | 5 (4 + spare) | Nulllab Choice Store | 3–12 V, 0.82 A stall (listing; measured R ≈ 3 Ω means ≈ 2.8 A at 8.4 V), 1:90, Hall A/B encoder; encoder on 3.3 V |
 | DRV8833 motor driver | 5 (4 + spare) | Realpoy | One per wheel node |
 | 2S 18650 holder with PCM | 1 | HuaXinHuiDianZi | 3 A continuous; protects but does not balance |
 | 2S charger board, 8.4 V, 2 A version | 2 (1 + spare) | XINZHIGUAN | USB-C input; no balancing |

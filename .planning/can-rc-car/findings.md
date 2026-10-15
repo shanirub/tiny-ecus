@@ -12,7 +12,7 @@ From `docs/can-rc-car-project-overview.md`:
 
 ## Research Findings
 Hardware (from `docs/can-rc-car-parts-list-final.md`):
-- **Motors:** TT encoder motor, 3–12 V, 0.82 A stall, 1:90 gearing, Hall A/B encoder powered from 3.3 V.
+- **Motors:** TT encoder motor, 3–12 V, 0.82 A stall (listing figure; contradicted by measurement, see Encoder motor specs below), 1:90 gearing, Hall A/B encoder powered from 3.3 V.
 - **Drivers:** DRV8833, one per wheel node. Its motor supply maximum is 10.8 V (from memory, unverified), and 2S full charge is 8.4 V, so it should be within range.
 - **Power:** 2S 18650 with PCM (3 A continuous, no balancing), 8.4 V charger board, MP1584EN buck to 5 V, 3 A mini blade main fuse with 5 A as fallback, KCD11 switch.
 - **Nodes:** four ESP32-C3 Super Mini, five CAN transceiver adapters (SN65HVD230), one ESP32-CAM with expansion board.
@@ -48,12 +48,23 @@ Technical notes (from general knowledge, verify when relevant):
   - Phase 1 firmware measures this (optional no-firmware hand count in F.4). If the result is 12 or 48, the PPR is quoted at the output shaft instead.
 - Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
 - Sound (2026-10-14, 2 motors): gearbox whine with a periodic "wow-wow", the same on both motors, so a trait of this gearbox, not a fault. Source gear stage not identified. Phase 1: expect a small periodic speed ripple in the encoder data (possibly once per output turn); don't mistake it for a firmware or controller bug.
-- Measured (2026-10-14): R ≈ 3.0 Ω and 3.1 Ω on the first two motors (3.2 / 3.3 Ω read, 0.2 Ω leads). Stall ≈ 2.0 A at 6 V, ≈ 2.8 A at 8.4 V; 4 motors stalled ≈ 11 A. The listing's 0.82 A doesn't fit V/R at any listed voltage. Caveats: two motors so far; an ohmmeter's tiny test current can overstate brush resistance, so the real stall current may be somewhat higher.
+- Measured (2026-10-14): R ≈ 3.0 Ω and 3.1 Ω on the first two motors (3.2 / 3.3 Ω read, 0.2 Ω leads). Stall ≈ 2.0 A at 6 V, ≈ 2.8 A at 8.4 V; 4 motors stalled ≈ 11 A. The listing's 0.82 A doesn't fit V/R at any listed voltage. No-load at 6 V ≈ 0.1 A on all 5 (2026-10-14/15). Caveats: R measured on two motors only; an ohmmeter's tiny test current can overstate brush resistance, so the real stall current may be somewhat higher.
 
 ### Encoder connector pinout (F.3, 2026-10-14)
 - Encoder PCB silkscreen "HallEncoder"; pins left to right: `+  GND  A  B  V  -`.
 - `+`/`-` (outer pins) are the motor terminals M+/M−; confirmed by ohmmeter (they read the ~3 Ω winding). `V`/`GND` are the encoder supply and `A`/`B` the quadrature outputs (inferred from the silkscreen; F.4 confirms). The motor power and the encoder share the one 6-pin cable.
-- Cable colors: `+` = red (outer), `-` = black (outer). The cable has a second red wire on an inner pin (probably `V`), so never pick the motor pair by color alone. Inner pin colors (blue, green, yellow, red) not yet mapped to labels.
+- Cable colors (2026-10-15, read visually at the PCB connector on all 5 motors; identical on every motor):
+
+  | Pin | Function | Color |
+  |-----|----------|-------|
+  | `+` | motor M+ | red (outer) |
+  | `GND` | encoder ground | yellow |
+  | `A` | encoder channel A | green |
+  | `B` | encoder channel B | blue |
+  | `V` | encoder supply | red (inner, second red) |
+  | `-` | motor M− | black (outer) |
+- Two red wires: `+` (motor, outer) and `V` (encoder supply, inner). Never pick by color alone; feeding motor voltage into `V` would likely kill the Hall sensors.
+- The encoder has its own supply (`V`/`GND`) because the Hall sensors are active ICs that need a steady logic supply, while the motor terminals see a PWM-chopped voltage whose polarity reverses with direction. Powering `V` at 3.3 V also sets the output high level (if push-pull) to the C3's logic level. Encoder `GND` must be common with the node's ground.
 - The cable's far end is individual female Dupont housings; male-to-male jumpers in them give clip-able test points.
 
 ### CAN adapter termination (E.2, 2026-10-14)
@@ -67,7 +78,7 @@ Technical notes (from general knowledge, verify when relevant):
 - Photos: `docs/images/before teardown up.webp` (top) and `docs/images/before teardown bottom.webp` (bottom).
 - Drive board: Keyes L298N V2 with screw terminals and an onboard buck. Removed.
 - Motors: 4 yellow TT motors; the two on each side appear wired in parallel through the centre hole. Per-terminal polarity and suppression caps aren't visible in the photos.
-- Fit concern (rough estimate from the bottom photo, scaled from a ~70 mm TT motor): about 10 mm between each motor's back end and the next motor's gearbox. The encoder motors are longer at that end. F.5 checks it.
+- Fit concern (rough estimate from the bottom photo, scaled from a ~70 mm TT motor): about 10 mm between each motor's back end and the next motor's gearbox. The encoder motors are longer at that end. Resolved 2026-10-14 (F.5): the encoder motors fit with about 1 mm to spare and don't rub.
 - Still on the chassis: the old MCU-with-camera board and its BT antenna.
 
 ## Technical Decisions

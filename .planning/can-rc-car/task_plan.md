@@ -5,10 +5,10 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 
 ## Next Step
 Phase 0 work item B: create the repo skeleton (`firmware/wheel_node`, `firmware/gateway`, `components/tiny_common`) and the two hello-worlds.
-In parallel (no firmware needed): item F. Done so far: F.1 teardown, F.3 pinout, motor fit (2 motors mounted, no rubbing), F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty). Next: the F.4 encoder 3.3 V check, the rest of F.5 (wheels, 2S holder, switch, fuse holder), and F.6 (caps, wheels). E.3 (bucks) is deferred until something first connects to a buck output.
+In parallel (no firmware needed): item F. Done so far: F.1 teardown, F.3 pinout (wire colors mapped 2026-10-15, same on all 5), motor fit (2 motors mounted, no rubbing), F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty). Next: the F.4 encoder 3.3 V check, the rest of F.5 (wheels, 2S holder, switch, fuse holder), and F.6 (caps, wheels). E.3 (bucks) is deferred until something first connects to a buck output.
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2, F.1 (teardown) and F.3 (pinout) done 2026-10-14; F.5 partly done the same day (2 motors mounted); F.2 done 2026-10-15 (all 5 spun, none faulty)
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); item A done, item B next; parts arrived 2026-10-10 (cells pending); E.2 and F.1 (teardown) done 2026-10-14; F.5 partly done the same day (2 motors mounted); F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -40,7 +40,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] C. Build and flash both targets; negative test (v5.5.5 build must fail)
 - [ ] D. CI: GitHub Actions build of both projects
 - [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
-- [ ] F. Chassis prep + motor/encoder bench tests: teardown (done 2026-10-14), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout, encoder 3.3 V check, fit check, mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
+- [ ] F. Chassis prep + motor/encoder bench tests: teardown (done 2026-10-14), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout (done 2026-10-15), encoder 3.3 V check, fit check (motor fit passed 2026-10-14), mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - **Status:** in_progress
 
@@ -108,7 +108,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
 - **Gateway overload:** camera + WiFi + CAN + UART on one ESP32. Measure in Phase 7.
-- **Current budget (worse than planned):** the first motor measures R ≈ 3.0 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice.
+- **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice.
 - **ESP-IDF TWAI API:** it has changed across IDF versions. Verify against the pinned version before writing code.
 
 ## Decisions Made

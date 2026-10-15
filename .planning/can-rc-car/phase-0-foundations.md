@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done, B next; E.2 done 2026-10-14. Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
+Status: **approved 2026-09-28**; A done, B next; E.2, F.1 done 2026-10-14; F.2, F.3 done 2026-10-15; F.5 motor fit passed (2 motors mounted). Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -82,11 +82,12 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Pick the 4 best for the chassis; the remaining one is the bench spare.
    - Reduced for the remaining 3 motors (2026-10-14): the first two matched closely, so ~3 Ω and ~0.1 A are taken as the model's typical values and their resistance measurement is skipped. Each still gets a quick 6 V spin before it is mounted, to catch a defective unit: expect about 0.1 A in CV, with no grinding. A clearly different current or sound makes that motor the bench spare.
    - Dropped (2026-10-14): the 8.4 V run and the second direction. Low value; Phase 1 runs the motor both ways at full PWM anyway.
-3. **Encoder pinout.**
+3. **Encoder pinout.** (done 2026-10-15: `+ GND A B V -` = red, yellow, green, blue, red, black; same on all 5 motors; see `findings.md`)
    - Identify the 6-wire cable pinout (M+, M−, encoder VCC, GND, A, B) from the seller listing and the encoder PCB silkscreen; these cables aren't standardized.
    - Confirm VCC and GND with the multimeter before powering.
    - Record the pinout in `findings.md`.
 4. **Encoder 3.3 V check.** Some Hall sensors need more than 3.3 V; if these do, every wheel node needs level shifting or a different encoder supply, which changes the wiring plan.
+   - Before powering: measure `V` (inner red) to `GND` (yellow); it must not read near 0 Ω. Two wires are red: `V` is the inner one, `+` (motor) the outer one.
    - Power the encoder at 3.3 V, current limit about 0.1 A, with the motor leads unpowered.
    - Connect A and B to the logic analyzer (PulseView) and turn the output shaft by hand.
    - Expect two clean square waves 90° apart (quadrature). Reversing the direction swaps which one leads.
@@ -109,7 +110,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
 - The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
-- The new encoder motors fit the old chassis mounts and wheels (checked in F.5).
+- The new encoder motors fit the old chassis mounts and wheels (checked in F.5; mounts confirmed 2026-10-14, wheels not yet).
 - The encoder outputs are push-pull at VCC level, with no pull-ups needed (checked in F.4).
 - The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this. `docs/dev-setup.md` already states it fails; fix that doc if C.2 shows otherwise.
 - Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.
