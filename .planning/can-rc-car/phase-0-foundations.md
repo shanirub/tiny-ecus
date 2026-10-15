@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done, B next; E.2, F.1 done 2026-10-14; F.2, F.3 done 2026-10-15; F.5 motor fit passed (2 motors mounted). Parts arrived 2026-10-10 except the 18650 cells (expected the week of 2026-10-12); bench PSU in the meantime
+Status: **approved 2026-09-28**; A done, B next; E.2, F.1 done 2026-10-14; F.2, F.3 done 2026-10-15; F.5 motor fit passed (2 motors mounted). Parts arrived 2026-10-10 except the 18650 cells (in customs as of 2026-10-15, hopefully the week of 2026-10-19); bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.

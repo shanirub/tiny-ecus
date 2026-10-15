@@ -76,6 +76,7 @@
 - Files modified: `progress.md`, `task_plan.md`, `phase-0-foundations.md`; added `docs/architecture.md`.
 - F.3 done (after a power cut lost the earlier session): inner wire colors read visually at the connector, GND yellow, A green, B blue, V red (second red). Same color order on all 5 motors. Recorded in `findings.md`.
 - Files modified: `findings.md`, `progress.md`, `phase-0-foundations.md`, `task_plan.md`.
+- 18650 cells: still not arrived, in customs; hopefully the week of 2026-10-19. The only part still missing; the bench PSU stands in until then.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

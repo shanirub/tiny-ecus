@@ -22,7 +22,7 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 
 | Part | Qty | Where | Notes |
 | --- | --- | --- | --- |
-| 18650 Li-ion cells | 2, matched | Vape shop (in transit, expected the week of 2026-10-12; bench PSU until then) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
+| 18650 Li-ion cells | 2, matched | Vape shop (in customs as of 2026-10-15, hopefully the week of 2026-10-19; bench PSU until then) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
 | 5 V USB-C charger, ≥ 2 A | 1 | Probably already owned | Powers the charger board |
 
 ## Already owned
