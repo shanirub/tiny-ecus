@@ -89,6 +89,7 @@
 - Item C partly: both projects build with IDF v6.1 (0 warnings); the v5.5.5 negative test fails as intended. Flashing pending.
 - F.4 done on the spare motor: logic analyzer (PulseView Gray code decoder) shows clean quadrature, +1/−1 counts by direction, 47 counts per encoder-disc turn (≈ 48 = 12 PPR × 4). Multimeter: A and B high 3.28 V, low 0 V, within the C3 input thresholds. Decided: skip F.4 on the other 4 motors (same encoder board); check one only if it misbehaves while debugging.
 - Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`, `findings.md`.
+- Added the F.4 PulseView capture as `docs/images/f4 encoder quadrature pulseview.webp` (lossless WebP), linked from `findings.md`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
