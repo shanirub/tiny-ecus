@@ -7,3 +7,9 @@
 .planning/**/.nonce
 .planning/**/.attestation
 .planning/**/ledger-*.jsonl
+
+# ESP-IDF generated files
+sdkconfig
+sdkconfig.old
+build/
+managed_components/

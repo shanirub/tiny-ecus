@@ -17,7 +17,7 @@
   - Git repo initialized (`main`) and pushed to public GitHub repo `shanirub/tiny-ecus`.
 
 ### Phase 0: Foundations
-- **Status:** in_progress (plan approved 2026-09-28; A done, B next)
+- **Status:** in_progress (plan approved 2026-09-28; see the later sessions for item status)
 - Actions taken:
   - Checked the local toolchain: IDF v5.5.5 and a master checkout are installed, v6.1 is not; docker, podman and pulseview are present; user is in `dialout`.
   - Compared TWAI drivers in v5.5.5 and v6.1: new-driver API identical; legacy deprecated in 6.1.
@@ -83,6 +83,13 @@
 - Wiring research: 4 options written up with diagrams (A one-breadboard backbone, B 4-wire bus cable + power star, C stripboard backplane, D two side pods). Suggestion: D layout with B's cabling; C as fallback. Page: https://claude.ai/artifact/1grV3WivA4evrorcrMcqnv.
 - Wiring decided: option D (two side pods, B-style bus cable and power star); recorded in `task_plan.md` Decisions. Page moved into the repo as `docs/design/wiring-options.html`, with a bill of cables and a wire-type guide added. Research notes in `findings.md`.
 
+## Session: 2026-10-16
+- Checked the C3 pin budget: 7–10 GPIOs needed per node (motor 2, encoder 2, CAN 2, LEDs 1–2, battery ADC 1 on one node, optional nSLEEP/nFAULT); 10 non-strapping GPIOs available (0, 1, 3–7, 10, 20, 21). Fits; pins assigned in Phase 1 planning.
+- Item B done: `components/tiny_common` (boot banner), `firmware/wheel_node` (esp32c3, console on USB-Serial-JTAG), `firmware/gateway` (esp32), hello-worlds blink the onboard LED at 1 Hz with a 5 s heartbeat log. `.gitignore` and README Development link added.
+- Item C partly: both projects build with IDF v6.1 (0 warnings); the v5.5.5 negative test fails as intended. Flashing pending.
+- F.4 done on the spare motor: logic analyzer (PulseView Gray code decoder) shows clean quadrature, +1/−1 counts by direction, 47 counts per encoder-disc turn (≈ 48 = 12 PPR × 4). Multimeter: A and B high 3.28 V, low 0 V, within the C3 input thresholds. Decided: skip F.4 on the other 4 motors (same encoder board); check one only if it misbehaves while debugging.
+- Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`, `findings.md`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -95,6 +102,9 @@
 | F.2 6 V no-load spin, first motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; CV, 6.00 V, 0.098 A (0.5 W) | pass (no rubbing; periodic gearbox "wow", same on both mounted motors, harmless) |
 | F.2 6 V no-load spin, second motor (2026-10-14) | Bench PSU 6.00 V, 1 A limit, across `+`/`-` | Spins; PSU settles in CV | Spins; 0.100 A | pass (no rubbing; same periodic gearbox "wow") |
 | F.2 6 V no-load spin, remaining 3 motors (2026-10-15) | Bench PSU 6 V, 1 A limit, across `+`/`-` | ~0.1 A in CV, no grinding | All 3 settle at ~0.1 A (0.6–0.7 W); 2 show ~0.3 A briefly at start (inrush); same periodic gearbox "wow" | pass (no faulty motor) |
+| C.1 build, both projects (2026-10-16) | `idf.py build` with IDF v6.1 | Builds, no warnings | Both build; 0 warnings | pass |
+| C.2 negative test (2026-10-16) | Clean copy, `idf.py build` with IDF v5.5.5 | Configure fails on the IDF constraint | `Version solving failed: no versions of idf match ~6.1.0` | pass |
+| F.4 encoder 3.3 V check, spare motor (2026-10-16) | PSU 3.3 V / 0.1 A limit to V/GND; analyzer D0 = A, D1 = B at 1 MHz; hand-turned both ways; Gray code decoder | Clean quadrature; count up one way, down the other; high 2.5–3.3 V, low ≤ 0.8 V | 3 mA supply; two clean square waves, no pull-ups needed; count 0→12 then back to 0 (Increment +1 / −1); one turn of the encoder disc = 47 counts (≈ 48 = 12 PPR × 4); multimeter: A and B high 3.28 V, low 0 V | pass on the spare motor; other 4 skipped (decided 2026-10-16) |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
 ## Error Log

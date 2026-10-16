@@ -1,0 +1,2 @@
+CONFIG_IDF_TARGET="esp32"
+# ESP32-CAM: console stays on UART0 via the expansion board's USB-UART bridge.

@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done, B next; E.2, F.1 done 2026-10-14; F.2, F.3 done 2026-10-15; F.5 motor fit passed (2 motors mounted). Parts arrived 2026-10-10 except the 18650 cells (in customs as of 2026-10-15, hopefully the week of 2026-10-19); bench PSU in the meantime
+Status: **approved 2026-09-28**; A done; B done 2026-10-16; C built and negative-tested 2026-10-16, flashing pending; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (in customs as of 2026-10-15, hopefully the week of 2026-10-19); bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -88,13 +88,13 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Identify the 6-wire cable pinout (M+, M−, encoder VCC, GND, A, B) from the seller listing and the encoder PCB silkscreen; these cables aren't standardized.
    - Confirm VCC and GND with the multimeter before powering.
    - Record the pinout in `findings.md`.
-4. **Encoder 3.3 V check.** Some Hall sensors need more than 3.3 V; if these do, every wheel node needs level shifting or a different encoder supply, which changes the wiring plan.
+4. **Encoder 3.3 V check.** (done 2026-10-16 on the spare motor: clean quadrature, A/B high 3.28 V, low 0 V, 3 mA, no pull-ups; see `progress.md`) Some Hall sensors need more than 3.3 V; if these do, every wheel node needs level shifting or a different encoder supply, which changes the wiring plan.
    - Before powering: measure `V` (inner red) to `GND` (yellow); it must not read near 0 Ω. Two wires are red: `V` is the inner one, `+` (motor) the outer one.
    - Power the encoder at 3.3 V, current limit about 0.1 A, with the motor leads unpowered.
-   - Connect A and B to the logic analyzer (PulseView) and turn the output shaft by hand.
+   - Connect A and B to the logic analyzer (8-ch 24 MHz, PulseView driver fx2lafw): D0 = A (green), D1 = B (blue), analyzer GND = encoder GND (yellow). Turn the output shaft by hand.
    - Expect two clean square waves 90° apart (quadrature). Reversing the direction swaps which one leads.
-   - Check the high level is ≤ 3.3 V; the C3 GPIOs are not 5 V tolerant. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
-   - One motor answers the 3.3 V question. Repeat it on the other 4 before mounting: that only saves taking a motor back out later, and takes about a minute each.
+   - Check the levels with the multimeter (DC volts, A or B to GND, shaft held still on a high state, then a low one); the logic analyzer only shows 0/1, not voltage. The C3 GPIOs are not 5 V tolerant, but at a 3.3 V supply the output can hardly exceed 3.3 V, so the useful check is the other side: high ≥ ~2.5 V and low ≤ ~0.8 V (C3 input thresholds ≈ 0.75 / 0.25 × VDD, from the datasheet, from memory). The analyzer's own threshold is lower, so a weak high can look clean there and still be marginal for the C3. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
+   - One motor answers the 3.3 V question. The other 4 have the same encoder board; checking them is skipped (decided 2026-10-16) and done only if one misbehaves while debugging.
    - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them with PCNT. Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
 5. **Mechanical fit check, on the 2-deck chassis.** (On the first chassis the motor fit passed on 2026-10-14 with about 1 mm to spare; that chassis is dropped, so this restarts.)
    - Flipped mounting: test-fit one acrylic T-bracket from the underside before stripping everything.
@@ -110,14 +110,14 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Leave the motor and encoder leads unterminated; don't wire them to drivers or nodes yet.
    - Fit the wheels.
 
-**Done when:** 4 tested motors are mounted with their wheels on; all 5 encoders show clean quadrature at 3.3 V; the pinout is recorded, plus the winding resistance of 2 motors and each motor's 6 V no-load spin result; and every fit problem has a decided fix.
+**Done when:** 4 tested motors are mounted with their wheels on; the spare's encoder shows clean quadrature at 3.3 V; the pinout is recorded, plus the winding resistance of 2 motors and each motor's 6 V no-load spin result; and every fit problem has a decided fix.
 
 ## Unverified (check during implementation)
 - The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
 - The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
 - The new encoder motors fit the 2-deck chassis mounts (flipped) and the wheels (checked in F.5).
-- The encoder outputs are push-pull at VCC level, with no pull-ups needed (checked in F.4).
-- The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn. Test C.2 checks this. `docs/dev-setup.md` already states it fails; fix that doc if C.2 shows otherwise.
+- ~~The encoder outputs are push-pull at VCC level, with no pull-ups needed.~~ Verified in F.4 (2026-10-16): high 3.28 V at a 3.3 V supply, no pull-ups needed.
+- ~~The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn.~~ Verified by C.2 (2026-10-16): the v5.5.5 build fails with `Version solving failed`, as `docs/dev-setup.md` states.
 - Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.
 - The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).
 

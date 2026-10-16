@@ -46,13 +46,15 @@ Technical notes (from general knowledge, verify when relevant):
   - 12 × 90 = 1080 rising edges on channel A per output-shaft revolution.
   - 4320 counts per output revolution with 4× quadrature decoding (both edges on both channels).
   - Phase 1 firmware measures this (optional no-firmware hand count in F.4). If the result is 12 or 48, the PPR is quoted at the output shaft instead.
+  - **Measured 2026-10-16 (F.4, spare motor):** one full hand turn of the encoder magnet disc (motor shaft) = 47 counts in PulseView's Gray code decoder, i.e. 48 within hand-positioning error. So 12 PPR is per motor-shaft revolution, as assumed: 48 counts per motor revolution in 4× decoding. The 4320 per output revolution still depends on the 1:90 ratio, which Phase 1 firmware confirms.
+  - Encoder supply current at 3.3 V: 3 mA. Outputs are push-pull or internally pulled up: clean square waves with no external pull-ups. Multimeter: high 3.28 V, low 0 V on both A and B, comfortably inside the C3 input thresholds (≈ 2.5 V / 0.8 V at 3.3 V, recalled from the datasheet).
 - Stall current at a given voltage: estimate it from the winding resistance, I ≈ V / R (F.2).
 - Sound (2026-10-14, 2 motors): gearbox whine with a periodic "wow-wow", the same on both motors, so a trait of this gearbox, not a fault. Source gear stage not identified. Phase 1: expect a small periodic speed ripple in the encoder data (possibly once per output turn); don't mistake it for a firmware or controller bug.
 - Measured (2026-10-14): R ≈ 3.0 Ω and 3.1 Ω on the first two motors (3.2 / 3.3 Ω read, 0.2 Ω leads). Stall ≈ 2.0 A at 6 V, ≈ 2.8 A at 8.4 V; 4 motors stalled ≈ 11 A. The listing's 0.82 A doesn't fit V/R at any listed voltage. No-load at 6 V ≈ 0.1 A on all 5 (2026-10-14/15). Caveats: R measured on two motors only; an ohmmeter's tiny test current can overstate brush resistance, so the real stall current may be somewhat higher.
 
 ### Encoder connector pinout (F.3, 2026-10-14)
 - Encoder PCB silkscreen "HallEncoder"; pins left to right: `+  GND  A  B  V  -`.
-- `+`/`-` (outer pins) are the motor terminals M+/M−; confirmed by ohmmeter (they read the ~3 Ω winding). `V`/`GND` are the encoder supply and `A`/`B` the quadrature outputs (inferred from the silkscreen; F.4 confirms). The motor power and the encoder share the one 6-pin cable.
+- `+`/`-` (outer pins) are the motor terminals M+/M−; confirmed by ohmmeter (they read the ~3 Ω winding). `V`/`GND` are the encoder supply and `A`/`B` the quadrature outputs (inferred from the silkscreen; confirmed by F.4 on 2026-10-16). The motor power and the encoder share the one 6-pin cable.
 - Cable colors (2026-10-15, read visually at the PCB connector on all 5 motors; identical on every motor):
 
   | Pin | Function | Color |
@@ -94,6 +96,10 @@ Technical notes (from general knowledge, verify when relevant):
 - **DRV8833 parallel mode:** TI datasheet (SLVSAR1E) application section: both H-bridges can be paralleled (inputs and outputs tied) for about double the current; internal dead time prevents cross-conduction between bridges. Third-party: 1.5 A RMS / 2 A peak per bridge, ~3 A RMS / 4 A peak paralleled (verify against the TI PDF).
 - **JST XH:** 2.5 mm pitch (not 2.54; fits 0.1" perfboard acceptably for small pin counts), 3 A with 22 AWG, wire 22–30 AWG. Pre-crimped leads are easy to buy.
 - **DroneCAN convention:** 4-pin JST-GH (1.25 mm) daisy-chain cable carrying 5 V, CAN_H, CAN_L, GND; devices have two connectors (in/out); termination only at the two ends (~60 Ω check). Validates the "power + CAN in one 4-wire chain" idea. GH needs a fine crimp tool or pre-made cables; XH is more hobby-friendly.
+
+### Bench tools (2026-10-16)
+- Logic analyzer: 8-channel 24 MHz clone, PulseView/sigrok with the fx2lafw driver; inputs are named D0–D7. PulseView 0.4.2, sigrok-cli 0.7.2 and the libsigrok udev rules are installed on the desktop.
+- Lesson from an earlier I2C project: PulseView decoders assign channels by their own defaults, so check the decoder's channel mapping against the actual wiring.
 
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
