@@ -70,3 +70,8 @@ idf.py -p /dev/ttyACM0 flash monitor   # Ctrl+] exits the monitor
 If flashing fails to connect:
 - **ESP32-C3:** hold BOOT, tap RESET, release BOOT, then flash again.
 - **ESP32-CAM:** hold the IO0 button on the expansion board while flashing starts.
+
+## Git workflow
+
+- Firmware, CI and build changes: work on a branch, open a pull request to `main`, wait for the CI build to pass, then squash-merge.
+- Planning files, bench logs and docs: commit straight to `main`.

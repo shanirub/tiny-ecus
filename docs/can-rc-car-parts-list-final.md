@@ -22,14 +22,19 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 
 | Part | Qty | Where | Notes |
 | --- | --- | --- | --- |
-| 18650 Li-ion cells | 2, matched | Vape shop (in customs as of 2026-10-15, hopefully the week of 2026-10-19; bench PSU until then) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
+| 18650 Li-ion cells | 2, matched | Vape shop (on the way as of 2026-10-16, after customs; bench PSU until then) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
 | 5 V USB-C charger, ≥ 2 A | 1 | Probably already owned | Powers the charger board |
-| WAGO 221-415 (5-port) | 2 | Electrical supply shop | Central motor-power split, + and − (wiring option D, 2026-10-15) |
-| WAGO 221-413 (3-port) | 3 (1 owned) | Electrical supply shop | One + and one − per side pod |
-| Silicone stranded wire, 22 AWG, red + black | ~2 m each | Electronics shop | Motor power branches, buck input |
-| Silicone stranded wire, 20 AWG, red + black | ~0.5 m each | Electronics shop | Battery trunk |
-| JST-XH 4-pin pigtail pairs (male + female) | pack of 5–10 | Electronics shop | Bus cable: 5 V, GND, CANH, CANL; 2 needed + spares |
-| Half-size breadboards | 2, if not owned | Electronics shop | One per side pod, bench phases |
+
+## Ordered (wiring, option D), 2026-10-16
+
+Not arrived yet. Together with the 18650 cells, these are the only missing parts.
+
+| Part | Qty | Notes |
+| --- | --- | --- |
+| WAGO 221 assortment box, 5-port (221-415) and 3-port (221-413) | 1 box | Central motor-power split (2× 5-port) and one + / − pair per side pod (4× 3-port); 1 more 3-port already owned |
+| Solid-core wire, 22 AWG, assorted colors | 1 set | Breadboard and perfboard links, signal wiring. Not for motor leads: solid core fatigues and breaks under vibration |
+| Silicone stranded wire, 20 AWG, red + black | 1 set | Battery trunk (planned 20 AWG) and motor power branches (planned 22 AWG; 20 AWG is thicker, so it covers them too) |
+| JST-XH 4-pin pigtail pairs (male + female) | enough for 2 + spares | Bus cable: 5 V, GND, CANH, CANL. 2 pairs needed (gateway → left pod → right pod) |
 
 ## Already owned
 
@@ -43,4 +48,5 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 | Basic stash: resistors, capacitors, wire, connectors | assorted | Includes LED resistors, 470 µF bulk caps (≥ 16 V), 100 nF motor caps |
 | Multimeter | 1 | Buck output, cell voltages, current draw |
 | Logic analyzer | 1 | CAN debugging with PulseView |
+| Half-size breadboards | 2+ | One per side pod, bench phases |
 | Raspberry Pi 3B+ | 1 | Optional bench CAN sniffer |

@@ -4,11 +4,11 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 0 item C: flash the hello-worlds onto a C3 and the ESP32-CAM (confirms the LED pins GPIO8 / GPIO33), then item D (CI).
+Phase 0 item C: flash the hello-worlds onto a C3 and the ESP32-CAM (confirms the LED pins GPIO8 / GPIO33), then item D (CI), the first change done on a branch with a PR.
 In parallel (no firmware needed): item F. Done so far: F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty), F.3 pinout (wire colors mapped 2026-10-15, same on all 5). Chassis switched 2026-10-15 to the wider 2-deck kit, so F.1, F.5 and F.6 restart on it. F.4 passed on the spare motor 2026-10-16 (A/B high 3.28 V, low 0 V; 47 counted per encoder-disc turn, ≈ 48 expected); the other 4 motors are skipped and only checked if one misbehaves while debugging. Next: F.1 teardown of the 2-deck chassis, then F.5 on it (flipped-mount test fit, middle gap, wheels, 2S holder, switch, fuse holder) and F.6. E.3 (bucks) is deferred until something first connects to a buck output.
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); items A, B done (B 2026-10-16), C next (build + negative test done, flashing pending); parts arrived 2026-10-10 (cells pending); E.2 done 2026-10-14; F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15 (F.1/F.5/F.6 restart on it)
+Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); items A, B done (B 2026-10-16), C next (build + negative test done, flashing pending); parts arrived 2026-10-10 (cells on the way; wiring order of 2026-10-16 not arrived); E.2 done 2026-10-14; F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15 (F.1/F.5/F.6 restart on it)
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -134,6 +134,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Switch to the wider 2-deck acrylic 4WD kit, flipped: motors on the underside, the whole top face for electronics (2026-10-15) | Wider, many more holes and slots, standoffs for a second deck; flipping raises ground clearance. Cost: the 2 motors mounted on the first chassis come off; F.1/F.5/F.6 restart (mechanical only) |
 | Wiring: breadboards on the bench for Phases 1–4 (PSU powered); soldered perfboard per pod from Phase 5 (2026-10-15; "per node" revised to "per pod" by the layout decision below) | Breadboards suit the rewiring of the bench phases. Vibration and battery current start in Phase 5, where loose jumpers would cause intermittent faults. Motor power never goes through breadboard strips (contacts ~1 A, stall ~2.8 A). Soldered nodes keep the C3 socketed and modules on connectors so a node stays replaceable |
 | Wiring layout: option D, two side pods (left FL+RL, right FR+RR) between the wheels, wired the option B way: a 4-wire bus cable (5 V, GND, CANH, CANL; JST-XH) gateway → left pod → right pod, and a motor power star from a central WAGO pair to a WAGO 221-413 on each pod (2026-10-15) | Only 2 boards, which fits the space limit; short motor cables; the same harness carries over from bench to car. Motor current stays off breadboard strips. Bus order is tentative until Phase 3. Fallback if the F.5 middle gap is too small: option C, a stripboard backplane on the upper deck. Options, cable list and wire types: `docs/design/wiring-options.html` |
+| Git workflow: firmware, CI and build changes go on a branch with a PR to `main`, CI must pass, squash-merge; planning files, bench logs and docs are committed straight to `main` (2026-10-16). No branch protection for now | PRs give a CI gate and a per-feature record where a mistake would break the build; docs-only commits gain nothing from a PR. Starts with item D, so the first PR also proves the workflow runs |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

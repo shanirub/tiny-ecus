@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done; B done 2026-10-16; C built and negative-tested 2026-10-16, flashing pending; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (in customs as of 2026-10-15, hopefully the week of 2026-10-19); bench PSU in the meantime
+Status: **approved 2026-09-28**; A done; B done 2026-10-16; C built and negative-tested 2026-10-16, flashing pending; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -58,7 +58,7 @@ docs/
 
 ### D. CI
 1. Write `.github/workflows/build.yml`: `container: espressif/idf:v6.1`, a matrix over `[wheel_node, gateway]`, and `idf.py build`.
-2. Push and confirm both jobs pass.
+2. Do it on a branch as the first PR (git workflow decided 2026-10-16, see `task_plan.md`): open the PR, confirm both jobs pass on it, then squash-merge.
 
 ### E. Hardware bring-up (as parts arrive; not a blocker for the exit criterion)
 1. **ESP32-C3 boards:** flash the hello-world on each of the 4 plus spares. Label the physical boards (FL/FR/RL/RR/spare) and record which ones fail.

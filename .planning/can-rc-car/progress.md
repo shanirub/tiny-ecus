@@ -90,6 +90,8 @@
 - F.4 done on the spare motor: logic analyzer (PulseView Gray code decoder) shows clean quadrature, +1/−1 counts by direction, 47 counts per encoder-disc turn (≈ 48 = 12 PPR × 4). Multimeter: A and B high 3.28 V, low 0 V, within the C3 input thresholds. Decided: skip F.4 on the other 4 motors (same encoder board); check one only if it misbehaves while debugging.
 - Files modified: `phase-0-foundations.md`, `task_plan.md`, `progress.md`, `findings.md`.
 - Added the F.4 PulseView capture as `docs/images/f4 encoder quadrature pulseview.webp` (lossless WebP), linked from `findings.md`.
+- Wiring parts ordered: WAGO 221 box (5- and 3-port), 22 AWG solid core in assorted colors, 20 AWG silicone stranded red + black, JST-XH 4-pin pigtail pair(s). 20 AWG stranded replaces the planned 22 AWG stranded for motor branches; solid core is for board-level links only. JST-XH pairs and half-size breadboards already on hand. Parts list updated. 18650 cells on the way. Still missing: the wiring order and the cells; everything else is on hand.
+- Decided the git workflow: branch + PR + squash-merge for firmware/CI/build changes, direct to `main` for docs and planning. Item D (CI) is the first PR. Recorded in `task_plan.md` Decisions, `phase-0-foundations.md` item D and `docs/dev-setup.md`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
