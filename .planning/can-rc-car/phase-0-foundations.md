@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done; B done 2026-10-16; C done 2026-10-17; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
+Status: **approved 2026-09-28**; A done; B done 2026-10-16; C and D done 2026-10-17 (exit criterion met); E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -119,7 +119,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
 - ~~The encoder outputs are push-pull at VCC level, with no pull-ups needed.~~ Verified in F.4 (2026-10-16): high 3.28 V at a 3.3 V supply, no pull-ups needed.
 - ~~The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn.~~ Verified by C.2 (2026-10-16): the v5.5.5 build fails with `Version solving failed`, as `docs/dev-setup.md` states.
 - ~~Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.~~ Neither was needed (2026-10-17): both boards auto-reset into the bootloader.
-- The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).
+- ~~The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).~~ Settled by D (2026-10-17): the workflow sources `$IDF_PATH/export.sh` in the step and both jobs pass; it also needs `git config safe.directory` for `git describe`.
 
 ## Out of scope for Phase 0
 Motor, encoder, CAN traffic and any protocol code (Phases 1–3). Pin allocation beyond the onboard LEDs. Wiring any electronics into the chassis (item F covers only mechanical work and motor caps).

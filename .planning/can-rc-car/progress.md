@@ -100,6 +100,7 @@
 - The hello-world source comments still say the LED pins are unverified; fix them in the item D branch (firmware changes go through a PR).
 - Docs reread for stale data: `docs/dev-setup.md` gained the venv-mismatch fix, a note that both boards auto-reset into the bootloader, and where to look for the ESP32-CAM LED.
 - Files modified: `task_plan.md`, `phase-0-foundations.md`, `findings.md`, `progress.md`, `docs/dev-setup.md`.
+- Item D done: `.github/workflows/build.yml` (container `espressif/idf:v6.1`, matrix `[wheel_node, gateway]`, build only, `contents: read`). First branch + PR under the new workflow: PR #1 on `ci/build-workflow`, also fixing the LED comments in both `main.c`. Both jobs passed (~2 min each, no warnings), squash-merged as `3e67b07`, branch deleted. **Phase 0 exit criterion met.**
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -117,6 +118,7 @@
 | C.2 negative test (2026-10-16) | Clean copy, `idf.py build` with IDF v5.5.5 | Configure fails on the IDF constraint | `Version solving failed: no versions of idf match ~6.1.0` | pass |
 | C.3 flash C3 (2026-10-17) | `idf.py -p /dev/ttyACM0 flash`, then reset and read the console | Hash verified; banner + heartbeat; LED blinks at 1 Hz | All 3 images verified; banner (ESP32-C3 rev v0.4, IDF v6.1) and heartbeat every 5 s; LED on GPIO8 blinks | pass |
 | C.4 flash ESP32-CAM (2026-10-17) | `idf.py -p /dev/ttyUSB0 flash` via the expansion board, then reset and read the console | Hash verified; banner + heartbeat; red LED blinks, flash LED off | All 3 images verified; banner (ESP32 rev v3.1, 2 cores, IDF v6.1) and heartbeat; red LED on GPIO33 blinks (glow only, LED faces the expansion board); flash LED off | pass |
+| D CI build (2026-10-17) | PR #1: GitHub Actions, `espressif/idf:v6.1`, matrix over both projects | Both jobs pass | `build (wheel_node)` pass 2m0s, `build (gateway)` pass 1m55s; `Project build complete`, no warnings | pass |
 | F.4 encoder 3.3 V check, spare motor (2026-10-16) | PSU 3.3 V / 0.1 A limit to V/GND; analyzer D0 = A, D1 = B at 1 MHz; hand-turned both ways; Gray code decoder | Clean quadrature; count up one way, down the other; high 2.5–3.3 V, low ≤ 0.8 V | 3 mA supply; two clean square waves, no pull-ups needed; count 0→12 then back to 0 (Increment +1 / −1); one turn of the encoder disc = 47 counts (≈ 48 = 12 PPR × 4); multimeter: A and B high 3.28 V, low 0 V | pass on the spare motor; other 4 skipped (decided 2026-10-16) |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
