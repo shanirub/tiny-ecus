@@ -6,7 +6,7 @@
 #include "freertos/task.h"
 #include "tiny_common.h"
 
-// C3 Super Mini onboard LED: believed GPIO8, active-low (unverified; see Phase 0 plan).
+// C3 Super Mini onboard LED: GPIO8, active-low (verified 2026-10-17).
 #define LED_GPIO        GPIO_NUM_8
 #define LED_ACTIVE_LOW  1
 

@@ -6,7 +6,8 @@
 #include "freertos/task.h"
 #include "tiny_common.h"
 
-// ESP32-CAM small red LED: believed GPIO33, active-low (unverified). Not GPIO4, the bright flash LED.
+// ESP32-CAM small red LED: GPIO33, active-low (verified 2026-10-17). Not GPIO4, the bright flash LED.
+// It faces the expansion board, so with the boards stacked only its glow is visible.
 #define LED_GPIO        GPIO_NUM_33
 #define LED_ACTIVE_LOW  1
 
