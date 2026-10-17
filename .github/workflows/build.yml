@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v6.1
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [wheel_node, gateway]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build ${{ matrix.project }}
+        shell: bash
+        run: |
+          # The checkout is owned by another uid than the container user; without this,
+          # `git describe` (used for the app version) fails with "dubious ownership".
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Actions runs steps directly, not through the image's entrypoint, so activate IDF here.
+          . "$IDF_PATH/export.sh"
+          idf.py -C firmware/${{ matrix.project }} build
