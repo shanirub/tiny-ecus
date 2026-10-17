@@ -101,6 +101,13 @@
 - Docs reread for stale data: `docs/dev-setup.md` gained the venv-mismatch fix, a note that both boards auto-reset into the bootloader, and where to look for the ESP32-CAM LED.
 - Files modified: `task_plan.md`, `phase-0-foundations.md`, `findings.md`, `progress.md`, `docs/dev-setup.md`.
 - Item D done: `.github/workflows/build.yml` (container `espressif/idf:v6.1`, matrix `[wheel_node, gateway]`, build only, `contents: read`). First branch + PR under the new workflow: PR #1 on `ci/build-workflow`, also fixing the LED comments in both `main.c`. Both jobs passed (~2 min each, no warnings), squash-merged as `3e67b07`, branch deleted. **Phase 0 exit criterion met.**
+- Phase 0 marked complete; open items moved: F.1/F.5/F.6 before Phase 3, E.1 to Phase 3 (user: seller protection is not a factor), E.3/E.4 to Phase 5.
+- Phase 1 planning started. Found that the ESP32-C3 has no PCNT; user chose 4× decoding in a GPIO interrupt. Also chosen: CSV telemetry + Python plot script, host unit tests in CI. Draft written: `phase-1-one-wheel-node.md` (with a glossary: the user asked for every term to be explained). Waiting for approval and the DRV8833 module's pin labels.
+- `docs/architecture.md`: PCNT replaced by GPIO-interrupt decoding.
+- DRV8833 module photographed (`docs/images/drv8833 module front.webp` / `back.webp`, lossy WebP q85, 143 KB total from 2.0 MB PNG). Pins recorded in `findings.md`: STBY exposed, no fault pin. Pin map: AIN1/AIN2 = GPIO6/7, STBY = GPIO20.
+- Phase 1 A.3: bench motor current needs no 20 AWG; thickest jumpers on hand suffice under the PSU's 1.5 A limit.
+- Glossary additions on request: why a motor driver is needed, STBY, nFAULT, NC. Phase 1 D.3 gained the low-speed resolution note (1 count per 10 ms = 1.39 rpm; moving average only if needed).
+- Phase 1 plan approved by the user (2026-10-17).
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

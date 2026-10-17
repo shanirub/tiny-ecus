@@ -105,6 +105,18 @@ Technical notes (from general knowledge, verify when relevant):
 - Both boot logs warn that the image header says 2 MB of flash while the chip has 4 MB (`CONFIG_ESPTOOLPY_FLASHSIZE` default). Harmless; change it only if the space is needed. The ESP32-CAM also logs "Detected boya flash chip but using generic driver"; the generic driver works.
 - **Shell pitfall:** running `idf61` in a terminal where another IDF was already active (here `~/esp/esp-idf`, the master checkout, probably injected by the VS Code ESP-IDF extension; not confirmed) keeps `IDF_PYTHON_ENV_PATH` pointing at the `idf6.2` venv, and the v6.1 export fails its Python dependency check (`esp-idf-kconfig`, `esp-idf-monitor` too old). Fix: `unset IDF_PATH IDF_PYTHON_ENV_PATH` before `idf61`, or use a fresh terminal.
 
+### DRV8833 module (2026-10-17, photos)
+- Photos: `docs/images/drv8833 module front.webp` (components) and `docs/images/drv8833 module back.webp` (pin labels). Red board marked "V318", TI DRV8833 (TSSOP-16, marking "DRV8833 83K AV16").
+- Pins, labeled side, left row top to bottom: NC, AIN2, AIN1, STBY, BIN1, BIN2, NC, GND. Right row: VM, NC, GND, AO1, AO2, BO2, BO1, GND. NC = not connected.
+- **STBY** is the chip's sleep input (nSLEEP in TI's datasheet): low = asleep, outputs off; high = awake. **No fault output (nFAULT) is brought out**, so firmware can't read driver faults directly; it relies on its own stall detection.
+- No logic-supply pin: the DRV8833 makes its own internal supply from VM, and its inputs take 3.3 V logic (from memory; check the datasheet's input-high threshold).
+- Components: a 10 µF 25 V tantalum capacitor (likely on VM) and two small SMD parts, probably the chip's required VINT and VCP capacitors (not confirmed). Unknown whether STBY has a pull-up or pull-down on the board: measure STBY–GND and STBY–VM resistance unpowered before wiring.
+- Option for later, if one bridge's current is too low: TI's datasheet allows paralleling both bridges (AIN1+BIN1, AIN2+BIN2, AO1+BO1, AO2+BO2) for about double the current (see Wiring research). Not used in Phase 1.
+
+### ESP32-C3 peripherals (2026-10-17, from IDF v6.1 `components/soc/esp32c3/include/soc/soc_caps.h`)
+- **No PCNT** (pulse counter): `SOC_PCNT_SUPPORTED` is defined for ESP32, S2, S3, C5, C6, H2, P4 and others, but not for the C3. The roadmap had assumed PCNT for the encoders; changed to a GPIO interrupt with 4× quadrature decoding (decision in `task_plan.md`).
+- Present: LEDC (6 channels, 14-bit timers), GPTimer, RMT, dedicated GPIO (fast CPU pin access), a per-pin glitch filter (removes only spikes a few clock cycles long), one CPU core.
+
 ### Bench tools (2026-10-16)
 - Logic analyzer: 8-channel 24 MHz clone, PulseView/sigrok with the fx2lafw driver; inputs are named D0–D7. PulseView 0.4.2, sigrok-cli 0.7.2 and the libsigrok udev rules are installed on the desktop.
 - Lesson from an earlier I2C project: PulseView decoders assign channels by their own defaults, so check the decoder's channel mapping against the actual wiring.

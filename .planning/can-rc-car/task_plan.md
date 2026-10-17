@@ -4,10 +4,10 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 0 exit criterion met 2026-10-17 (C: both boards flashed; D: CI via PR #1), and F.2–F.4 (needed before Phase 1) are done, so Phase 1's detailed planning pass can start. Item F continues in parallel (mechanical, no firmware). Done so far: F.2 on all 5 (≈ 3 Ω on the first 2, ≈ 0.1 A no-load on all; none faulty), F.3 pinout (wire colors mapped 2026-10-15, same on all 5). Chassis switched 2026-10-15 to the wider 2-deck kit, so F.1, F.5 and F.6 restart on it. F.4 passed on the spare motor 2026-10-16 (A/B high 3.28 V, low 0 V; 47 counted per encoder-disc turn, ≈ 48 expected); the other 4 motors are skipped and only checked if one misbehaves while debugging. Next: F.1 teardown of the 2-deck chassis, then F.5 on it (flipped-mount test fit, middle gap, wheels, 2S holder, switch, fuse holder) and F.6. E.3 (bucks) is deferred until something first connects to a buck output.
+Phase 1 item A (bench wiring), starting with A.1: unpowered STBY–GND and STBY–VM resistance on the DRV8833 module. Item B (command line, telemetry, host tests) can start in parallel on its own branch. Phase 1 plan approved 2026-10-17 (`phase-1-one-wheel-node.md`).
 
 ## Current Phase
-Phase 0: plan approved 2026-09-28 (`phase-0-foundations.md`); items A–D done (B 2026-10-16, C and D 2026-10-17), exit criterion met; E and F continue; parts arrived 2026-10-10 (cells on the way; wiring order of 2026-10-16 not arrived); E.2 done 2026-10-14; F.2 done 2026-10-15 (all 5 spun, none faulty); F.3 (pinout incl. wire colors) done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15 (F.1/F.5/F.6 restart on it)
+Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 18650 cells and the wiring order of 2026-10-16.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -41,16 +41,19 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
 - [ ] F. Chassis prep + motor/encoder bench tests: teardown (2-deck chassis; first chassis done 2026-10-14, then dropped), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout (done 2026-10-15), encoder 3.3 V check (done 2026-10-16 on the spare), fit check, mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
-- **Status:** in_progress
+- Open items moved out 2026-10-17 (details stay in `phase-0-foundations.md`): F.1, F.5, F.6 → before Phase 3; E.1 → Phase 3; E.3, E.4 → Phase 5.
+- **Status:** complete (2026-10-17)
 
 ### Phase 1: One wheel node on the bench
+Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
+- [x] Detailed planning pass (approved 2026-10-17)
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
-- [ ] DRV8833 PWM via LEDC and encoder counting via PCNT
+- [ ] DRV8833 PWM via LEDC and encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT)
 - [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (expect 1080 on A or 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [ ] Commands over USB serial (temporary)
 - **Learning:** embedded control. **Exit:** the wheel holds a commanded speed under finger-drag load and reports actual speed.
-- **Status:** pending
+- **Status:** in progress (plan approved 2026-10-17)
 
 ### Phase 2: CAN bring-up + gateway v0
 - [ ] ESP32-CAM and one C3 over TWAI; 120 Ω only at the two end nodes; decode frames in PulseView
@@ -61,6 +64,8 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - **Status:** pending
 
 ### Phase 3: Protocol spec + four nodes
+- [ ] **Before starting:** Phase 0 F.1 (strip the 2-deck chassis) and F.5 (fit check, incl. pod space and middle gap, which confirm wiring option D for the harness), then F.6 (mount the 4 motors). Moved from Phase 0 on 2026-10-17
+- [ ] Phase 0 E.1 (moved 2026-10-17): flash the hello-world on every C3 and label the boards FL/FR/RL/RR/spare
 - [ ] Write the spec: message catalog, ID/priority allocation, node addressing, error and bus-off handling
 - [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor marked "121", beside the "120R" silkscreen label, with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
 - [ ] Four wheel nodes plus the gateway on a bench harness, all on one firmware image with node identity in NVS
@@ -74,7 +79,8 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - **Status:** pending
 
 ### Phase 5: Power system + chassis integration
-- [ ] Motors are already mounted (Phase 0 F); this phase does the electrical integration
+- [ ] Motors are already mounted (Phase 0 F.6, done before Phase 3); this phase does the electrical integration
+- [ ] Phase 0 E.3 and E.4 (moved 2026-10-17): check each MP1584 buck output before anything connects to it (method in `phase-0-foundations.md`); check and charge the 18650 cells. The buck rule applies earlier if any bench setup uses a buck first
 - [ ] Move from bench breadboards to soldered wiring: each side pod (option D) on a perfboard, the C3 in female headers (socketed), plug-in connectors (JST-type) between modules, heat shrink and tie-downs at every joint; motor power on heavier wire with soldered or screw-terminal joints
 - [ ] Battery chain: 2S holder with PCM → fuse → switch → 5 V buck logic rail and motor rail, with bulk and motor caps
 - [ ] Measure stall and start current
@@ -109,6 +115,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
 - **Gateway overload:** camera + WiFi + CAN + UART on one ESP32. Measure in Phase 7.
 - **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice.
+- **Encoder interrupt load (new 2026-10-17):** with no PCNT, every encoder edge interrupts the single C3 core (estimated 8–14 k/s at full speed). Together with CAN interrupts from Phase 2 it must leave the control loop on time. Measured in Phase 1 item D; fallback 2× decoding.
 - **ESP-IDF TWAI API:** it has changed across IDF versions. Verify against the pinned version before writing code.
 
 ## Decisions Made
@@ -128,12 +135,16 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Two IDF projects plus shared `components/`, target locked via `sdkconfig.defaults` | Different chips and apps; a clean clone builds without `set-target` |
 | CI: GitHub Actions, `espressif/idf:v6.1` container, build only | Free for public repos on standard runners; no artifacts, to avoid storage quota |
 | Mechanical chassis prep pulled forward into Phase 0 (item F); no electronics in the chassis until Phases 1–3 settle wiring | Surfaces fit problems early, while a reorder is cheap; avoids rework of an unplanned harness (2026-10-11) |
-| Phase 0 F trimmed: counts/rev, no-load speed and direction convention move to Phase 1 (measured by firmware); F.2 drops the 8.4 V and reverse runs; E.3 deferred until first buck use | Keep in Phase 0 only what protects hardware or must precede mounting; Phase 1 measuring them is a good PCNT exercise. Cost: no independent no-firmware reference, unless the optional hand count is done (2026-10-14) |
+| Phase 0 F trimmed: counts/rev, no-load speed and direction convention move to Phase 1 (measured by firmware); F.2 drops the 8.4 V and reverse runs; E.3 deferred until first buck use | Keep in Phase 0 only what protects hardware or must precede mounting; Phase 1 measuring them is a good encoder-counting exercise. Cost: no independent no-firmware reference, unless the optional hand count is done (2026-10-14) |
 | Phase detail plans live in separate `phase-N-*.md` files next to `task_plan.md` | Keeps the top of `task_plan.md` (what the hooks inject) short |
 | Switch to the wider 2-deck acrylic 4WD kit, flipped: motors on the underside, the whole top face for electronics (2026-10-15) | Wider, many more holes and slots, standoffs for a second deck; flipping raises ground clearance. Cost: the 2 motors mounted on the first chassis come off; F.1/F.5/F.6 restart (mechanical only) |
 | Wiring: breadboards on the bench for Phases 1–4 (PSU powered); soldered perfboard per pod from Phase 5 (2026-10-15; "per node" revised to "per pod" by the layout decision below) | Breadboards suit the rewiring of the bench phases. Vibration and battery current start in Phase 5, where loose jumpers would cause intermittent faults. Motor power never goes through breadboard strips (contacts ~1 A, stall ~2.8 A). Soldered nodes keep the C3 socketed and modules on connectors so a node stays replaceable |
 | Wiring layout: option D, two side pods (left FL+RL, right FR+RR) between the wheels, wired the option B way: a 4-wire bus cable (5 V, GND, CANH, CANL; JST-XH) gateway → left pod → right pod, and a motor power star from a central WAGO pair to a WAGO 221-413 on each pod (2026-10-15) | Only 2 boards, which fits the space limit; short motor cables; the same harness carries over from bench to car. Motor current stays off breadboard strips. Bus order is tentative until Phase 3. Fallback if the F.5 middle gap is too small: option C, a stripboard backplane on the upper deck. Options, cable list and wire types: `docs/design/wiring-options.html` |
 | Git workflow: firmware, CI and build changes go on a branch with a PR to `main`, CI must pass, squash-merge; planning files, bench logs and docs are committed straight to `main` (2026-10-16). No branch protection for now | PRs give a CI gate and a per-feature record where a mistake would break the build; docs-only commits gain nothing from a PR. Starts with item D, so the first PR also proves the workflow runs |
+
+| Phase 0 open items moved to the phases that need them (2026-10-17): F.1/F.5/F.6 before Phase 3, E.1 to Phase 3, E.3/E.4 to Phase 5; Phase 0 marked complete | Phase status stays honest. The fit check stays ahead of the Phase 3 harness, which depends on wiring option D. E.1 has no seller-protection urgency (boards owned a long time) |
+| Wheel-node encoders counted by a GPIO interrupt with 4× quadrature decoding (2026-10-17) | The ESP32-C3 has no PCNT peripheral (IDF v6.1 `soc_caps.h`). Full resolution and missed-edge detection; CPU load measured in Phase 1, fallback 2× |
+| Phase 1 tooling: hardware-free logic with host unit tests in CI (CMake + Unity); telemetry as CSV over USB, plotted by `tools/plot_run.py` (2026-10-17) | Control and parser bugs found on the PC; saved runs make tunings comparable |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

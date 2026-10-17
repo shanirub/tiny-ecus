@@ -75,7 +75,7 @@ Exactly two terminators are fitted, one at each physical end of the bus. With th
                  │                                             │
                  │ LEDC PWM ×2                                 ├──► DRV8833 AIN1/AIN2
                  │                                             │      AOUT1/AOUT2 ──► motor + / −
-                 │ PCNT                                        │◄─── encoder A, B
+                 │ GPIO interrupts (4× quadrature decode)      │◄─── encoder A, B
                  │ TWAI TX/RX                                  │◄──► SN65HVD230 ◄──► CAN bus
                  │ GPIO                                        ├──► corner LED(s) + resistor
                  │ ADC (one node only)                         │◄─── VBAT divider

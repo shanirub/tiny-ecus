@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done; B done 2026-10-16; C and D done 2026-10-17 (exit criterion met); E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
+Status: **complete 2026-10-17.** Open items moved: F.1, F.5, F.6 → before Phase 3; E.1 → Phase 3; E.3, E.4 → Phase 5 (their instructions stay below). History: approved 2026-09-28; A done; B done 2026-10-16; C and D done 2026-10-17 (exit criterion met); E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -61,6 +61,7 @@ docs/
 2. Do it on a branch as the first PR (git workflow decided 2026-10-16, see `task_plan.md`): open the PR, confirm both jobs pass on it, then squash-merge.
 
 ### E. Hardware bring-up (as parts arrive; not a blocker for the exit criterion)
+Moved 2026-10-17: E.1 → Phase 3, E.3 and E.4 → Phase 5. The steps below remain the reference.
 1. **ESP32-C3 boards:** flash the hello-world on each of the 4 plus spares. Label the physical boards (FL/FR/RL/RR/spare) and record which ones fail.
 2. **CAN adapters (SN65HVD230):** (done 2026-10-14: all 5 measure 118–120 Ω, so all have a terminator fitted. It is a fixed SMD part, not jumper-selectable; 3 come off in Phase 3.) Unpowered, measure CANH–CANL resistance on each. About 120 Ω means onboard termination is fitted. Record which boards have it; only the two end nodes should keep it.
 3. **MP1584 bucks:** deferred (2026-10-14). Until Phases 3–5 every board runs from USB, so nothing connects to a buck output yet. Rule: check each buck before anything is connected to its output. MP1584 modules often ship with the trim pot at an arbitrary setting, and one set high would destroy a C3. Method: feed from the bench PSU at ~7.4–8.4 V with a current limit (~0.5 A). Measure the output at no load, then with a load resistor: 100 Ω draws 50 mA and dissipates 0.25 W, so use a ½ W part or two 220 Ω ¼ W in parallel. Confirm 5.0 V ±0.1 V; trim if the module allows it. About 2 minutes per module.
@@ -68,6 +69,7 @@ docs/
 5. Log every measurement in `progress.md` under Test Results.
 
 ### F. Chassis prep + motor/encoder bench tests (added 2026-10-11; no firmware needed)
+Moved 2026-10-17: F.1, F.5, F.6 must be done before Phase 3 starts. The steps below remain the reference.
 Not a blocker for the Phase 0 exit. F.2–F.4 on the spare motor must be done before Phase 1 starts. Log every result in `progress.md` under Test Results.
 Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (counts per rev, no-load speed, direction convention). What stays here either protects hardware or must happen before mounting.
 
@@ -95,7 +97,7 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
    - Expect two clean square waves 90° apart (quadrature). Reversing the direction swaps which one leads.
    - Check the levels with the multimeter (DC volts, A or B to GND, shaft held still on a high state, then a low one); the logic analyzer only shows 0/1, not voltage. The C3 GPIOs are not 5 V tolerant, but at a 3.3 V supply the output can hardly exceed 3.3 V, so the useful check is the other side: high ≥ ~2.5 V and low ≤ ~0.8 V (C3 input thresholds ≈ 0.75 / 0.25 × VDD, from the datasheet, from memory). The analyzer's own threshold is lower, so a weak high can look clean there and still be marginal for the C3. If the edges are missing or slow, the outputs may be open-collector and need pull-ups (try 10 kΩ to 3.3 V): note it.
    - One motor answers the 3.3 V question. The other 4 have the same encoder board; checking them is skipped (decided 2026-10-16) and done only if one misbehaves while debugging.
-   - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them with PCNT. Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
+   - Moved to Phase 1 (2026-10-14): counts per output revolution, no-load speed and the left/right direction convention. Firmware measures them by counting encoder edges (in a GPIO interrupt: the C3 has no PCNT, found 2026-10-17). Optional, if you want a no-firmware reference to check that firmware against: hand-count edges per output revolution on the spare. Expect 1080 rising edges on A, or 4320 across A and B; 12 or 48 means the PPR is quoted at the output shaft (see `findings.md`).
 5. **Mechanical fit check, on the 2-deck chassis.** (On the first chassis the motor fit passed on 2026-10-14 with about 1 mm to spare; that chassis is dropped, so this restarts.)
    - Flipped mounting: test-fit one acrylic T-bracket from the underside before stripping everything.
    - Middle gap: the motors face each other with the encoder ends toward the middle. From the photo the gap between front and rear motor ends is roughly 12 mm (estimate, scaled from a ~65 mm wheel); the encoder used ~9 mm on the first chassis, and the 6-pin connector plus its cable bend need room too. Measure it.
