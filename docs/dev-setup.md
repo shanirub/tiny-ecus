@@ -39,6 +39,13 @@ alias idf61='. ~/esp/esp-idf-v6.1/export.sh'
 
 Then run `idf61` in any new terminal before using `idf.py`. Check it with `idf.py --version`, which should print `ESP-IDF v6.1`.
 
+If `idf61` fails with "Checking python dependencies ... FAILED" and the diagnostics name a Python env for another IDF version (for example `idf6.2_py3.14_env`), the shell already had a different IDF activated (an IDE extension can do this in its terminals). Clear it and activate again:
+
+```sh
+unset IDF_PATH IDF_PYTHON_ENV_PATH
+idf61
+```
+
 ### Updating to a patch release
 
 Install the new tag next to the old one, for example `~/esp/esp-idf-v6.1.1`, and point the alias at it. The version constraint accepts any 6.1.x.
@@ -67,7 +74,9 @@ idf.py build
 idf.py -p /dev/ttyACM0 flash monitor   # Ctrl+] exits the monitor
 ```
 
-If flashing fails to connect:
+The hello-worlds blink an LED at 1 Hz and log a heartbeat every 5 s. On the ESP32-CAM the blinking red LED faces the expansion board, so only its glow is visible at the edge between the boards.
+
+Both boards normally enter the bootloader on their own (auto-reset over DTR/RTS). If flashing fails to connect:
 - **ESP32-C3:** hold BOOT, tap RESET, release BOOT, then flash again.
 - **ESP32-CAM:** hold the IO0 button on the expansion board while flashing starts.
 

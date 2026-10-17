@@ -1,6 +1,6 @@
 # Phase 0: Foundations — Detailed Plan
 
-Status: **approved 2026-09-28**; A done; B done 2026-10-16; C built and negative-tested 2026-10-16, flashing pending; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
+Status: **approved 2026-09-28**; A done; B done 2026-10-16; C done 2026-10-17; E.2 done 2026-10-14; F.2, F.3 done 2026-10-15; F.4 done 2026-10-16 on the spare motor; chassis switched to the 2-deck kit 2026-10-15, so F.1, F.5 and F.6 restart on it. Parts arrived 2026-10-10 except the 18650 cells (on the way as of 2026-10-16); wiring parts for option D ordered 2026-10-16, not arrived; bench PSU in the meantime
 
 ## Goal and exit criterion
 Toolchain, repo skeleton and hardware are ready for Phase 1.
@@ -113,12 +113,12 @@ Scope trimmed 2026-10-14: checks that firmware can do in Phase 1 moved there (co
 **Done when:** 4 tested motors are mounted with their wheels on; the spare's encoder shows clean quadrature at 3.3 V; the pinout is recorded, plus the winding resistance of 2 motors and each motor's 6 V no-load spin result; and every fit problem has a decided fix.
 
 ## Unverified (check during implementation)
-- The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.
-- The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.
+- ~~The C3 Super Mini onboard LED is believed to be on GPIO8, active-low.~~ Verified by C.3 (2026-10-17): it blinks with the hello-world.
+- ~~The ESP32-CAM (AI-Thinker) red LED is believed to be on GPIO33, active-low; the flash LED is on GPIO4.~~ Verified by C.4 (2026-10-17): the red LED blinks and the flash LED stays off. The red LED faces the expansion board, so only its glow is visible (see `findings.md`).
 - The new encoder motors fit the 2-deck chassis mounts (flipped) and the wheels (checked in F.5).
 - ~~The encoder outputs are push-pull at VCC level, with no pull-ups needed.~~ Verified in F.4 (2026-10-16): high 3.28 V at a 3.3 V supply, no pull-ups needed.
 - ~~The `~6.1.0` constraint syntax in `idf_component.yml`, and whether it makes the build hard-fail rather than warn.~~ Verified by C.2 (2026-10-16): the v5.5.5 build fails with `Version solving failed`, as `docs/dev-setup.md` states.
-- Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.
+- ~~Some C3 Super Minis need BOOT held during reset for the first flash. Some ESP32-CAM-MB boards need IO0 held if auto-reset fails.~~ Neither was needed (2026-10-17): both boards auto-reset into the bootloader.
 - The exact package format of the `espressif/idf` container when used as a GitHub Actions `container:` (whether it needs `export.sh` sourced in the `run` step).
 
 ## Out of scope for Phase 0

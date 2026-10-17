@@ -24,7 +24,7 @@ Technical notes (from general knowledge, verify when relevant):
 
 ### Phase 0 discovery (2026-09-28)
 - **Upstream ESP-IDF releases** (`gh release list -R espressif/esp-idf`): v6.1 is "Latest" (2026-08-27). Maintenance lines: v6.0.3 (2026-09-02), v5.5.5 (2026-07-17), v5.3.6, v5.2.8.
-- **This desktop:** `~/esp/esp-idf-v5.5.5` (stable), and `~/esp/esp-idf` (a `master` dev checkout at v6.1-dev-5253; do not use for the project). Tools are in `~/.espressif` for Xtensa and RISC-V, with Python envs for idf5.5 and idf6.2 on Python 3.14. `idf.py` is not on PATH by default, so `export.sh` must be sourced.
+- **This desktop:** `~/esp/esp-idf-v5.5.5` (stable), and `~/esp/esp-idf` (a `master` dev checkout at v6.1-dev-5253; do not use for the project). Tools are in `~/.espressif` for Xtensa and RISC-V, with Python envs for idf5.5 and idf6.2 on Python 3.14 (idf6.1 added by item A; the idf6.2 env belongs to the master checkout). `idf.py` is not on PATH by default, so `export.sh` must be sourced.
 - **Host tools present:** docker, podman, pulseview, sigrok-cli. The user is in the `dialout` group. picocom and minicom are not installed; `idf.py monitor` is enough.
 - **esp32-camera component** (v2.1.8, 2026-09-25) declares `idf: ">=5.1"` with no upper bound. The dependency constraint is fine for 6.x, but runtime compatibility is not proven until Phase 7.
 
@@ -97,6 +97,13 @@ Technical notes (from general knowledge, verify when relevant):
 - **DRV8833 parallel mode:** TI datasheet (SLVSAR1E) application section: both H-bridges can be paralleled (inputs and outputs tied) for about double the current; internal dead time prevents cross-conduction between bridges. Third-party: 1.5 A RMS / 2 A peak per bridge, ~3 A RMS / 4 A peak paralleled (verify against the TI PDF).
 - **JST XH:** 2.5 mm pitch (not 2.54; fits 0.1" perfboard acceptably for small pin counts), 3 A with 22 AWG, wire 22–30 AWG. Pre-crimped leads are easy to buy.
 - **DroneCAN convention:** 4-pin JST-GH (1.25 mm) daisy-chain cable carrying 5 V, CAN_H, CAN_L, GND; devices have two connectors (in/out); termination only at the two ends (~60 Ω check). Validates the "power + CAN in one 4-wire chain" idea. GH needs a fine crimp tool or pre-made cables; XH is more hobby-friendly.
+
+### Board bring-up (item C, 2026-10-17)
+- **C3 Super Mini:** ESP32-C3 (QFN32) rev v0.4, 4 MB embedded flash (XMC), on `/dev/ttyACM0` (USB-Serial-JTAG, `303a:1001`). Onboard LED on GPIO8, active-low: confirmed. No BOOT button needed to flash.
+- **ESP32-CAM:** ESP32-D0WD-V3 rev v3.1, 4 MB flash (BoyaMicro), on `/dev/ttyUSB0` via the expansion board's CH340 (`1a86:7523`). Auto-reset into the bootloader works, so no IO0 jumper is needed. Console is on UART0 (GPIO1/3).
+- **ESP32-CAM red LED is hidden:** it sits on the back of the ESP32-CAM, the side that plugs into the expansion board, so the LED itself can't be seen with the board stacked. Only its glow leaks out at the edge, and it is easy to miss. Look at the gap between the two boards. The bright white flash LED (GPIO4) on the camera side stays off.
+- Both boot logs warn that the image header says 2 MB of flash while the chip has 4 MB (`CONFIG_ESPTOOLPY_FLASHSIZE` default). Harmless; change it only if the space is needed. The ESP32-CAM also logs "Detected boya flash chip but using generic driver"; the generic driver works.
+- **Shell pitfall:** running `idf61` in a terminal where another IDF was already active (here `~/esp/esp-idf`, the master checkout, probably injected by the VS Code ESP-IDF extension; not confirmed) keeps `IDF_PYTHON_ENV_PATH` pointing at the `idf6.2` venv, and the v6.1 export fails its Python dependency check (`esp-idf-kconfig`, `esp-idf-monitor` too old). Fix: `unset IDF_PATH IDF_PYTHON_ENV_PATH` before `idf61`, or use a fresh terminal.
 
 ### Bench tools (2026-10-16)
 - Logic analyzer: 8-channel 24 MHz clone, PulseView/sigrok with the fx2lafw driver; inputs are named D0–D7. PulseView 0.4.2, sigrok-cli 0.7.2 and the libsigrok udev rules are installed on the desktop.

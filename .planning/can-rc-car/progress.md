@@ -93,6 +93,14 @@
 - Wiring parts ordered: WAGO 221 box (5- and 3-port), 22 AWG solid core in assorted colors, 20 AWG silicone stranded red + black, JST-XH 4-pin pigtail pair(s). 20 AWG stranded replaces the planned 22 AWG stranded for motor branches; solid core is for board-level links only. JST-XH pairs and half-size breadboards already on hand. Parts list updated. 18650 cells on the way. Still missing: the wiring order and the cells; everything else is on hand.
 - Decided the git workflow: branch + PR + squash-merge for firmware/CI/build changes, direct to `main` for docs and planning. Item D (CI) is the first PR. Recorded in `task_plan.md` Decisions, `phase-0-foundations.md` item D and `docs/dev-setup.md`.
 
+## Session: 2026-10-17
+- Item C done: flashed `wheel_node` onto a C3 Super Mini (`/dev/ttyACM0`) and `gateway` onto the ESP32-CAM (`/dev/ttyUSB0`); both boot logs show the banner and the 5 s heartbeat, and the user saw both LEDs blink at 1 Hz. GPIO8 and GPIO33 (both active-low) are confirmed. No BOOT / IO0 button needed.
+- The ESP32-CAM red LED faces the expansion board, so only its glow is visible; noted in `findings.md`.
+- The user's `idf61` failed in one terminal because a previous IDF activation (master checkout) left `IDF_PYTHON_ENV_PATH` on the `idf6.2` venv. Fix recorded in `findings.md`.
+- The hello-world source comments still say the LED pins are unverified; fix them in the item D branch (firmware changes go through a PR).
+- Docs reread for stale data: `docs/dev-setup.md` gained the venv-mismatch fix, a note that both boards auto-reset into the bootloader, and where to look for the ESP32-CAM LED.
+- Files modified: `task_plan.md`, `phase-0-foundations.md`, `findings.md`, `progress.md`, `docs/dev-setup.md`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -107,6 +115,8 @@
 | F.2 6 V no-load spin, remaining 3 motors (2026-10-15) | Bench PSU 6 V, 1 A limit, across `+`/`-` | ~0.1 A in CV, no grinding | All 3 settle at ~0.1 A (0.6–0.7 W); 2 show ~0.3 A briefly at start (inrush); same periodic gearbox "wow" | pass (no faulty motor) |
 | C.1 build, both projects (2026-10-16) | `idf.py build` with IDF v6.1 | Builds, no warnings | Both build; 0 warnings | pass |
 | C.2 negative test (2026-10-16) | Clean copy, `idf.py build` with IDF v5.5.5 | Configure fails on the IDF constraint | `Version solving failed: no versions of idf match ~6.1.0` | pass |
+| C.3 flash C3 (2026-10-17) | `idf.py -p /dev/ttyACM0 flash`, then reset and read the console | Hash verified; banner + heartbeat; LED blinks at 1 Hz | All 3 images verified; banner (ESP32-C3 rev v0.4, IDF v6.1) and heartbeat every 5 s; LED on GPIO8 blinks | pass |
+| C.4 flash ESP32-CAM (2026-10-17) | `idf.py -p /dev/ttyUSB0 flash` via the expansion board, then reset and read the console | Hash verified; banner + heartbeat; red LED blinks, flash LED off | All 3 images verified; banner (ESP32 rev v3.1, 2 cores, IDF v6.1) and heartbeat; red LED on GPIO33 blinks (glow only, LED faces the expansion board); flash LED off | pass |
 | F.4 encoder 3.3 V check, spare motor (2026-10-16) | PSU 3.3 V / 0.1 A limit to V/GND; analyzer D0 = A, D1 = B at 1 MHz; hand-turned both ways; Gray code decoder | Clean quadrature; count up one way, down the other; high 2.5–3.3 V, low ≤ 0.8 V | 3 mA supply; two clean square waves, no pull-ups needed; count 0→12 then back to 0 (Increment +1 / −1); one turn of the encoder disc = 47 counts (≈ 48 = 12 PPR × 4); multimeter: A and B high 3.28 V, low 0 V | pass on the spare motor; other 4 skipped (decided 2026-10-16) |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
 
