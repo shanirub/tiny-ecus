@@ -121,8 +121,16 @@ def plot(path_png: pathlib.Path, title: str, header: list[str], rows: list[list[
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path_png, dpi=120)
-    if show:
-        plt.show()
+    if not show:
+        return
+    # Without a GUI toolkit matplotlib silently falls back to Agg, which can't
+    # open a window; say so plainly instead of its cryptic warning.
+    from matplotlib.backends import BackendFilter, backend_registry
+    if plt.get_backend().lower() not in backend_registry.list_builtin(BackendFilter.INTERACTIVE):
+        print(f"no GUI backend for matplotlib ({plt.get_backend()}), so no window; the PNG is saved. "
+              "Install tools/requirements.txt (includes PyQt6) or pass --no-show.", file=sys.stderr)
+        return
+    plt.show()
 
 
 def main() -> int:
