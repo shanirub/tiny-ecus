@@ -117,6 +117,12 @@ Technical notes (from general knowledge, verify when relevant):
 - **No PCNT** (pulse counter): `SOC_PCNT_SUPPORTED` is defined for ESP32, S2, S3, C5, C6, H2, P4 and others, but not for the C3. The roadmap had assumed PCNT for the encoders; changed to a GPIO interrupt with 4× quadrature decoding (decision in `task_plan.md`).
 - Present: LEDC (6 channels, 14-bit timers), GPTimer, RMT, dedicated GPIO (fast CPU pin access), a per-pin glitch filter (removes only spikes a few clock cycles long), one CPU core.
 
+### USB console on the C3 (item B, 2026-10-20, bench-verified)
+- **Opening the port can reset the board.** The C3's USB-Serial-JTAG resets the chip when RTS is high and DTR low. Linux raises both lines on open, and pyserial applies DTR before RTS, so asking for both low passes through the reset state (`rst:0x15 USB_UART_CHIP_RESET`). Opening with DTR high and RTS low never resets it: checked over 3 open/close cycles and hours of tool use. `tools/plot_run.py` `open_port()` does this; `send_cmd.py` reuses it.
+- **With no host reading, the USB driver drops output itself.** Writes wait once for up to 50 ms, then the bytes are discarded. Telemetry on with the port closed for 5 s: the console still answered at once, and `drops` stayed 0, because that loss happens in the driver, not in our queue. `drops` only counts samples the writer task fell behind on.
+- The host machine lacks `libasan`/`libubsan`, so local host tests run with `-DSANITIZE=OFF`; CI always runs the sanitizers.
+- **Plot window (2026-10-20):** on this Fedora desktop, matplotlib had no GUI backend (`tkinter` comes in the separate `python3-tkinter` package, not installed; no Qt in the venv), so it fell back to Agg silently and `plot_run.py` opened no window. Fixed by pinning `PyQt6==6.11.0` (released 2026-03-30; pulls `PyQt6-Qt6` 6.11.2): matplotlib picks `qtagg`, and the window opens on Wayland. Size: 91 MB download, ~260 MB installed; the venv went from 180 MB to 440 MB. Qt still needs common desktop libraries (libxkbcommon, EGL, fontconfig), so a minimal or headless machine can still lack a window; the script then says so.
+
 ### Bench tools (2026-10-16)
 - Logic analyzer: 8-channel 24 MHz clone, PulseView/sigrok with the fx2lafw driver; inputs are named D0–D7. PulseView 0.4.2, sigrok-cli 0.7.2 and the libsigrok udev rules are installed on the desktop.
 - Lesson from an earlier I2C project: PulseView decoders assign channels by their own defaults, so check the decoder's channel mapping against the actual wiring.

@@ -4,7 +4,7 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item A (bench wiring), starting with A.1: unpowered STBY–GND and STBY–VM resistance on the DRV8833 module. Item B (command line, telemetry, host tests) can start in parallel on its own branch. Phase 1 plan approved 2026-10-17 (`phase-1-one-wheel-node.md`).
+Phase 1 item A (bench wiring), starting with A.1: unpowered STBY–GND and STBY–VM resistance on the DRV8833 module. Item B is done (2026-10-20, PR #2); item C (encoder) follows A. Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
 Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 18650 cells and the wiring order of 2026-10-16.
@@ -27,7 +27,7 @@ Full diagrams (power chain with battery, PCM, fuse, switch and rails; CAN topolo
 - **Gateway (ESP32-CAM):** translates operator commands into CAN messages and aggregates status back. Owns the operator-link watchdog. Streams video later.
 - **Wheel nodes:** run a local closed-loop speed controller. The gateway sends *setpoints*, not PWM duty. Each node has its own fail-safe: it stops if setpoints stop arriving. Each node also drives its corner LEDs.
 - **Application protocol on raw CAN:** 11-bit IDs encode priority. Safety and sync messages get the lowest IDs, then setpoints, then telemetry.
-- **Monorepo, planned layout:** a shared `protocol` component, `firmware/wheel_node`, `firmware/gateway`, and `docs/` for the protocol spec.
+- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`; later `protocol`), host unit tests in `test/host`, bench scripts in `tools/`, and `docs/` (protocol spec later).
 
 ## Phases
 
@@ -51,14 +51,14 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [ ] DRV8833 PWM via LEDC and encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT)
 - [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (expect 1080 on A or 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
-- [ ] Commands over USB serial (temporary)
+- [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools
 - **Learning:** embedded control. **Exit:** the wheel holds a commanded speed under finger-drag load and reports actual speed.
 - **Status:** in progress (plan approved 2026-10-17)
 
 ### Phase 2: CAN bring-up + gateway v0
 - [ ] ESP32-CAM and one C3 over TWAI; 120 Ω only at the two end nodes; decode frames in PulseView
 - [ ] Verify which ESP32-CAM GPIOs are free for TWAI (see Risks)
-- [ ] First text commands (`DRIVE`, `STOP`, `STATUS`) on the gateway UART, with a transport-independent parser
+- [ ] First text commands (`DRIVE`, `STOP`, `STATUS`) on the gateway UART, with a transport-independent parser (reuse `components/tiny_cmd` from Phase 1)
 - [ ] Fail-safe from the start: heartbeat plus setpoint timeout
 - **Learning:** CAN protocol, arbitration, termination. **Exit:** a typed command spins the bench wheel, and pulling the CAN wire stops it within a defined timeout.
 - **Status:** pending
@@ -141,10 +141,11 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Wiring: breadboards on the bench for Phases 1–4 (PSU powered); soldered perfboard per pod from Phase 5 (2026-10-15; "per node" revised to "per pod" by the layout decision below) | Breadboards suit the rewiring of the bench phases. Vibration and battery current start in Phase 5, where loose jumpers would cause intermittent faults. Motor power never goes through breadboard strips (contacts ~1 A, stall ~2.8 A). Soldered nodes keep the C3 socketed and modules on connectors so a node stays replaceable |
 | Wiring layout: option D, two side pods (left FL+RL, right FR+RR) between the wheels, wired the option B way: a 4-wire bus cable (5 V, GND, CANH, CANL; JST-XH) gateway → left pod → right pod, and a motor power star from a central WAGO pair to a WAGO 221-413 on each pod (2026-10-15) | Only 2 boards, which fits the space limit; short motor cables; the same harness carries over from bench to car. Motor current stays off breadboard strips. Bus order is tentative until Phase 3. Fallback if the F.5 middle gap is too small: option C, a stripboard backplane on the upper deck. Options, cable list and wire types: `docs/design/wiring-options.html` |
 | Git workflow: firmware, CI and build changes go on a branch with a PR to `main`, CI must pass, squash-merge; planning files, bench logs and docs are committed straight to `main` (2026-10-16). No branch protection for now | PRs give a CI gate and a per-feature record where a mistake would break the build; docs-only commits gain nothing from a PR. Starts with item D, so the first PR also proves the workflow runs |
-
 | Phase 0 open items moved to the phases that need them (2026-10-17): F.1/F.5/F.6 before Phase 3, E.1 to Phase 3, E.3/E.4 to Phase 5; Phase 0 marked complete | Phase status stays honest. The fit check stays ahead of the Phase 3 harness, which depends on wiring option D. E.1 has no seller-protection urgency (boards owned a long time) |
 | Wheel-node encoders counted by a GPIO interrupt with 4× quadrature decoding (2026-10-17) | The ESP32-C3 has no PCNT peripheral (IDF v6.1 `soc_caps.h`). Full resolution and missed-edge detection; CPU load measured in Phase 1, fallback 2× |
 | Phase 1 tooling: hardware-free logic with host unit tests in CI (CMake + Unity); telemetry as CSV over USB, plotted by `tools/plot_run.py` (2026-10-17) | Control and parser bugs found on the PC; saved runs make tunings comparable |
+| Telemetry values sent as scaled integers, unit in the column name (e.g. `sine_milli` = value × 1000) (2026-10-20) | No float formatting on the node: cheaper and shorter lines at 100 Hz; the suffix tells the reader how to scale back |
+| `PyQt6` pinned in `tools/requirements.txt` as matplotlib's window backend; `plot_run.py` prints a clear message when no window can open (2026-10-20) | A fresh clone must open the plot without extra system packages (Fedora lacks `tkinter` by default). Cost: ~260 MB in the venv, desktop only |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

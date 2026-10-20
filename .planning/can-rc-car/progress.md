@@ -109,6 +109,15 @@
 - Glossary additions on request: why a motor driver is needed, STBY, nFAULT, NC. Phase 1 D.3 gained the low-speed resolution note (1 count per 10 ms = 1.39 rpm; moving average only if needed).
 - Phase 1 plan approved by the user (2026-10-17).
 
+## Session: 2026-10-20
+- Phase 1 item B done on `phase1/b-console`, PR #2, squash-merged as `81ecfca` after all 3 CI jobs passed (both firmware builds, host tests). Contents: `components/tiny_cmd` (parser + line assembler), wheel_node console (`STATUS`, `TELEM ON|OFF`, `HELP`) and 100 Hz sine telemetry through a queue and a low-priority writer task, `test/host` (33 Unity tests, sanitizers in CI), `tools/plot_run.py` and `tools/send_cmd.py`.
+- A host test caught a real bug before flashing: the LF of a CRLF wiped the line the CR had just finished. Fixed by handling the LF first.
+- Bench check found that opening the port reset the C3; fixed in the tools (DTR high, RTS low). Details in `findings.md`.
+- Files modified: `task_plan.md`, `phase-1-one-wheel-node.md`, `findings.md`, `progress.md`.
+- Plot window check: `plot_run.py` without `--no-show` opened no window (matplotlib fell back to Agg; no Tk or Qt). User chose PyQt6 in the requirements over a system package, so a fresh clone works; plus a clear message in `plot_run.py` when no window can open. Done on branch `tools/plot-window`; the user confirmed the window opens.
+- Reread all markdown docs for stale or missing data: `docs/dev-setup.md` gained Host unit tests and Bench tools sections and no longer says the wheel node logs a heartbeat; README link text; `task_plan.md` repo layout, Phase 2 parser reuse, two decisions (scaled-integer telemetry, PyQt6), a table break fixed; Phase 1 plan glossary (queue, scaled integers, DTR/RTS, sanitizers, GUI backend), item B summary, and a note that `CONFIG_FREERTOS_HZ=1000` isn't set yet.
+- Files modified: `README.md`, `docs/dev-setup.md`, `task_plan.md`, `phase-1-one-wheel-node.md`, `findings.md`, `progress.md`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -128,6 +137,13 @@
 | D CI build (2026-10-17) | PR #1: GitHub Actions, `espressif/idf:v6.1`, matrix over both projects | Both jobs pass | `build (wheel_node)` pass 2m0s, `build (gateway)` pass 1m55s; `Project build complete`, no warnings | pass |
 | F.4 encoder 3.3 V check, spare motor (2026-10-16) | PSU 3.3 V / 0.1 A limit to V/GND; analyzer D0 = A, D1 = B at 1 MHz; hand-turned both ways; Gray code decoder | Clean quadrature; count up one way, down the other; high 2.5–3.3 V, low ≤ 0.8 V | 3 mA supply; two clean square waves, no pull-ups needed; count 0→12 then back to 0 (Increment +1 / −1); one turn of the encoder disc = 47 counts (≈ 48 = 12 PPR × 4); multimeter: A and B high 3.28 V, low 0 V | pass on the spare motor; other 4 skipped (decided 2026-10-16) |
 | F.1 teardown (2026-10-14) | Old car: photos, then remove drive board and battery holder | Chassis clear for new motors | Done; photos in `docs/images/`. Old MCU+camera board and BT antenna left on for now | pass |
+| B host tests (2026-10-20) | `ctest` on `test/host`, locally (sanitizers off) and in CI (sanitizers on) | All pass | 33/33 locally; CI `host-tests` pass in 7 s | pass |
+| B console (2026-10-20) | `STATUS`, `HELP`, unknown command, wrong arg count, bad value, 120-char line, blank line over USB | One OK/ERR line each; blank gets no reply | All as expected; 120 chars → `ERR line too long` | pass |
+| B telemetry (2026-10-20) | `plot_run.py --seconds 5` | 100 Hz sine ±1000, no drops | 501 rows in 5.00 s, every gap 10 ms, ±1000, drops=0 | pass |
+| B no reader (2026-10-20) | Telemetry on, port closed 5 s, then `STATUS` | Console still responsive | Reply in 0.05 s, drops=0 (driver discards the bytes itself) | pass |
+| B no reset on open (2026-10-20) | Repeated port opens with DTR high / RTS low | `up_ms` keeps counting | Uptime kept counting to ~7 h; with both lines low, it reset (`rst:0x15`) | pass after fix |
+| B plot window, before fix (2026-10-20) | `plot_run.py --seconds 3` (window expected) | Plot window opens | Capture, CSV and PNG fine (301 rows, 100 Hz); no window, matplotlib `FigureCanvasAgg is non-interactive` warning | fail (no GUI backend) |
+| B plot window, after fix (2026-10-20) | Same, with `PyQt6==6.11.0` in the venv; also a run without it | Window opens; without a backend, a clear message | Backend `qtagg`; the user saw the window open. Without PyQt6: `no GUI backend for matplotlib (agg), so no window; the PNG is saved...` | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

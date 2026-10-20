@@ -13,5 +13,5 @@ A 4WD skid-steer RC car built as a small distributed system. Each wheel has its 
 
 - [Project overview](docs/can-rc-car-project-overview.md): goals, learning goals, principles and non-goals.
 - [Parts list](docs/can-rc-car-parts-list-final.md): hardware bill of materials.
-- [Development](docs/dev-setup.md): install the toolchain, build, flash and monitor.
+- [Development](docs/dev-setup.md): install the toolchain, build, flash, run the host tests and the bench tools.
 - [Roadmap and current status](.planning/can-rc-car/task_plan.md): phases, decisions and next step. This is the source of truth for project status.

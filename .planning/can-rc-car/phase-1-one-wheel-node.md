@@ -56,14 +56,18 @@ Short definitions; ask for more depth on any of them.
 - **Serial console:** the text channel over the USB cable (what the boot log appeared on). It also accepts typed lines.
 - **Command parser:** code that reads a typed line such as `SPEED 60`, splits it into a command word and numbers, checks them, and calls the matching function. Written without any USB dependency, so the same parser later reads commands arriving from the gateway.
 - **Telemetry:** data the node reports continuously while running (time, setpoint, speed, duty). Here as **CSV** lines (comma-separated values, one row per sample), which a script can save and plot.
-- **Host unit test:** a small automated test of a piece of logic (the PI controller, the parser) compiled and run on the PC rather than the chip. **Unity** is a small C test framework for this; **CMake** builds it. CI runs these tests on every PR.
+- **Queue:** a FreeRTOS mailbox between tasks. The 100 Hz task drops each sample in without waiting; a lower-priority task takes them out and prints them, so slow USB output never delays the fast task. If the queue is full, the sample is dropped and counted (`drops` in `STATUS`).
+- **Scaled integers (`_milli`):** telemetry sends whole numbers, e.g. `sine_milli` = value × 1000, so the node never formats floating-point numbers. The column name says how to scale back.
+- **DTR / RTS:** two control lines of a serial port. On the C3's USB port they double as a reset and boot-mode switch, so the tools set them carefully on open to avoid resetting the board.
+- **Host unit test:** a small automated test of a piece of logic (the PI controller, the parser) compiled and run on the PC rather than the chip. **Unity** is a small C test framework for this; **CMake** builds it. CI runs these tests on every PR. **Sanitizers** (ASan, UBSan) are compiler options that make a test crash loudly on memory errors or undefined behavior that would otherwise pass silently.
+- **GUI backend:** the part of matplotlib that draws on screen. Without one (e.g. no Qt or Tk installed) it can only save image files; `PyQt6` provides it here.
 
 ## Decisions for this phase
 | Decision | Rationale |
 |---|---|
 | **Encoder: 4× decoding in a GPIO ISR**, state-table decoder in IRAM (chosen 2026-10-17) | The C3 has no PCNT. Full resolution plus missed-edge detection. Estimated load at full speed: about 8–14 k interrupts/s, a few % CPU (estimate: speed and ISR cost are both unmeasured). Measured in item D; fallback is 2× (interrupt on A only). |
 | **Bench power:** motor supply from the bench PSU at 7.4 V (2S nominal) with a 1.5 A current limit; C3 from USB; all grounds joined | A stall at ~3 Ω would draw ~2.4 A, above the DRV8833's ~1.5 A per bridge (third-party figure, see Unverified). The PSU limit is the hardware protection on the bench; the firmware protections come on top. |
-| **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
+| **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` (not set yet: still the default 100; set it with the control loop in item D) | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
 | **Units:** setpoints and reported speed in wheel rpm, signed (+ forward) | Same unit later in CAN setpoints; no wheel diameter needed yet. |
 | **PWM:** LEDC at 20 kHz, 10-bit duty (1024 steps); slow decay first, fast decay compared as an experiment | 20 kHz is above hearing. 10 bits is within the C3's limit at 20 kHz (80 MHz / 20 kHz = 4000 timer counts, so up to 11 bits). |
 | **Commands are timed runs:** `DUTY` and `SPEED` hold for at most N seconds (default 5, max 30), then the motor ramps to a stop | A first fail-safe (motion needs a fresh command), and it makes every run a clean recording window for tuning. |
@@ -93,10 +97,12 @@ Each item is one branch and PR, CI must pass, and each ends with a short bench c
 3. Motor supply from the bench PSU, 7.4 V, 1.5 A limit. Motor current never runs through breadboard strips: PSU and motor leads go straight to the module. The ordered 20 AWG wire isn't needed for this: bench current is ~0.1–0.6 A in use (estimate) and capped at 1.5 A by the PSU, so the thickest jumpers or clip leads on hand are fine for these short runs (the same setup as F.2). Connect the motor supply last, and switch it off before rewiring.
 4. Before power: check for shorts between the motor supply and 3V3, and that all grounds are joined.
 
-### B. Command line, telemetry and host tests
+### B. Command line, telemetry and host tests (done 2026-10-20, PR #2)
 1. Command parser (hardware-free) plus a console task reading lines from USB. First commands: `STATUS`, `HELP`.
 2. Host-test setup: `test/host/` with CMake + Unity; a CI job that builds and runs it. First tests: the parser.
 3. `tools/plot_run.py` (pyserial + matplotlib, own Python venv): sends a command, records CSV for N seconds, saves to `logs/`, plots.
+
+Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), console commands `STATUS` and `TELEM ON|OFF`, a 100 Hz test sine as telemetry (stand-in until the encoder exists), 33 host tests with sanitizers in CI, `plot_run.py` plus `send_cmd.py` (one-shot commands). Follow-up PR #3: PyQt6 so the plot window opens. Usage: `docs/dev-setup.md`.
 
 ### C. Encoder
 1. Quadrature decoder: the state table as pure logic (host-tested: every valid step ±1, every invalid one flagged), the ISR in IRAM, a 32-bit position counter read under a critical section.
