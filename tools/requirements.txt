@@ -1,2 +1,4 @@
 pyserial==3.5
 matplotlib==3.11.2
+# GUI backend so plot_run.py can open a window (~260 MB installed; desktop only)
+PyQt6==6.11.0
