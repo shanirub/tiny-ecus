@@ -7,7 +7,7 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 Phase 1 item A (bench wiring), starting with A.1: unpowered STBY–GND and STBY–VM resistance on the DRV8833 module. Item B is done (2026-10-20, PR #2); item C (encoder) follows A. Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 18650 cells and the wiring order of 2026-10-16.
+Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 18650 cells and the wiring order of 2026-10-16 (both still missing as of 2026-10-20; Phase 1 doesn't need them).
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.

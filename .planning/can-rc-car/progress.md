@@ -117,6 +117,7 @@
 - Plot window check: `plot_run.py` without `--no-show` opened no window (matplotlib fell back to Agg; no Tk or Qt). User chose PyQt6 in the requirements over a system package, so a fresh clone works; plus a clear message in `plot_run.py` when no window can open. Done on branch `tools/plot-window`; the user confirmed the window opens.
 - Reread all markdown docs for stale or missing data: `docs/dev-setup.md` gained Host unit tests and Bench tools sections and no longer says the wheel node logs a heartbeat; README link text; `task_plan.md` repo layout, Phase 2 parser reuse, two decisions (scaled-integer telemetry, PyQt6), a table break fixed; Phase 1 plan glossary (queue, scaled integers, DTR/RTS, sanitizers, GUI backend), item B summary, and a note that `CONFIG_FREERTOS_HZ=1000` isn't set yet.
 - Files modified: `README.md`, `docs/dev-setup.md`, `task_plan.md`, `phase-1-one-wheel-node.md`, `findings.md`, `progress.md`.
+- Parts check: the 18650 cells and the wiring order still haven't arrived (user, 2026-10-20). Neither blocks Phase 1 (bench PSU, jumpers).
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
