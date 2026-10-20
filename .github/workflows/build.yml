@@ -27,3 +27,14 @@ jobs:
           # Actions runs steps directly, not through the image's entrypoint, so activate IDF here.
           . "$IDF_PATH/export.sh"
           idf.py -C firmware/${{ matrix.project }} build
+
+  host-tests:
+    # Hardware-free logic (test/host), compiled with sanitizers and run on the runner itself.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and run host tests
+        run: |
+          cmake -S test/host -B build/host -DSANITIZE=ON
+          cmake --build build/host
+          ctest --test-dir build/host --output-on-failure
