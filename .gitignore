@@ -13,3 +13,8 @@ sdkconfig
 sdkconfig.old
 build/
 managed_components/
+
+# Bench tooling
+tools/.venv/
+logs/
+__pycache__/
