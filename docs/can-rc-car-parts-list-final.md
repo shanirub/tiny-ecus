@@ -22,7 +22,7 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 
 | Part | Qty | Where | Notes |
 | --- | --- | --- | --- |
-| 18650 Li-ion cells | 2, matched | Vape shop (arrived 2026-10-21: LiitoKala, flat top both ends, model and discharge rating not recorded yet; both 3.6 V on arrival) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
+| 18650 Li-ion cells | 2, matched | Vape shop (arrived 2026-10-21: LiitoKala Lii-35A, 3500 mAh, flat top both ends; both 3.59 V on arrival. Discharge rating unverified, see `findings.md`) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
 | 5 V USB-C charger, ≥ 2 A | 1 | Probably already owned | Powers the charger board |
 
 ## Ordered (wiring, option D), 2026-10-16

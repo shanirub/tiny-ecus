@@ -127,6 +127,12 @@ Technical notes (from general knowledge, verify when relevant):
 - **No PCNT** (pulse counter): `SOC_PCNT_SUPPORTED` is defined for ESP32, S2, S3, C5, C6, H2, P4 and others, but not for the C3. The roadmap had assumed PCNT for the encoders; changed to a GPIO interrupt with 4× quadrature decoding (decision in `task_plan.md`).
 - Present: LEDC (6 channels, 14-bit timers), GPTimer, RMT, dedicated GPIO (fast CPU pin access), a per-pin glitch filter (removes only spikes a few clock cycles long), one CPU core.
 
+### 18650 cells (2026-10-21)
+- LiitoKala Lii-35A: label 3500 mAh, 3.7 V nominal, flat top on both ends. Both 3.59 V on arrival, so matched (well within 0.05 V).
+- No LiitoKala datasheet found. Retail listings claim 10 A continuous (marketing, unverified). A forum user measured 3268–3345 mAh and 25–30 mΩ internal resistance on four cells, below the label, and another thought it resembles the Samsung 35E, which Samsung rates at 8 A continuous (inference, not confirmed). Working figure: about 8 A continuous, treated as unverified.
+- Fit with our budget: the holder's PCM cuts off at 3 A continuous, well below 8 A, so in normal use the PCM, not the cells, is the limit. The all-four-stalled worst case (~11 A) is above the cells' likely rating too; firmware stall detection and the fuse must stop it before it lasts.
+- Sources: budgetlightforum.com/t/q-about-liitokala-35a-ncr18650ga-based-and-other-battery-tips/46686, 18650batterystore.com (Samsung 35E 8 A), rozetka.com.ua listing (10 A claim).
+
 ### USB console on the C3 (item B, 2026-10-20, bench-verified)
 - **Opening the port can reset the board.** The C3's USB-Serial-JTAG resets the chip when RTS is high and DTR low. Linux raises both lines on open, and pyserial applies DTR before RTS, so asking for both low passes through the reset state (`rst:0x15 USB_UART_CHIP_RESET`). Opening with DTR high and RTS low never resets it: checked over 3 open/close cycles and hours of tool use. `tools/plot_run.py` `open_port()` does this; `send_cmd.py` reuses it.
 - **With no host reading, the USB driver drops output itself.** Writes wait once for up to 50 ms, then the bytes are discarded. Telemetry on with the port closed for 5 s: the console still answered at once, and `drops` stayed 0, because that loss happens in the driver, not in our queue. `drops` only counts samples the writer task fell behind on.
