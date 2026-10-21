@@ -17,7 +17,9 @@ Short definitions; ask for more depth on any of them.
 - **LEDC** ("LED control"): the ESP32's PWM peripheral. Despite the name it drives anything, motors included.
 - **DRV8833:** a motor driver chip (our module's pins: `findings.md`). Its **H-bridge** is four switches around the motor that can apply the supply either way round, so the motor turns forwards or backwards. The C3 tells it what to do through two input pins per motor (on our module AIN1, AIN2). **STBY** puts the whole chip to sleep (outputs off) when low.
 - **Why a motor driver at all:** a C3 pin can supply only about 20–40 mA at 3.3 V; the motor needs ~0.1 A running and ~2 A or more at stall, at 6–8.4 V. A pin also can't reverse polarity, and the motor's coil kicks back a voltage spike at every switch-off that would destroy a pin. The driver switches the motor supply on the C3's command and absorbs those spikes. PWM is used instead of an in-between voltage because a fully-on or fully-off switch wastes almost no power, while a linear stage burns the difference as heat (and the C3 has no DAC, digital-to-analog converter, anyway).
-- **STBY** (TI: nSLEEP): low = chip asleep, all outputs disconnected ("high impedance"), the motor coasts; high = awake (≈ 1 ms wake-up, from memory). Kept low until the firmware is ready, so the motor can't twitch during boot; also a second, independent "off" switch.
+- **Pull-up / pull-down resistor:** a high-value resistor from a pin to the supply (pull-up) or to GND (pull-down) that sets the pin's level while nothing drives it. Something driving the pin overrides it.
+- **Body diode:** the diode built into every power transistor (MOSFET); in an H-bridge they conduct from GND towards the supply and absorb the motor's switch-off spikes. **Zener diode:** a diode that conducts in reverse above a set voltage, used to clamp a pin.
+- **STBY** (TI: nSLEEP): low = chip asleep, all outputs disconnected ("high impedance"), the motor coasts; high = awake (up to 1 ms wake-up, TI datasheet). Kept low until the firmware is ready, so the motor can't twitch during boot; also a second, independent "off" switch.
 - **nFAULT** (the "n" means active-low): the chip pulls it low when it shuts itself off for overcurrent, overtemperature or undervoltage, and recovers by itself. Our module doesn't bring it out, so firmware can't read it; the chip still protects itself, and our stall detection covers the "why did it stop" gap.
 - **NC** (not connected): a header position wired to nothing. Here probably filler, so the board matches the common TB6612FNG module's pin layout (inference). Never use an NC pin as a spare tie point.
 - **Decay mode:** what the H-bridge does during the "off" part of each PWM cycle. **Fast decay** lets the motor coast (its current dies out quickly); **slow decay** shorts the motor's terminals (it brakes gently). Slow decay usually gives speed that follows duty more linearly.
@@ -66,7 +68,7 @@ Short definitions; ask for more depth on any of them.
 | Decision | Rationale |
 |---|---|
 | **Encoder: 4× decoding in a GPIO ISR**, state-table decoder in IRAM (chosen 2026-10-17) | The C3 has no PCNT. Full resolution plus missed-edge detection. Estimated load at full speed: about 8–14 k interrupts/s, a few % CPU (estimate: speed and ISR cost are both unmeasured). Measured in item D; fallback is 2× (interrupt on A only). |
-| **Bench power:** motor supply from the bench PSU at 7.4 V (2S nominal) with a 1.5 A current limit; C3 from USB; all grounds joined | A stall at ~3 Ω would draw ~2.4 A, above the DRV8833's ~1.5 A per bridge (third-party figure, see Unverified). The PSU limit is the hardware protection on the bench; the firmware protections come on top. |
+| **Bench power:** motor supply from the bench PSU at 7.4 V (2S nominal) with a 1.5 A current limit; C3 from USB; all grounds joined | A stall at ~3 Ω would draw ~2.4 A, above the DRV8833's 1.5 A RMS per bridge (TI datasheet; its overcurrent trip is 2 A minimum, 3.3 A typical). The PSU limit is the hardware protection on the bench; the firmware protections come on top. |
 | **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` (not set yet: still the default 100; set it with the control loop in item D) | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
 | **Units:** setpoints and reported speed in wheel rpm, signed (+ forward) | Same unit later in CAN setpoints; no wheel diameter needed yet. |
 | **PWM:** LEDC at 20 kHz, 10-bit duty (1024 steps); slow decay first, fast decay compared as an experiment | 20 kHz is above hearing. 10 bits is within the C3's limit at 20 kHz (80 MHz / 20 kHz = 4000 timer counts, so up to 11 bits). |
@@ -85,17 +87,18 @@ The Super Mini exposes GPIO0–10, 20 and 21. GPIO18/19 are the USB pins and GPI
 | Onboard status LED | 8 | Already used, active-low; a strapping pin, but fine as an output after boot |
 | Reserved: CAN TX / RX (Phase 2) | 3 / 4 | Keeps CAN off GPIO21, which the boot ROM drives with log output at power-up; that would put garbage on the bus |
 | Reserved: battery ADC (Phase 5, one node) / corner LED (Phase 4) | 0 / 1 | ADC1 pins |
-| Module STBY (driver sleep) | 20 | Not driven during boot, so the driver stays asleep until the firmware wakes it (relies on the chip's internal pull-down; check). Also gives firmware a hard "all outputs off" |
+| Module STBY (driver sleep) | 20 | Not driven during boot, so the driver stays asleep until the firmware wakes it (relies on the chip's internal 500 kΩ pull-down; A.1 found no pull-up on the board). Also gives firmware a hard "all outputs off" |
 | Driver fault output | none | The module doesn't bring nFAULT out |
 
 ## Work items
 Each item is one branch and PR, CI must pass, and each ends with a short bench check logged in `progress.md`.
 
 ### A. Bench wiring
-1. Module pins are recorded (photos, 2026-10-17). Unpowered, measure STBY–GND and STBY–VM resistance to see whether the board pulls STBY up or down.
+1. Module pins are recorded (photos, 2026-10-17). Unpowered, measure STBY–GND and STBY–VM resistance to see whether the board pulls STBY up or down. (Done 2026-10-21: pulled down, no pull-up; `findings.md`.)
 2. On a breadboard: C3, DRV8833, the spare motor (`+`/`-` to the driver outputs), encoder (`V` to 3V3, `GND`, A, B to the C3). A 100 nF cap across the motor terminals, a bulk cap (e.g. 470 µF) at the driver's motor supply.
 3. Motor supply from the bench PSU, 7.4 V, 1.5 A limit. Motor current never runs through breadboard strips: PSU and motor leads go straight to the module. The ordered 20 AWG wire isn't needed for this: bench current is ~0.1–0.6 A in use (estimate) and capped at 1.5 A by the PSU, so the thickest jumpers or clip leads on hand are fine for these short runs (the same setup as F.2). Connect the motor supply last, and switch it off before rewiring.
 4. Before power: check for shorts between the motor supply and 3V3, and that all grounds are joined.
+5. First power-up, before the C3 drives STBY (STBY left unconnected, or GPIO20 not yet configured): STBY should read about 0 V and the motor must not move. This is the powered half of A.1.
 
 ### B. Command line, telemetry and host tests (done 2026-10-20, PR #2)
 1. Command parser (hardware-free) plus a console task reading lines from USB. First commands: `STATUS`, `HELP`.
@@ -127,8 +130,8 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 4. **Exit test:** hold e.g. 60 rpm, drag the wheel with a finger, record the run: speed dips and recovers, duty rises, and the reported speed stays within a tolerance to be set from the measured ripple.
 
 ## Unverified (check during implementation)
-- DRV8833 module: whether STBY has an onboard pull-up/down (measure in A.1); what the two small SMD parts are.
-- DRV8833 figures from memory or third-party sources: about 1.5 A RMS / 2 A peak per bridge, internal pull-downs on the inputs, built-in overcurrent shutdown behavior, 10.8 V max motor supply. Check against the TI datasheet.
+- DRV8833 module: STBY reads as a pull-down to GND, 222 kΩ unpowered (A.1, 2026-10-21; `findings.md`); no pull-up to VM (one-way reading only, 1.81 MΩ / OL). The powered check (STBY ≈ 0 V with VM on) is still to do in A.5. What the two small SMD parts are.
+- ~~DRV8833 figures from memory or third-party sources.~~ Checked against the TI datasheet 2026-10-21 (`findings.md`): 1.5 A RMS / 2 A peak per bridge, 2.7–10.8 V, input pull-downs (500 kΩ on nSLEEP, 150 kΩ on the others), input thresholds, 1 ms wake-up, overcurrent trip 2 A min / 3.3 A typ with 1.35 ms auto-retry.
 - GPIO0/1 are free on this board (no 32 kHz crystal fitted).
 - The no-load speed (estimated 110–190 wheel rpm) and so the interrupt rate; measured in D.
 - The GPIO ISR cost in IDF (estimated 1–3 µs per interrupt); measured in D.

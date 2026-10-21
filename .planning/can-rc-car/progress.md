@@ -119,6 +119,11 @@
 - Files modified: `README.md`, `docs/dev-setup.md`, `task_plan.md`, `phase-1-one-wheel-node.md`, `findings.md`, `progress.md`.
 - Parts check: the 18650 cells and the wiring order still haven't arrived (user, 2026-10-20). Neither blocks Phase 1 (bench PSU, jumpers).
 
+## Session: 2026-10-21
+- A.1 done: unpowered STBY resistance on the DRV8833 module, probed on the bare pads (header not soldered yet). A first try on the 200 Ω range read OL both ways, which only means "above 200 Ω"; repeated on the 2 MΩ and 200 kΩ ranges. Result: STBY is pulled down to GND and has no pull-up to VM. Details and reasoning in `findings.md`.
+- Fetched the TI DRV8833 datasheet and checked the figures we had from memory: nSLEEP 500 kΩ internal pull-down and 6.5 V clamp, 150 kΩ pull-downs on the other inputs, input thresholds, 1 ms wake-up (`findings.md`). Also new from it: our chip is the HTSSOP (PWP) package by its marking, so 1.5 A RMS / 2 A peak per bridge applies (the plain TSSOP is 0.5 A); overcurrent trips at 2 A min / 3.3 A typ and auto-retries every 1.35 ms, so a battery-powered stall (~2.8 A) can trip it.
+- Docs sweep before commit: replaced every remaining "from memory" DRV8833 figure with the datasheet value (`findings.md`, Phase 1 plan); added A.5 (powered STBY check at first power-up) to the Phase 1 plan; glossary gained pull-up/pull-down, body diode and Zener diode; `docs/architecture.md` notes the driver's overcurrent trip next to the stall warning.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -145,6 +150,7 @@
 | B no reset on open (2026-10-20) | Repeated port opens with DTR high / RTS low | `up_ms` keeps counting | Uptime kept counting to ~7 h; with both lines low, it reset (`rst:0x15`) | pass after fix |
 | B plot window, before fix (2026-10-20) | `plot_run.py --seconds 3` (window expected) | Plot window opens | Capture, CSV and PNG fine (301 rows, 100 Hz); no window, matplotlib `FigureCanvasAgg is non-interactive` warning | fail (no GUI backend) |
 | B plot window, after fix (2026-10-20) | Same, with `PyQt6==6.11.0` in the venv; also a run without it | Window opens; without a backend, a clear message | Backend `qtagg`; the user saw the window open. Without PyQt6: `no GUI backend for matplotlib (agg), so no window; the PNG is saved...` | pass |
+| A.1 STBY pull, DRV8833 module (2026-10-21) | Unpowered, multimeter on the bare pads: STBY–GND and STBY–VM on the 2 MΩ and 200 kΩ ranges, probes both ways | A pull-down (or none); no pull-up to VM | STBY–GND: 222 kΩ both ways on 2 MΩ; 123.1 kΩ / OL on 200 kΩ (a junction in the path). STBY–VM: climbs (charging the 10 µF VM cap), settles at 1.81 MΩ with red on STBY / black on VM, OL the other way: one-way, so not a resistor | pass (pulled down, no pull-up; powered check in A.5) |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

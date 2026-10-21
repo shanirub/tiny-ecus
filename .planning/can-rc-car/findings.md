@@ -13,7 +13,7 @@ From `docs/can-rc-car-project-overview.md`:
 ## Research Findings
 Hardware (from `docs/can-rc-car-parts-list-final.md`):
 - **Motors:** TT encoder motor, 3–12 V, 0.82 A stall (listing figure; contradicted by measurement, see Encoder motor specs below), 1:90 gearing, Hall A/B encoder powered from 3.3 V.
-- **Drivers:** DRV8833, one per wheel node. Its motor supply maximum is 10.8 V (from memory, unverified), and 2S full charge is 8.4 V, so it should be within range.
+- **Drivers:** DRV8833, one per wheel node. Its motor supply range is 2.7–10.8 V (TI datasheet, checked 2026-10-21), and 2S full charge is 8.4 V, so it is within range.
 - **Power:** 2S 18650 with PCM (3 A continuous, no balancing), 8.4 V charger board, MP1584EN buck to 5 V, 3 A mini blade main fuse with 5 A as fallback, KCD11 switch.
 - **Nodes:** four ESP32-C3 Super Mini, five CAN transceiver adapters (SN65HVD230), one ESP32-CAM with expansion board.
 - **Tools:** multimeter, logic analyzer (PulseView), Raspberry Pi 3B+ as an optional sniffer.
@@ -94,7 +94,7 @@ Technical notes (from general knowledge, verify when relevant):
 - **WAGO 221-415:** 0.2–4 mm² solid/stranded, 0.14–4 mm² fine-stranded (24–12 AWG), strip 11 mm (element14 / datasheet mirror). Typical Dupont jumpers (26–28 AWG) are below that range.
 - **Wire current (practical, short runs in a small vehicle):** sources disagree because they mix "chassis wiring" and "power transmission" tables. Conservative working figures: 26 AWG ≈ 1 A, 24 AWG ≈ 2 A (jumper listings), 22 AWG ≈ 3–5 A, 20 AWG ≈ 5–7 A, 18 AWG ≈ 10+ A. Treat as rules of thumb, not specs.
 - **Breadboards:** BB830-style spec ≈ 36 V / 2 A per contact, 21–26 AWG insertion; practical advice ≈ 1 A per contact.
-- **DRV8833 parallel mode:** TI datasheet (SLVSAR1E) application section: both H-bridges can be paralleled (inputs and outputs tied) for about double the current; internal dead time prevents cross-conduction between bridges. Third-party: 1.5 A RMS / 2 A peak per bridge, ~3 A RMS / 4 A peak paralleled (verify against the TI PDF).
+- **DRV8833 parallel mode:** TI datasheet (SLVSAR1E) application section: both H-bridges can be paralleled (inputs and outputs tied) for about double the current; internal dead time prevents cross-conduction between bridges. Per bridge 1.5 A RMS / 2 A peak, paralleled 3 A RMS / 4 A peak, for the HTSSOP (PWP) package our module has (TI datasheet, checked 2026-10-21; see DRV8833 datasheet below).
 - **JST XH:** 2.5 mm pitch (not 2.54; fits 0.1" perfboard acceptably for small pin counts), 3 A with 22 AWG, wire 22–30 AWG. Pre-crimped leads are easy to buy.
 - **DroneCAN convention:** 4-pin JST-GH (1.25 mm) daisy-chain cable carrying 5 V, CAN_H, CAN_L, GND; devices have two connectors (in/out); termination only at the two ends (~60 Ω check). Validates the "power + CAN in one 4-wire chain" idea. GH needs a fine crimp tool or pre-made cables; XH is more hobby-friendly.
 
@@ -106,11 +106,21 @@ Technical notes (from general knowledge, verify when relevant):
 - **Shell pitfall:** running `idf61` in a terminal where another IDF was already active (here `~/esp/esp-idf`, the master checkout, probably injected by the VS Code ESP-IDF extension; not confirmed) keeps `IDF_PYTHON_ENV_PATH` pointing at the `idf6.2` venv, and the v6.1 export fails its Python dependency check (`esp-idf-kconfig`, `esp-idf-monitor` too old). Fix: `unset IDF_PATH IDF_PYTHON_ENV_PATH` before `idf61`, or use a fresh terminal.
 
 ### DRV8833 module (2026-10-17, photos)
-- Photos: `docs/images/drv8833 module front.webp` (components) and `docs/images/drv8833 module back.webp` (pin labels). Red board marked "V318", TI DRV8833 (TSSOP-16, marking "DRV8833 83K AV16").
+- Photos: `docs/images/drv8833 module front.webp` (components) and `docs/images/drv8833 module back.webp` (pin labels). Red board marked "V318", TI DRV8833 (marking "DRV8833 83K AV16"; per TI's marking table, "DRV8833" is the HTSSOP-16 PowerPAD package, PWP, while the plain TSSOP is marked "8833PW").
 - Pins, labeled side, left row top to bottom: NC, AIN2, AIN1, STBY, BIN1, BIN2, NC, GND. Right row: VM, NC, GND, AO1, AO2, BO2, BO1, GND. NC = not connected.
 - **STBY** is the chip's sleep input (nSLEEP in TI's datasheet): low = asleep, outputs off; high = awake. **No fault output (nFAULT) is brought out**, so firmware can't read driver faults directly; it relies on its own stall detection.
-- No logic-supply pin: the DRV8833 makes its own internal supply from VM, and its inputs take 3.3 V logic (from memory; check the datasheet's input-high threshold).
-- Components: a 10 µF 25 V tantalum capacitor (likely on VM) and two small SMD parts, probably the chip's required VINT and VCP capacitors (not confirmed). Unknown whether STBY has a pull-up or pull-down on the board: measure STBY–GND and STBY–VM resistance unpowered before wiring.
+- No logic-supply pin: the DRV8833 makes its own internal supply from VM, and its inputs take 3.3 V logic (checked 2026-10-21: input-high thresholds in DRV8833 datasheet below).
+- Components: a 10 µF 25 V tantalum capacitor (likely on VM) and two small SMD parts, probably the chip's required VINT and VCP capacitors (not confirmed). STBY on the board: pulled down, no pull-up (A.1 below).
+- **A.1 STBY measurement (2026-10-21, unpowered, probes on the bare pads):** STBY–GND on the 2 MΩ range reads 222 kΩ with the probes either way round. On the 200 kΩ range it reads 123.1 kΩ one way and OL the other. A value that changes with range and probe direction means a semiconductor junction is in the path (the pin's 6.5 V clamp Zener or its protection diode), not only a resistor. The steady 222 kΩ is a pull-down to GND; it's below the datasheet's 500 kΩ, so the board may add a resistor in parallel (about 400 kΩ would give 222 kΩ), or the unpowered chip reads low. Either way it pulls STBY low, which is what the plan needs. STBY–VM on the 2 MΩ range: the reading climbs (the meter charging the 10 µF VM capacitor through the STBY–GND path), then settles at 1.81 MΩ one way and climbs to OL with the probes swapped. A pull-up resistor would read the same both ways, so this is no pull-up: the one-way path is most likely STBY → pull-down → GND → the H-bridge FETs' body diodes (the diode built into every power transistor) → VM, which conducts only from GND towards VM. The probe direction fits: 1.81 MΩ with red (the meter's + in ohm mode) on STBY and black on VM, the direction those diodes conduct. Result: STBY has no pull-up; it sits low unless driven. The real check is powered: VM on, STBY unconnected, STBY should read about 0 V (Phase 1 A.5).
+
+### DRV8833 datasheet (TI SLVSAR1E, rev. July 2015, fetched 2026-10-21)
+- nSLEEP (our STBY): internal 500 kΩ pull-down to GND, plus a Zener that clamps the pin at 6.5 V; more than 250 µA into the pin can damage it. TI suggests a 20–75 kΩ pull-up if nSLEEP is tied to VM. Wake-up (tWAKE): up to 1 ms from nSLEEP high to the H-bridge on.
+- Input thresholds: nSLEEP low ≤ 0.5 V, high ≥ 2.5 V; all other inputs low ≤ 0.7 V, high ≥ 2 V. A 3.3 V C3 output meets both, with less margin on nSLEEP (0.8 V).
+- Other inputs (AIN1/2, BIN1/2): internal 150 kΩ pull-downs, so the motor inputs also sit low while the C3 boots.
+- VM undervoltage lockout: the outputs turn off below 2.6 V (max), with 90 mV hysteresis.
+- Current, HTSSOP (PWP) package: 1.5 A RMS / 2 A peak per bridge; VM 2.7–10.8 V. (The plain TSSOP, PW, is only 0.5 A RMS; ours is PWP by its marking.)
+- Overcurrent protection (OCP): trips at 2 A minimum, 3.3 A typical, after a 4 µs deglitch; that bridge turns off for 1.35 ms, then retries, and keeps cycling while the fault lasts. The other bridge keeps running. A stalled motor at 8.4 V (~2.8 A, see Encoder motor specs) can reach the trip level, so on the battery a stall may show as the driver cutting in and out rather than a steady current. On the bench the PSU's 1.5 A limit comes first.
+- Thermal shutdown at 150 °C minimum.
 - Option for later, if one bridge's current is too low: TI's datasheet allows paralleling both bridges (AIN1+BIN1, AIN2+BIN2, AO1+BO1, AO2+BO2) for about double the current (see Wiring research). Not used in Phase 1.
 
 ### ESP32-C3 peripherals (2026-10-17, from IDF v6.1 `components/soc/esp32c3/include/soc/soc_caps.h`)

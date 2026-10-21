@@ -40,7 +40,7 @@ The target system as planned. Items marked *(TBD)* are decided in the phase name
                └──► DRV8833 VM (RR) ──► RR motor ‖ 100 nF
 ```
 
-⚠ Measured stall current is about 2.8 A per motor at 8.4 V, about 11 A for all four. That is above the PCM, fuse and switch ratings. Current limiting is planned for Phases 1 and 5 (see Risks in `task_plan.md`).
+⚠ Measured stall current is about 2.8 A per motor at 8.4 V, about 11 A for all four. That is above the PCM, fuse and switch ratings. Current limiting is planned for Phases 1 and 5 (see Risks in `task_plan.md`). Each DRV8833 bridge also cuts out on its own above 2 A minimum (3.3 A typical) and retries every 1.35 ms (TI datasheet).
 
 ## 2. Control and data
 
