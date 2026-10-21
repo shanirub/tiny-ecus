@@ -122,6 +122,7 @@
 ## Session: 2026-10-21
 - A.1 done: unpowered STBY resistance on the DRV8833 module, probed on the bare pads (header not soldered yet). A first try on the 200 Ω range read OL both ways, which only means "above 200 Ω"; repeated on the 2 MΩ and 200 kΩ ranges. Result: STBY is pulled down to GND and has no pull-up to VM. Details and reasoning in `findings.md`.
 - Fetched the TI DRV8833 datasheet and checked the figures we had from memory: nSLEEP 500 kΩ internal pull-down and 6.5 V clamp, 150 kΩ pull-downs on the other inputs, input thresholds, 1 ms wake-up (`findings.md`). Also new from it: our chip is the HTSSOP (PWP) package by its marking, so 1.5 A RMS / 2 A peak per bridge applies (the plain TSSOP is 0.5 A); overcurrent trips at 2 A min / 3.3 A typ and auto-retries every 1.35 ms, so a battery-powered stall (~2.8 A) can trip it.
+- The two 18650 cells arrived (user, 2026-10-21). Parts list and plan updated; only the wiring order is still missing. Their check and charge (Phase 0 E.4) stays in Phase 5.
 - Docs sweep before commit: replaced every remaining "from memory" DRV8833 figure with the datasheet value (`findings.md`, Phase 1 plan); added A.5 (powered STBY check at first power-up) to the Phase 1 plan; glossary gained pull-up/pull-down, body diode and Zener diode; `docs/architecture.md` notes the driver's overcurrent trip next to the stall warning.
 
 ## Test Results

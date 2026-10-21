@@ -7,7 +7,7 @@ A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per whee
 Phase 1 item A (bench wiring): A.2, the breadboard wiring (A.1 done 2026-10-21: STBY pulled down, no pull-up). Item B is done (2026-10-20, PR #2); item C (encoder) follows A. Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 18650 cells and the wiring order of 2026-10-16 (both still missing as of 2026-10-20; Phase 1 doesn't need them).
+Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -38,7 +38,7 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 - [x] B. Repo skeleton: `firmware/wheel_node` (esp32c3), `firmware/gateway` (esp32), shared `components/tiny_common`, hello-worlds (done 2026-10-16; both build with 0 warnings)
 - [x] C. Build and flash both targets; negative test (v5.5.5 build must fail). Build and negative test done 2026-10-16; both boards flashed 2026-10-17 (LEDs GPIO8 / GPIO33 confirmed)
 - [x] D. CI: GitHub Actions build of both projects (done 2026-10-17, PR #1, squash-merged)
-- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10 except the cells; bench PSU in the meantime. E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
+- [ ] E. Hardware bring-up as parts arrive (C3 boards, CAN termination, bucks, cells). Parts arrived 2026-10-10; the cells 2026-10-21 (bench PSU until Phase 5). E.2 done 2026-10-14 (all 5 adapters terminated). E.3 deferred: check each buck before anything connects to its output
 - [ ] F. Chassis prep + motor/encoder bench tests: teardown (2-deck chassis; first chassis done 2026-10-14, then dropped), motor resistance and 6 V spin (done 2026-10-15: R on 2, spin on all 5), encoder pinout (done 2026-10-15), encoder 3.3 V check (done 2026-10-16 on the spare), fit check, mount 4 motors (mechanical only; added 2026-10-11, trimmed 2026-10-14)
 - **Exit:** from a clean clone, one repo builds and flashes a hello-world onto a C3 and onto the ESP32-CAM, and CI builds both on push. (E and F are not exit blockers; F.2–F.4 on the spare motor are needed before Phase 1.)
 - Open items moved out 2026-10-17 (details stay in `phase-0-foundations.md`): F.1, F.5, F.6 → before Phase 3; E.1 → Phase 3; E.3, E.4 → Phase 5.
