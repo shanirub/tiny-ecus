@@ -107,7 +107,7 @@ Technical notes (from general knowledge, verify when relevant):
 
 ### DRV8833 module (2026-10-17, photos)
 - Photos: `docs/images/drv8833 module front.webp` (components) and `docs/images/drv8833 module back.webp` (pin labels). Red board marked "V318", TI DRV8833 (marking "DRV8833 83K AV16"; per TI's marking table, "DRV8833" is the HTSSOP-16 PowerPAD package, PWP, while the plain TSSOP is marked "8833PW").
-- Pins, labeled side, left row top to bottom: NC, AIN2, AIN1, STBY, BIN1, BIN2, NC, GND. Right row: VM, NC, GND, AO1, AO2, BO2, BO1, GND. NC = not connected.
+- Pins, labeled side, left row top to bottom: NC, AIN2, AIN1, STBY, BIN1, BIN2, NC, GND. Right row: VM, NC, GND, AO1, AO2, BO2, BO1, GND. NC = not connected. All four GND pins are joined on the board (continuity, 2026-10-22, after soldering the header).
 - **STBY** is the chip's sleep input (nSLEEP in TI's datasheet): low = asleep, outputs off; high = awake. **No fault output (nFAULT) is brought out**, so firmware can't read driver faults directly; it relies on its own stall detection.
 - No logic-supply pin: the DRV8833 makes its own internal supply from VM, and its inputs take 3.3 V logic (checked 2026-10-21: input-high thresholds in DRV8833 datasheet below).
 - Components: a 10 µF 25 V tantalum capacitor (likely on VM) and two small SMD parts, probably the chip's required VINT and VCP capacitors (not confirmed). STBY on the board: pulled down, no pull-up (A.1 below).
@@ -122,6 +122,11 @@ Technical notes (from general knowledge, verify when relevant):
 - Overcurrent protection (OCP): trips at 2 A minimum, 3.3 A typical, after a 4 µs deglitch; that bridge turns off for 1.35 ms, then retries, and keeps cycling while the fault lasts. The other bridge keeps running. A stalled motor at 8.4 V (~2.8 A, see Encoder motor specs) can reach the trip level, so on the battery a stall may show as the driver cutting in and out rather than a steady current. On the bench the PSU's 1.5 A limit comes first.
 - Thermal shutdown at 150 °C minimum.
 - Option for later, if one bridge's current is too low: TI's datasheet allows paralleling both bridges (AIN1+BIN1, AIN2+BIN2, AO1+BO1, AO2+BO2) for about double the current (see Wiring research). Not used in Phase 1.
+
+### ESP32-C3 pin states at reset (2026-10-22, Espressif ESP32-C3 datasheet pin table)
+- "After reset" settings, kept until firmware reconfigures a pin: GPIO6 (MTCK) and GPIO20 (U0RXD) have the internal weak pull-up on (45 kΩ typical); GPIO9 too (strapping); GPIO21 (U0TXD) is an output. GPIO2, 3, 4, 5, 7, 8 and 10: input only, no pull. GPIO0/1: no pull.
+- Consequence: a pin with a reset pull-up must not drive a "keep off" input. Against the DRV8833's 500 kΩ nSLEEP pull-down, 45 kΩ gives ≈ 3.0 V (≈ 2.7 V with the measured 222 kΩ), above its 2.5 V high threshold. This led to the Phase 1 pin re-map.
+- The wheel node's console is USB-Serial-JTAG (`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`, no secondary console), so UART0's pins (GPIO20/21) are free for other use.
 
 ### ESP32-C3 peripherals (2026-10-17, from IDF v6.1 `components/soc/esp32c3/include/soc/soc_caps.h`)
 - **No PCNT** (pulse counter): `SOC_PCNT_SUPPORTED` is defined for ESP32, S2, S3, C5, C6, H2, P4 and others, but not for the C3. The roadmap had assumed PCNT for the encoders; changed to a GPIO interrupt with 4× quadrature decoding (decision in `task_plan.md`).

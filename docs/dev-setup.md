@@ -108,5 +108,5 @@ Both open the port in a way that doesn't reset the C3 (DTR high, RTS low; see `o
 
 ## Git workflow
 
-- Firmware, CI and build changes: work on a branch, open a pull request to `main`, wait for the CI build to pass, then squash-merge.
+- Firmware, CI and build changes: work on a branch, open a pull request to `main` and wait for the CI build to pass. The user reviews and approves every PR and does the squash-merge; Claude opens PRs but never merges them (2026-10-22).
 - Planning files, bench logs and docs: commit straight to `main`.

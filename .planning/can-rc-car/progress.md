@@ -125,6 +125,14 @@
 - The two 18650 cells arrived (user, 2026-10-21). Parts list and plan updated; only the wiring order is still missing. Their check and charge (Phase 0 E.4) stays in Phase 5. Cells: LiitoKala Lii-35A 18650 (3500 mAh, 3.7 V nominal), flat top on both ends, both read 3.59 V on arrival (multimeter, user; first half of E.4: matched). Discharge rating looked up (`findings.md`). Still to check in Phase 5: whether flat tops make contact in the holder.
 - Docs sweep before commit: replaced every remaining "from memory" DRV8833 figure with the datasheet value (`findings.md`, Phase 1 plan); added A.5 (powered STBY check at first power-up) to the Phase 1 plan; glossary gained pull-up/pull-down, body diode and Zener diode; `docs/architecture.md` notes the driver's overcurrent trip next to the stall warning.
 
+## Session: 2026-10-22
+- A.2 prep. Checked the ESP32-C3 datasheet's reset pin states: GPIO20 (planned STBY) and GPIO6 (planned AIN1) have the 45 kΩ pull-up on after reset, which would wake the driver and run the motor from reset until firmware takes the pins (and indefinitely with blank firmware or in download mode). Re-mapped (user's choice): AIN1/AIN2 = GPIO5/7, STBY = GPIO10, encoder A/B = GPIO6/20. A.5 now also checks the pins with the C3 held in download mode.
+- Decided: motor current may pass one breadboard contact per lead (PSU and motor leads in the same short strip as the module pin), replacing "never through breadboard strips".
+- Headers: the C3 has its pins. DRV8833 module header soldered (Sn63/Pb37, ~320 °C), labels up / components down, using the breadboard as a jig. Joints shiny; a few slightly heavy but wetted. Continuity check passed (test row below).
+- Git workflow change (user, 2026-10-22): the user reviews, approves and merges every PR, to understand the code before it lands; Claude opens PRs and waits. Recorded in `docs/dev-setup.md`, the decision table and the Phase 1 plan.
+- Docs re-check before commit: A.3's repeated current figures merged; diagram note on module GND updated (now verified) and PNG re-rendered.
+- Wiring diagram for A.2: first as ASCII in the Phase 1 plan, then (user: ASCII not fully clear) redrawn as `docs/images/phase1-a2-wiring.svg` + `.png`, linked from the plan in place of the ASCII.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -152,6 +160,7 @@
 | B plot window, before fix (2026-10-20) | `plot_run.py --seconds 3` (window expected) | Plot window opens | Capture, CSV and PNG fine (301 rows, 100 Hz); no window, matplotlib `FigureCanvasAgg is non-interactive` warning | fail (no GUI backend) |
 | B plot window, after fix (2026-10-20) | Same, with `PyQt6==6.11.0` in the venv; also a run without it | Window opens; without a backend, a clear message | Backend `qtagg`; the user saw the window open. Without PyQt6: `no GUI backend for matplotlib (agg), so no window; the PNG is saved...` | pass |
 | A.1 STBY pull, DRV8833 module (2026-10-21) | Unpowered, multimeter on the bare pads: STBY–GND and STBY–VM on the 2 MΩ and 200 kΩ ranges, probes both ways | A pull-down (or none); no pull-up to VM | STBY–GND: 222 kΩ both ways on 2 MΩ; 123.1 kΩ / OL on 200 kΩ (a junction in the path). STBY–VM: climbs (charging the 10 µF VM cap), settles at 1.81 MΩ with red on STBY / black on VM, OL the other way: one-way, so not a resistor | pass (pulled down, no pull-up; powered check in A.5) |
+| DRV8833 header joints (2026-10-22) | Unpowered, multimeter 200 Ω range (beeper not working); probes shorted = ~0.02 Ω, unstable | Neighbors OL; all 4 GND pins joined; VM–GND not shorted | Every neighbor pair OL; GND–GND same as probes shorted; VM–GND OL | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

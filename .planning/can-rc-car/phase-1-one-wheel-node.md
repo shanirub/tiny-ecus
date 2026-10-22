@@ -77,28 +77,32 @@ Short definitions; ask for more depth on any of them.
 | **Telemetry:** CSV lines over the USB console, switched on by command; `tools/plot_run.py` captures a fixed time window, saves the CSV and plots it with matplotlib (chosen 2026-10-17) | Saved runs make tunings comparable. The capture is time-bounded by design (no never-ending monitor). |
 | **One branch + PR per work item** below | The git workflow decided 2026-10-16; CI gates each step. |
 
-## Pin map (proposed; DRV8833 module pins from the photos)
+## Pin map (DRV8833 module pins from the photos; re-mapped 2026-10-22)
 The Super Mini exposes GPIO0–10, 20 and 21. GPIO18/19 are the USB pins and GPIO11–17 the internal flash.
+
+Re-mapped 2026-10-22 (was AIN1/AIN2 = 6/7, encoder = 5/10, STBY = 20): the C3 datasheet's pin table shows GPIO20 and GPIO6 with the internal 45 kΩ pull-up on after reset. On GPIO20 that pull-up beats the driver's 500 kΩ pull-down (STBY ≈ 2.7–3.0 V, above the 2.5 V "high" threshold), and GPIO6 would hold AIN1 high: the motor would run at full voltage from reset until the firmware configured the pins, and indefinitely with blank or crashed firmware or in download mode. Rule: driver inputs only on pins with no pull at reset (GPIO5, 7, 10 here); pins with a reset pull-up go to inputs.
 
 | Function | GPIO | Reason |
 |---|---|---|
-| Motor: module AIN1 / AIN2 (PWM) | 6 / 7 | Plain pins, no boot role. Motor on AO1 / AO2; bridge B unused |
-| Encoder A / B (interrupt inputs) | 5 / 10 | Plain pins; GPIO5's ADC is the unreliable ADC2, so nothing is lost |
+| Motor: module AIN1 / AIN2 (PWM) | 5 / 7 | No pull-up or pull-down at reset (C3 datasheet), so the driver's 150 kΩ pull-downs hold them low until firmware drives them. Motor on AO1 / AO2; bridge B unused |
+| Encoder A / B (interrupt inputs) | 6 / 20 | These two pins have the C3's 45 kΩ pull-up on at reset, harmless on an input the encoder drives push-pull. GPIO20 is UART0 RX, free because our console is USB-Serial-JTAG |
 | Onboard status LED | 8 | Already used, active-low; a strapping pin, but fine as an output after boot |
 | Reserved: CAN TX / RX (Phase 2) | 3 / 4 | Keeps CAN off GPIO21, which the boot ROM drives with log output at power-up; that would put garbage on the bus |
 | Reserved: battery ADC (Phase 5, one node) / corner LED (Phase 4) | 0 / 1 | ADC1 pins |
-| Module STBY (driver sleep) | 20 | Not driven during boot, so the driver stays asleep until the firmware wakes it (relies on the chip's internal 500 kΩ pull-down; A.1 found no pull-up on the board). Also gives firmware a hard "all outputs off" |
+| Module STBY (driver sleep) | 10 | No pull at reset, so the driver's internal 500 kΩ pull-down keeps it asleep until the firmware wakes it (A.1: no pull-up on the board). Also gives firmware a hard "all outputs off" |
 | Driver fault output | none | The module doesn't bring nFAULT out |
 
 ## Work items
-Each item is one branch and PR, CI must pass, and each ends with a short bench check logged in `progress.md`.
+Each item is one branch and PR, CI must pass, the user reviews and merges it (not Claude), and each ends with a short bench check logged in `progress.md`.
 
 ### A. Bench wiring
 1. Module pins are recorded (photos, 2026-10-17). Unpowered, measure STBY–GND and STBY–VM resistance to see whether the board pulls STBY up or down. (Done 2026-10-21: pulled down, no pull-up; `findings.md`.)
 2. On a breadboard: C3, DRV8833, the spare motor (`+`/`-` to the driver outputs), encoder (`V` to 3V3, `GND`, A, B to the C3). A 100 nF cap across the motor terminals, a bulk cap (e.g. 470 µF) at the driver's motor supply.
-3. Motor supply from the bench PSU, 7.4 V, 1.5 A limit. Motor current never runs through breadboard strips: PSU and motor leads go straight to the module. The ordered 20 AWG wire isn't needed for this: bench current is ~0.1–0.6 A in use (estimate) and capped at 1.5 A by the PSU, so the thickest jumpers or clip leads on hand are fine for these short runs (the same setup as F.2). Connect the motor supply last, and switch it off before rewiring.
-4. Before power: check for shorts between the motor supply and 3V3, and that all grounds are joined.
-5. First power-up, before the C3 drives STBY (STBY left unconnected, or GPIO20 not yet configured): STBY should read about 0 V and the motor must not move. This is the powered half of A.1.
+   Wiring diagram (2026-10-22, pin map above): [`docs/images/phase1-a2-wiring.png`](../../docs/images/phase1-a2-wiring.png) (source: `phase1-a2-wiring.svg`; edit the SVG and re-render with `magick -density 96 phase1-a2-wiring.svg phase1-a2-wiring.png`). C3 pin labels per the Super Mini silkscreen. The module's header is soldered labels up, components down (2026-10-22), so its pin labels are readable on the breadboard.
+   Unconnected: module NC, BIN1, BIN2 (held low by the chip's pull-downs), BO1, BO2; C3 5V and the other GPIOs. Module pin numbers count from the top of each row as recorded in `findings.md` (left: NC, AIN2, AIN1, STBY, BIN1, BIN2, NC, GND; right: VM, NC, GND, AO1, AO2, BO2, BO1, GND).
+3. Motor supply from the bench PSU, 7.4 V, 1.5 A limit. Motor current goes through one breadboard contact per lead at most: PSU and motor leads plug into the same short strip as the module's VM, GND, AO1 and AO2 pins, never through the power rails or long jumpers (decided 2026-10-22; a contact is rated ~2 A, ≈ 1 A practical, so never hold a stall). The ordered 20 AWG wire isn't needed for this: bench current is ~0.1–0.6 A in use (estimate) and capped at 1.5 A by the PSU, so the thickest jumpers or clip leads on hand are fine for these short runs (the same setup as F.2). Connect the motor supply last, and switch it off before rewiring.
+4. Before power: check for shorts between the motor supply and 3V3, and that all grounds are joined. (The module's own four GND pins were checked joined on 2026-10-22.)
+5. First power-up, with the C3 running firmware that doesn't touch the motor pins (the item B firmware) and wired as in A.2: STBY, AIN1 and AIN2 should each read about 0 V and the motor must not move. Repeat while holding the C3's BOOT button through a reset (download mode, pins at their reset state). This is the powered half of A.1 and the check of the 2026-10-22 re-map.
 
 ### B. Command line, telemetry and host tests (done 2026-10-20, PR #2)
 1. Command parser (hardware-free) plus a console task reading lines from USB. First commands: `STATUS`, `HELP`.
