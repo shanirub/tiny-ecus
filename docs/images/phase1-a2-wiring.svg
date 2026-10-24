@@ -134,7 +134,7 @@
   <path d="M884,217 Q900,209 916,217" stroke="#555" stroke-width="3" fill="none"/>
   <line x1="900" y1="213" x2="900" y2="260" stroke="#555" stroke-width="2.5"/>
   <text x="878" y="200" font-size="14" font-weight="bold" text-anchor="end">+</text>
-  <text x="925" y="200" font-size="13">470 µF ≥16 V</text>
+  <text x="925" y="200" font-size="13">100–470 µF ≥16 V</text>
   <text x="925" y="216" font-size="11" fill="#555">stripe (−) to GND</text>
 
   <!-- notes -->

@@ -4,10 +4,10 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item A (bench wiring): DRV8833 header soldered and checked 2026-10-22; next A.2, the breadboard wiring (diagram in the Phase 1 plan; pins re-mapped 2026-10-22), A.4 checks and A.5 first power-up. A.1 done 2026-10-21. Item B is done (2026-10-20, PR #2); item C (encoder) follows A. Phase 1 plan: `phase-1-one-wheel-node.md`.
+Phase 1 item A (bench wiring): A.5, first power-up (C3 on the item B firmware, PSU 7.4 V / 1.5 A: motor still, STBY/AIN1/AIN2 ≈ 0 V, also in download mode; option: capture the three pins with the logic analyzer via `sigrok-cli`). A.1 done 2026-10-21, header soldered 2026-10-22, A.2 wiring and A.4 checks done 2026-10-24. Item B is done (2026-10-20, PR #2); item C (encoder) follows A. Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
+Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it); 470 µF bulk caps also still to buy before Phase 5 (none in the stash, found 2026-10-24). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
