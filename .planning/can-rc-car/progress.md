@@ -138,6 +138,11 @@
 - A.2 wiring done by the user; photo review found three faults, all fixed: no jumper from the − rail (C3/encoder GND) to a module GND, so the grounds weren't common; bulk cap first had its − leg in the rail, then both legs on GND (now − on module GND row, + on VM row); one motor-lead coupler loose (found by check 4).
 - Idea for A.5 and later (user asked whether Claude could probe directly): the logic analyzer with `sigrok-cli` (already installed) gives Claude bounded captures of STBY/AIN1/AIN2 through boot, reset and download mode; inputs max 5 V, never VM or AO1/AO2. A USB-controllable PSU or meter would be a purchase, not decided.
 
+## Session: 2026-10-25
+- Phase 1 A.5 first power-up done, pass. PSU 7.4 V / 1.5 A, C3 on USB. With the item B firmware running and again in download mode, STBY, AIN1 and AIN2 read 0 V, the motor stayed still and the PSU showed 0.000 A (below its 1 mA resolution). VM–GND read 7.4 V. Item A is complete.
+- Download mode confirmed with `esptool --before no-reset --after no-reset chip-id`: no reply while the firmware ran, "Connected to ESP32-C3" after BOOT+RST. It leaves esptool's stub flasher in RAM, which doesn't drive the motor pins. Visual cue: the GPIO8 LED blinks under the item B firmware and stops in download mode.
+- Logic analyzer skipped for A.5: the meter answers the test, and the DRV8833's ~1 ms wake-up makes a short reset glitch unlikely to move the motor (inference, not tested). Next needed in D.4 (ISR load); optional in C.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -167,6 +172,7 @@
 | A.1 STBY pull, DRV8833 module (2026-10-21) | Unpowered, multimeter on the bare pads: STBY–GND and STBY–VM on the 2 MΩ and 200 kΩ ranges, probes both ways | A pull-down (or none); no pull-up to VM | STBY–GND: 222 kΩ both ways on 2 MΩ; 123.1 kΩ / OL on 200 kΩ (a junction in the path). STBY–VM: climbs (charging the 10 µF VM cap), settles at 1.81 MΩ with red on STBY / black on VM, OL the other way: one-way, so not a resistor | pass (pulled down, no pull-up; powered check in A.5) |
 | DRV8833 header joints (2026-10-22) | Unpowered, multimeter 200 Ω range (beeper not working); probes shorted = ~0.02 Ω, unstable | Neighbors OL; all 4 GND pins joined; VM–GND not shorted | Every neighbor pair OL; GND–GND same as probes shorted; VM–GND OL | pass |
 | A.4 pre-power checks (2026-10-24) | Unpowered, PSU leads and USB disconnected, 200 Ω range | C3 GND–module GND ≈ 0; 3V3–VM OL; 3V3–AO1 OL (reds not swapped); AO1–AO2 ≈ motor winding; GPIO5–AIN1, GPIO7–AIN2, GPIO10–STBY ≈ 0; VM–GND OL | 0.05 Ω; OL; OL; first wandering then OL (motor lead coupler loose), after re-seating 4.2 Ω (motor alone 3.2 Ω at its cable, so ~1 Ω in couplers and breadboard contacts); ≈ 0.05 Ω each; OL | pass after fix |
+| A.5 first power-up (2026-10-25) | PSU 7.4 V / 1.5 A, C3 on USB; meter 20 V DC, black on the GND rail; item B firmware, then download mode (BOOT held through RST, confirmed by esptool) | STBY, AIN1, AIN2 ≈ 0 V; motor still; current a few mA at most | Both states: 0 V on all three; motor still; 0.000 A; VM–GND 7.4 V | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
