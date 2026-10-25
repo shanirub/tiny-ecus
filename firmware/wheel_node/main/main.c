@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "console.h"
+#include "encoder.h"
 #include "driver/gpio.h"
 #include "esp_check.h"
 #include "esp_timer.h"
@@ -63,6 +64,7 @@ void app_main(void)
 {
     tiny_common_print_banner("wheel node");
 
+    encoder_start();
     telemetry_start();
     console_start();
 

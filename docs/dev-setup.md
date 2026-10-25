@@ -82,7 +82,7 @@ Both boards normally enter the bootloader on their own (auto-reset over DTR/RTS)
 
 ## Host unit tests
 
-Hardware-free code (for now the `tiny_cmd` parser) is also compiled and tested on the PC with CMake, CTest and Unity. CI runs the same tests on every push.
+Hardware-free code (the `tiny_cmd` parser and the `tiny_qdec` encoder decoder) is also compiled and tested on the PC with CMake, CTest and Unity. CI runs the same tests on every push.
 
 ```sh
 cmake -S test/host -B build/host        # add -DSANITIZE=OFF if the line below fails
