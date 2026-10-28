@@ -94,6 +94,8 @@ By default the tests build with AddressSanitizer and UndefinedBehaviorSanitizer,
 
 Mutation tests check the tests themselves: `python3 test/host/mutate.py` (after the build above, which fetches Unity) plants a list of deliberate bugs in a component one at a time and fails if the tests still pass on any of them. It needs no sanitizer libraries. The bugs are exact text replacements, so when a component's source changes the script may report a "stale mutant"; update its text in `mutate.py`. New mutants go in the same list.
 
+What each test covers, and what the tests don't cover: `test/README.md`.
+
 ## Bench tools
 
 Python scripts in `tools/` talk to the wheel node's console over USB. Set up their venv once (about 440 MB, most of it PyQt6, which `plot_run.py` needs to open a plot window):
