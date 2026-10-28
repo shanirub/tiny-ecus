@@ -46,24 +46,19 @@ Nothing in CI touches hardware; see [What the tests don't cover](#what-the-tests
 | Mutation tests | Would the tests notice a realistic bug? | `test/host/mutate.py` |
 | Bench checks | Does it work on the real board, motor and encoder? | the Phase 1 plan, run by hand |
 
-An example of a failure each category catches:
-
-- **Unit tests.** A change makes `ENC ZERO` also forget the encoder state → `test_zero_clears_counts_keeps_state` fails.
-- **Exhaustive tests.** A typo in one of the decoder table's 16 entries → `test_every_transition` fails and names the pair, e.g. `prev=0 now=1`.
-- **Must-fail tests.** An overlong console line overflows the buffer, or locks the line reader up → `test_too_long_line_is_discarded_then_recovers` fails.
-- **Sanitizers.** The position is updated with a plain signed `+`. On the PC the result *looks* right (the CPU wraps), so no assertion fails, but the overflow is undefined behavior in C → UBSan stops the test.
-- **Mutation tests.** A test that passes for the wrong reason. The first run found one: the zero test happened to call `zero` at state 0, where keeping and resetting the state look the same.
-- **Bench checks.** The A and B wires are swapped, so the count runs backwards. No host test can see this.
-
 ## Strategy
 
-- **Hardware-free logic lives in components, and only that is unit-tested.** Code that needs no chip (the parser, the line reader, the decoder) is a component in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that touches pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along that line: `tiny_qdec` (decoding, tested here) and `encoder.c` (GPIO, ISR, lock).
-- **One framework, one executable per component.** [Unity](https://github.com/ThrowTheSwitch/Unity) v2.7.0, fetched by CMake and pinned to a commit. Each `test_<component>.c` is its own executable with its own `main()`, registered with `ctest`.
-- **Every test starts from a known state.** Unity calls `setUp()` before each test and `tearDown()` after it. `setUp()` re-initialises the shared object (the decoder, the line reader, the fake handler's records), so no test depends on the order or on what the previous one left behind. The isolation also makes bugs in the init functions visible: a broken `tiny_qdec_init` shows up as leftovers in the next test.
-- **Expected values don't come from the code under test.** The decoder tests derive every expected step from the forward sequence as recorded on the logic analyzer (`RING`, 10 → 11 → 01 → 00), not from the decoder's table. A typo in the table can't be copied into the tests.
-- **Boundaries are tested on both sides.** E.g. a line of exactly `TINY_LINE_MAX` characters is accepted and one more is rejected; 8 words reach the argument check and 9 are refused; `INT32_MAX` + 1 wraps.
-- **Strict compilation.** Our code is built with `-Wall -Wextra -Werror`: any warning fails the build.
-- **Sanitizers on by default, always in CI.** AddressSanitizer (ASan) reports out-of-bounds and use-after-free memory accesses. UndefinedBehaviorSanitizer (UBSan) reports undefined behavior such as signed overflow or a bad array index. `-fno-sanitize-recover=all` makes every report stop the test, so CI fails.
+Only code that needs no chip is unit-tested. That code (the parser, the line reader and the decoder) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock).
+
+Each component has one test file, built into its own executable and registered with CTest. The framework is [Unity](https://github.com/ThrowTheSwitch/Unity) v2.7.0, which CMake fetches at a pinned commit.
+
+Unity calls `setUp()` before every test and `tearDown()` after it. Each file's `setUp()` re-initialises the object its tests share, so no test depends on which tests ran before it.
+
+The expected values in the decoder tests come from the state sequence recorded on the logic analyzer (`RING`, 10 → 11 → 01 → 00), not from the decoder's table, so a mistake in the table can't be copied into the tests.
+
+Limits are tested on both sides: a line of exactly `TINY_LINE_MAX` characters is accepted and one more is rejected; 8 words reach the argument check and 9 are refused; `INT32_MAX` + 1 wraps to `INT32_MIN`.
+
+The components and the test files compile with `-Wall -Wextra -Werror`, so any warning fails the build. They also compile with AddressSanitizer (ASan: out-of-bounds and use-after-free memory accesses) and UndefinedBehaviorSanitizer (UBSan: undefined behavior such as signed overflow or an array index past the end). `-fno-sanitize-recover=all` makes the first report stop the test, so a sanitizer can fail a test whose assertions all pass. The sanitizers are on by default and always on in CI.
 
 ## Mutation testing
 
@@ -81,7 +76,7 @@ It compiles with `-fsanitize=undefined -fsanitize-undefined-trap-on-error`. In t
 
 ### Current mutants
 
-All in `tiny_qdec.c`; all 12 killed.
+All in `tiny_qdec.c`.
 
 | # | Mutant | Killed by |
 |---|---|---|
@@ -100,13 +95,11 @@ All in `tiny_qdec.c`; all 12 killed.
 
 Mutant 9 shows why the sanitizers are part of the tests: without UBSan it survives, because the PC's CPU happens to wrap to exactly the value the test expects.
 
-The first run (2026-10-28) had two survivors, mutants 4 and 12. Both were gaps in the tests, not bugs in the decoder, and both are now covered.
-
 ### Adding mutants
 
 Add a `(description, original text, replacement)` line to the component's `mutants` list in `mutate.py`. A new component gets its own entry in `TARGETS` (source, include directory, test file). A good mutant is a bug someone could realistically write, in code whose behavior matters. Add one whenever a test is written to guard a specific rule, to prove that the test can fail.
 
-`tiny_cmd` has no mutants yet.
+Only `tiny_qdec` has mutants; `tiny_cmd` has none.
 
 A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up.
 
@@ -120,11 +113,11 @@ The host tests prove the logic. Everything that depends on the chip, the wiring 
 | `tiny_common` (boot banner; needs ESP-IDF) | seen in the boot log |
 | Encoder wiring, pin numbers, pull-ups, which channel leads | C.3 (10 hand turns ≈ 43 200 counts), D.4 direction convention |
 | The ISR keeping up at full speed; edges missed under load | D.4: ISR load on the logic analyzer, invalid count at full speed |
-| IRAM placement of the ISR path | checked once with `nm` (PR #5); not automated |
+| IRAM placement of the ISR path | checked by hand with `nm`; not automated |
 | Concurrency: the ISR and tasks sharing the decoder under the lock | code review; no test can force the interleavings |
 | Motor drive, protections, speed control | items D and E, recorded with `tools/plot_run.py` |
 
-The firmware doesn't run sanitizers. ESP-IDF can enable UBSan for one component on the chip for debugging (`docs/en/api-guides/fatal-errors.rst` in ESP-IDF); it isn't used so far.
+The firmware doesn't run sanitizers. ESP-IDF can enable UBSan for one component on the chip for debugging (`docs/en/api-guides/fatal-errors.rst` in ESP-IDF); this project doesn't use it.
 
 ## Test files
 
