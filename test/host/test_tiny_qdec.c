@@ -79,6 +79,15 @@ static void test_invalid_means_both_bits_changed(void)
     }
 }
 
+// tiny_qdec_step() is public, so it masks its own inputs instead of relying on
+// tiny_qdec_update() having done it. Without the mask these index far past the
+// table (a sanitizer error).
+static void test_step_uses_only_low_two_bits(void)
+{
+    TEST_ASSERT_EQUAL_INT(tiny_qdec_step(3, 3), tiny_qdec_step(0xF3, 0xFF));
+    TEST_ASSERT_EQUAL_INT(tiny_qdec_step(0, 2), tiny_qdec_step(0xFC, 0xFE));
+}
+
 static void test_init_starts_at_zero(void)
 {
     TEST_ASSERT_EQUAL_INT32(0, s_q.position);
@@ -147,14 +156,16 @@ static void test_only_low_two_bits_used(void)
 
 static void test_zero_clears_counts_keeps_state(void)
 {
-    turn(5);
-    tiny_qdec_update(&s_q, s_q.state ^ 3u);
+    turn(4);                                 // back at 10
+    tiny_qdec_update(&s_q, s_q.state ^ 3u);  // 10 -> 01: invalid
+    // State 01 is neither 0 nor setUp's 10, so a zero that reset the state to
+    // either would show here.
+    uint8_t before = s_q.state;
     tiny_qdec_zero(&s_q);
     TEST_ASSERT_EQUAL_INT32(0, s_q.position);
     TEST_ASSERT_EQUAL_UINT32(0, s_q.invalid);
-    uint8_t before = s_q.state;
+    TEST_ASSERT_EQUAL_UINT8(before, s_q.state);
     turn(1);  // counts normally from the kept state
-    TEST_ASSERT_NOT_EQUAL(before, s_q.state);
     TEST_ASSERT_EQUAL_INT32(1, s_q.position);
 }
 
@@ -178,6 +189,7 @@ int main(void)
     RUN_TEST(test_state_packs_a_high_b_low);
     RUN_TEST(test_every_transition);
     RUN_TEST(test_invalid_means_both_bits_changed);
+    RUN_TEST(test_step_uses_only_low_two_bits);
     RUN_TEST(test_init_starts_at_zero);
     RUN_TEST(test_forward_cycle_counts_four);
     RUN_TEST(test_backward_cycle_counts_minus_four);

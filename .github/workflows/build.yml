@@ -38,3 +38,6 @@ jobs:
           cmake -S test/host -B build/host -DSANITIZE=ON
           cmake --build build/host
           ctest --test-dir build/host --output-on-failure
+      - name: Mutation tests
+        # Deliberate bugs in the components; fails if the tests miss any of them.
+        run: python3 test/host/mutate.py
