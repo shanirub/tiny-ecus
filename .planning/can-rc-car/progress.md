@@ -142,6 +142,16 @@
 - Phase 1 A.5 first power-up done, pass. PSU 7.4 V / 1.5 A, C3 on USB. With the item B firmware running and again in download mode, STBY, AIN1 and AIN2 read 0 V, the motor stayed still and the PSU showed 0.000 A (below its 1 mA resolution). VM–GND read 7.4 V. Item A is complete.
 - Download mode confirmed with `esptool --before no-reset --after no-reset chip-id`: no reply while the firmware ran, "Connected to ESP32-C3" after BOOT+RST. It leaves esptool's stub flasher in RAM, which doesn't drive the motor pins. Visual cue: the GPIO8 LED blinks under the item B firmware and stops in download mode.
 - Logic analyzer skipped for A.5: the meter answers the test, and the DRV8833's ~1 ms wake-up makes a short reset glitch unlikely to move the motor (inference, not tested). Next needed in D.4 (ISR load); optional in C.
+- Phase 1 item C on `phase1/c-encoder`, PR #5 opened (the user reviews and merges). New `components/tiny_qdec` (state table, host-tested: 14 tests), IRAM-safe encoder ISR on GPIO6/20 with pull-ups, console `ENC` / `ENC ZERO`. CI: all 3 jobs pass. Bench check C.3 (10 hand turns ≈ 43 200) after merge and flash.
+
+## Session: 2026-10-28
+- Mutation tests added to PR #5 (`test/host/mutate.py`, 12 hand-picked mutants, run in CI). The first run found two test gaps (direct `tiny_qdec_step` calls with out-of-range inputs; the zero test zeroing at state 0); both closed, now 15 tests, 12/12 mutants killed, CI green.
+- Also in PR #5: `test/README.md` (what the tests cover and what they don't) and `components/README.md` (what goes in `components/`). Decided: top-level docs stay short and link to per-directory READMEs; `tools/README.md` deferred until `tools/` grows.
+- Parts: 470 µF 50 V bulk caps ordered (for Phase 5). Part of the wiring order is with a local carrier, expected the week of 2026-11-02.
+
+## Session: 2026-10-29
+- PR #5 review changes: every wheel-node pin moved into `firmware/wheel_node/main/pins.h`; a comment in `encoder.c` on how an edge reaches the ISR and what happens when edges come too fast.
+- PR #5 merged (`e50b5d8`), flashed. C.3 first try: 10 turns of the encoder disc at the motor's back end (not the output shaft) gave `pos=480 invalid=0` = 10 × 48, confirming 48 counts per motor turn (12 pulses × 4) with no missed edges. Then with a wheel on: 10 hand turns of the wheel gave `pos=-43858 invalid=0` (4386 per turn, +1.5 % vs the expected 4320). C.3 passed, accepted by the user without a repeat: the difference is taken to be hand positioning at start/end (~55° over 10 turns). Not ruled out: a real gear ratio of ~1:91.4 instead of 1:90. The sign only reflects the turning direction (convention decided in D.4). Item C done.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

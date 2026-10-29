@@ -28,7 +28,7 @@ Short definitions; ask for more depth on any of them.
 
 **Encoder and speed**
 - **Quadrature encoder:** two sensor outputs, A and B, each a square wave, a quarter cycle (90°) apart. Which one changes first tells the direction; counting the changes tells how far the shaft turned (what F.4 showed in PulseView).
-- **4× decoding:** counting every edge (rise and fall) on both A and B, so 4 counts per pulse cycle: 48 counts per motor turn, about 4320 per wheel turn through the 1:90 gearbox.
+- **4× decoding:** counting every edge (rise and fall) on both A and B, so 4 counts per pulse cycle: 48 counts per motor turn, about 4320 per wheel turn through the 1:90 gearbox (measured by hand in C.3: 4386).
 - **State table:** the decoder's lookup table. From the previous and the new A/B levels it gives +1, −1, 0, or "impossible" (both changed at once, so an edge was missed). The impossible count is a free health check.
 - **Speed estimation:** turning counts into speed. Each control period, take how many counts arrived since the last one, divide by the period, convert to wheel rpm (revolutions per minute).
 
@@ -78,6 +78,8 @@ Short definitions; ask for more depth on any of them.
 | **One branch + PR per work item** below | The git workflow decided 2026-10-16; CI gates each step. |
 
 ## Pin map (DRV8833 module pins from the photos; re-mapped 2026-10-22)
+In the firmware, every pin is defined once in `firmware/wheel_node/main/pins.h` (2026-10-29); this table keeps the reasons. Change both together.
+
 The Super Mini exposes GPIO0–10, 20 and 21. GPIO18/19 are the USB pins and GPIO11–17 the internal flash.
 
 Re-mapped 2026-10-22 (was AIN1/AIN2 = 6/7, encoder = 5/10, STBY = 20): the C3 datasheet's pin table shows GPIO20 and GPIO6 with the internal 45 kΩ pull-up on after reset. On GPIO20 that pull-up beats the driver's 500 kΩ pull-down (STBY ≈ 2.7–3.0 V, above the 2.5 V "high" threshold), and GPIO6 would hold AIN1 high: the motor would run at full voltage from reset until the firmware configured the pins, and indefinitely with blank or crashed firmware or in download mode. Rule: driver inputs only on pins with no pull at reset (GPIO5, 7, 10 here); pins with a reset pull-up go to inputs.
@@ -111,10 +113,12 @@ Each item is one branch and PR, CI must pass, the user reviews and merges it (no
 
 Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), console commands `STATUS` and `TELEM ON|OFF`, a 100 Hz test sine as telemetry (stand-in until the encoder exists), 33 host tests with sanitizers in CI, `plot_run.py` plus `send_cmd.py` (one-shot commands). Follow-up PR #3: PyQt6 so the plot window opens. Usage: `docs/dev-setup.md`.
 
-### C. Encoder
+### C. Encoder (done 2026-10-29, PR #5)
 1. Quadrature decoder: the state table as pure logic (host-tested: every valid step ±1, every invalid one flagged), the ISR in IRAM, a 32-bit position counter read under a critical section.
 2. Commands: `ENC` (position, invalid-transition count), `ENC ZERO`.
-3. **Measure counts per wheel revolution:** motor unpowered, mark the wheel shaft, turn it by hand exactly 10 turns, read the count. Expect ~43 200 (4320 per turn). This confirms the 1:90 gearbox.
+3. **Measure counts per wheel revolution:** motor unpowered, mark the wheel shaft, turn it by hand exactly 10 turns, read the count. Expect ~43 200 (4320 per turn). This confirms the 1:90 gearbox. (Done 2026-10-29: `pos=-43858 invalid=0`, 4386 per turn, +1.5 %, accepted as hand-positioning error; a ratio of ~1:91.4 isn't ruled out. Disc-only check: exactly 48 per motor turn. Details in `progress.md`.)
+
+Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
 1. LEDC PWM on IN1/IN2, signed duty, slow decay. Command `DUTY <−100…100>` as a timed run.

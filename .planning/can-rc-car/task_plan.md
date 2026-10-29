@@ -4,10 +4,10 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item C (encoder firmware), on a branch with a PR that the user reviews and merges. Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
+Phase 1 item D (open-loop drive and protections), on a branch with a PR that the user reviews and merges. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it); 470 µF bulk caps also still to buy before Phase 5 (none in the stash, found 2026-10-24). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
+Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it; part of it is with a local carrier, expected the week of 2026-11-02) and the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -27,7 +27,7 @@ Full diagrams (power chain with battery, PCM, fuse, switch and rails; CAN topolo
 - **Gateway (ESP32-CAM):** translates operator commands into CAN messages and aggregates status back. Owns the operator-link watchdog. Streams video later.
 - **Wheel nodes:** run a local closed-loop speed controller. The gateway sends *setpoints*, not PWM duty. Each node has its own fail-safe: it stops if setpoints stop arriving. Each node also drives its corner LEDs.
 - **Application protocol on raw CAN:** 11-bit IDs encode priority. Safety and sync messages get the lowest IDs, then setpoints, then telemetry.
-- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`; later `protocol`), host unit tests in `test/host`, bench scripts in `tools/`, and `docs/` (protocol spec later).
+- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`, `tiny_qdec`; later `protocol`; see `components/README.md`), host unit tests in `test/host` (`test/README.md`), bench scripts in `tools/`, and `docs/` (protocol spec later).
 
 ## Phases
 
@@ -48,8 +48,9 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [x] Detailed planning pass (approved 2026-10-17)
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
-- [ ] DRV8833 PWM via LEDC and encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT)
-- [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (expect 1080 on A or 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
+- [x] Encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT): item C done 2026-10-29 (PR #5)
+- [ ] DRV8833 PWM via LEDC (item D)
+- [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools
 - **Learning:** embedded control. **Exit:** the wheel holds a commanded speed under finger-drag load and reports actual speed.
@@ -145,6 +146,8 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 | Wheel-node encoders counted by a GPIO interrupt with 4× quadrature decoding (2026-10-17) | The ESP32-C3 has no PCNT peripheral (IDF v6.1 `soc_caps.h`). Full resolution and missed-edge detection; CPU load measured in Phase 1, fallback 2× |
 | Phase 1 tooling: hardware-free logic with host unit tests in CI (CMake + Unity); telemetry as CSV over USB, plotted by `tools/plot_run.py` (2026-10-17) | Control and parser bugs found on the PC; saved runs make tunings comparable |
 | Telemetry values sent as scaled integers, unit in the column name (e.g. `sine_milli` = value × 1000) (2026-10-20) | No float formatting on the node: cheaper and shorter lines at 100 Hz; the suffix tells the reader how to scale back |
+| Host tests are themselves checked by hand-picked mutation tests (`test/host/mutate.py`, deliberate bugs that a test must catch), run in CI (2026-10-28) | Proves each test can fail; the first run found two test gaps. Hand-picked, not generated, so a clean run doesn't prove the tests complete |
+| Each wheel-node GPIO is defined once, in `firmware/wheel_node/main/pins.h`; the reasons stay in the Phase 1 pin map (2026-10-29) | One place to change a pin; the plan keeps the why |
 | `PyQt6` pinned in `tools/requirements.txt` as matplotlib's window backend; `plot_run.py` prints a clear message when no window can open (2026-10-20) | A fresh clone must open the plot without extra system packages (Fedora lacks `tkinter` by default). Cost: ~260 MB in the venv, desktop only |
 
 ## Errors Encountered

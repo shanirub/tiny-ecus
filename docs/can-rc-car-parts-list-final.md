@@ -27,7 +27,7 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 
 ## Ordered (wiring, option D), 2026-10-16
 
-Not arrived yet (checked 2026-10-20). These are the only missing parts (the 18650 cells arrived 2026-10-21).
+Not arrived yet (checked 2026-10-28): part of it is with a local carrier, expected the week of 2026-11-02. These and the 470 µF caps below are the only missing parts (the 18650 cells arrived 2026-10-21).
 
 | Part | Qty | Notes |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ Not arrived yet (checked 2026-10-20). These are the only missing parts (the 1865
 | ESP32-CAM + expansion board | 1 | Camera and WiFi gateway |
 | 2-deck acrylic 4WD chassis kit + wheels | 1 | Chosen 2026-10-15, mounted flipped (motors underneath); the first chassis is dropped. Check the new metal shafts fit the wheels |
 | Single-color LEDs | assorted | Corner lights, driven by each wheel node |
-| Basic stash: resistors, capacitors, wire, connectors | assorted | Includes LED resistors and 100 nF motor caps ("104"). Electrolytics on hand: 10 µF and 100 µF only, **no 470 µF** (found 2026-10-24); 100 µF is used as the bench bulk cap. 470 µF (≥ 16 V) per node still to buy before Phase 5 |
+| Basic stash: resistors, capacitors, wire, connectors | assorted | Includes LED resistors and 100 nF motor caps ("104"). Electrolytics on hand: 10 µF and 100 µF only, **no 470 µF** (found 2026-10-24); 100 µF is used as the bench bulk cap. 470 µF 50 V ordered 2026-10-28 (≥ 16 V needed; 50 V fine, just larger) for Phase 5 |
 | Multimeter | 1 | Buck output, cell voltages, current draw |
 | Logic analyzer | 1 | CAN debugging with PulseView |
 | Half-size breadboards | 2+ | One per side pod, bench phases |
