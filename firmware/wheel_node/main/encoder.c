@@ -4,14 +4,10 @@
 #include "esp_attr.h"
 #include "esp_check.h"
 #include "freertos/FreeRTOS.h"
+#include "pins.h"
 #include "soc/gpio_reg.h"
 #include "soc/soc.h"
 #include "tiny_qdec.h"
-
-// Pin map of 2026-10-22 (Phase 1 plan): both pins have the C3's pull-up on at
-// reset, harmless on inputs the encoder drives.
-#define ENC_A_GPIO  GPIO_NUM_6
-#define ENC_B_GPIO  GPIO_NUM_20
 
 // Shared between the ISR and tasks; only touched inside s_lock.
 static tiny_qdec_t s_qdec;

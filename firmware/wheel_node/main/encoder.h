@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 /**
- * Configure the encoder pins (A = GPIO6, B = GPIO20) and start counting:
+ * Configure the encoder pins (ENC_A_GPIO, ENC_B_GPIO in pins.h) and start counting:
  * a GPIO interrupt on every edge of both pins feeds the quadrature decoder
  * (components/tiny_qdec). Call once at startup.
  */

@@ -8,12 +8,9 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "pins.h"
 #include "telemetry.h"
 #include "tiny_common.h"
-
-// C3 Super Mini onboard LED: GPIO8, active-low (verified 2026-10-17).
-#define LED_GPIO        GPIO_NUM_8
-#define LED_ACTIVE_LOW  1
 
 #define BLINK_HALF_PERIOD_MS  500   // 1 Hz blink: the firmware is alive
 
