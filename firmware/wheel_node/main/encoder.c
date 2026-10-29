@@ -22,9 +22,26 @@ static inline IRAM_ATTR uint8_t read_state(void)
     return tiny_qdec_state((in >> ENC_A_GPIO) & 1u, (in >> ENC_B_GPIO) & 1u);
 }
 
-// Runs on every edge of A or B. If both pins changed before it ran, the GPIO
-// driver calls it once per pin: the first call sees both changed (counted as
-// invalid), the second sees no change and adds 0.
+// Runs on every edge of A or B. How one edge reaches it, e.g. A rising:
+//   1. The GPIO peripheral sets A's bit in the interrupt status register.
+//   2. That raises the GPIO interrupt, which all pins share, to the CPU.
+//   3. The CPU pauses the running task, saves its registers and enters
+//      ESP-IDF's interrupt entry code, which calls the GPIO ISR service (the
+//      dispatcher installed in encoder_start()).
+//   4. The dispatcher reads the status register, and for each set bit clears
+//      it and calls that pin's handler: here encoder_isr.
+//   5. encoder_isr reads both pins and updates the decoder.
+//   6. The dispatcher handles any other set bit (B's, if B also changed),
+//      then returns, and the CPU restores and continues the task.
+// The status bit is cleared before the handler runs, so an edge during it
+// raises a new interrupt. Edges arriving faster than this whole path merge
+// into one status bit and are lost: two merged steps count as invalid, three
+// or four are silently miscounted (as -1 or 0). Phase 1 D.4 checks that the
+// invalid count stays 0 at full speed.
+//
+// If both pins changed before it ran, it is called once per pin: the first
+// call sees both changed (counted as invalid), the second sees no change and
+// adds 0.
 static void IRAM_ATTR encoder_isr(void *arg)
 {
     (void)arg;
