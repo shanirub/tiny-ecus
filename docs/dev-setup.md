@@ -82,7 +82,7 @@ Both boards normally enter the bootloader on their own (auto-reset over DTR/RTS)
 
 ## Host unit tests
 
-Hardware-free code (for now the `tiny_cmd` parser) is also compiled and tested on the PC with CMake, CTest and Unity. CI runs the same tests on every push.
+Hardware-free code (the `tiny_cmd` parser and the `tiny_qdec` encoder decoder) is also compiled and tested on the PC with CMake, CTest and Unity. CI runs the same tests on every push.
 
 ```sh
 cmake -S test/host -B build/host        # add -DSANITIZE=OFF if the line below fails
@@ -91,6 +91,10 @@ ctest --test-dir build/host --output-on-failure
 ```
 
 By default the tests build with AddressSanitizer and UndefinedBehaviorSanitizer, which abort on memory errors and undefined behavior. They need the runtime libraries: on Fedora `sudo dnf install libasan libubsan`. Without them, configure with `-DSANITIZE=OFF`; CI always runs them on.
+
+Mutation tests check the tests themselves: `python3 test/host/mutate.py` (after the build above, which fetches Unity) plants a list of deliberate bugs in a component one at a time and fails if the tests still pass on any of them. It needs no sanitizer libraries. The bugs are exact text replacements, so when a component's source changes the script may report a "stale mutant"; update its text in `mutate.py`. New mutants go in the same list.
+
+What each test covers, and what the tests don't cover: `test/README.md`.
 
 ## Bench tools
 

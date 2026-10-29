@@ -1,0 +1,7 @@
+# The encoder ISR is registered IRAM-safe, so it keeps running while the flash
+# is busy (e.g. a write). Everything it calls must then be out of flash too:
+# "noflash" puts this archive's code in IRAM and its constant table in DRAM.
+[mapping:tiny_qdec]
+archive: libtiny_qdec.a
+entries:
+    * (noflash)

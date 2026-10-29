@@ -4,6 +4,7 @@
 
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
+#include "encoder.h"
 #include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_system.h"
@@ -46,11 +47,29 @@ static bool cmd_telem(int argc, char *argv[], char *reply, size_t size)
     return true;
 }
 
+static bool cmd_enc(int argc, char *argv[], char *reply, size_t size)
+{
+    if (argc == 2) {
+        if (!tiny_cmd_equals(argv[1], "ZERO")) {
+            snprintf(reply, size, "usage: ENC [ZERO]");
+            return false;
+        }
+        encoder_zero();
+    }
+    int32_t position;
+    uint32_t invalid;
+    encoder_read(&position, &invalid);
+    snprintf(reply, size, "pos=%ld invalid=%lu", (long)position, (unsigned long)invalid);
+    return true;
+}
+
 static const tiny_cmd_t s_cmds[] = {
     {"STATUS", "STATUS", "uptime, firmware version, free heap, telemetry state and drops",
      0, 0, cmd_status},
     {"TELEM", "TELEM ON|OFF", "stream telemetry as CSV lines starting with T,",
      1, 1, cmd_telem},
+    {"ENC", "ENC [ZERO]", "encoder position (counts) and invalid transitions; ZERO clears both first",
+     0, 1, cmd_enc},
 };
 
 static const tiny_cmd_table_t s_table = {s_cmds, sizeof s_cmds / sizeof s_cmds[0]};
