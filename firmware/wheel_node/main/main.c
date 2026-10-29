@@ -2,8 +2,8 @@
 #include <stdbool.h>
 
 #include "console.h"
-#include "encoder.h"
 #include "driver/gpio.h"
+#include "encoder.h"
 #include "esp_check.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"

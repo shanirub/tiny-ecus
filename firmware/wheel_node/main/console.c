@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #include "driver/usb_serial_jtag.h"
-#include "encoder.h"
 #include "driver/usb_serial_jtag_vfs.h"
+#include "encoder.h"
 #include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_system.h"
