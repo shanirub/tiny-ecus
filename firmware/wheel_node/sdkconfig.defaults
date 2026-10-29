@@ -1,3 +1,5 @@
 CONFIG_IDF_TARGET="esp32c3"
 # Console on the native USB port (/dev/ttyACM*); keeps GPIO20/21 (UART0) free.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# 1 ms ticks, so the 10 ms drive loop keeps a steady period.
+CONFIG_FREERTOS_HZ=1000

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "console.h"
+#include "drive.h"
 #include "driver/gpio.h"
 #include "encoder.h"
 #include "esp_check.h"
@@ -17,7 +18,7 @@
 // Stand-in for the item D/E control loop: same rate, same telemetry path.
 #define SAMPLE_PERIOD_MS      10    // 100 Hz
 #define SINE_PERIOD_MS        2000
-#define SAMPLE_PRIORITY       5     // highest of our tasks, as the control loop will be
+#define SAMPLE_PRIORITY       5     // below the drive loop (drive.c)
 
 static void led_set(bool on)
 {
@@ -62,6 +63,7 @@ void app_main(void)
     tiny_common_print_banner("wheel node");
 
     encoder_start();
+    drive_start();
     telemetry_start();
     console_start();
 
