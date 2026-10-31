@@ -4,7 +4,7 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item D (open-loop drive and protections), on a branch with a PR that the user reviews and merges. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
+Phase 1 item D (open-loop drive and protections), split into two PRs. PR #6 (D.1 PWM drive + D.2 protections, branch `phase1/d-drive`) is reviewed and waits for the user's merge; after it: flash and run the bench checks listed in the PR, then PR 2 (D.3 speed estimation and real telemetry columns), then the D.4 measurements. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
 Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it; part of it is with a local carrier, expected the week of 2026-11-02) and the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
@@ -27,7 +27,7 @@ Full diagrams (power chain with battery, PCM, fuse, switch and rails; CAN topolo
 - **Gateway (ESP32-CAM):** translates operator commands into CAN messages and aggregates status back. Owns the operator-link watchdog. Streams video later.
 - **Wheel nodes:** run a local closed-loop speed controller. The gateway sends *setpoints*, not PWM duty. Each node has its own fail-safe: it stops if setpoints stop arriving. Each node also drives its corner LEDs.
 - **Application protocol on raw CAN:** 11-bit IDs encode priority. Safety and sync messages get the lowest IDs, then setpoints, then telemetry.
-- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`, `tiny_qdec`; later `protocol`; see `components/README.md`), host unit tests in `test/host` (`test/README.md`), bench scripts in `tools/`, and `docs/` (protocol spec later).
+- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`, `tiny_qdec`, `tiny_motor`; later `protocol`; see `components/README.md`), host unit tests in `test/host` (`test/README.md`), bench scripts in `tools/`, and `docs/` (protocol spec later).
 
 ## Phases
 
@@ -49,7 +49,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [x] Detailed planning pass (approved 2026-10-17)
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [x] Encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT): item C done 2026-10-29 (PR #5)
-- [ ] DRV8833 PWM via LEDC (item D)
+- [ ] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections in PR #6 (awaiting merge and bench check)
 - [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools
@@ -68,6 +68,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [ ] **Before starting:** Phase 0 F.1 (strip the 2-deck chassis) and F.5 (fit check, incl. pod space and middle gap, which confirm wiring option D for the harness), then F.6 (mount the 4 motors). Moved from Phase 0 on 2026-10-17
 - [ ] Phase 0 E.1 (moved 2026-10-17): flash the hello-world on every C3 and label the boards FL/FR/RL/RR/spare
 - [ ] Write the spec: message catalog, ID/priority allocation, node addressing, error and bus-off handling
+- [ ] Reconsider generated mutation testing (Mull, Dextool, universalmutator; see `test/README.md`) for the `protocol` packing code, alongside the hand-picked mutants in `mutate.py` (user request 2026-10-30)
 - [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor marked "121", beside the "120R" silkscreen label, with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
 - [ ] Four wheel nodes plus the gateway on a bench harness, all on one firmware image with node identity in NVS
 - **Learning:** protocol design, failure detection. **Exit:** skid-steer commands drive all four wheels correctly, and losing any single node stops the whole car.
@@ -115,7 +116,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
 - **Gateway overload:** camera + WiFi + CAN + UART on one ESP32. Measure in Phase 7.
-- **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice.
+- **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice. Phase 1 part: 80 % duty cap, slew ramp and latched stall trip in item D (PR #6; bench check pending).
 - **Encoder interrupt load (new 2026-10-17):** with no PCNT, every encoder edge interrupts the single C3 core (estimated 8–14 k/s at full speed). Together with CAN interrupts from Phase 2 it must leave the control loop on time. Measured in Phase 1 item D; fallback 2× decoding.
 - **ESP-IDF TWAI API:** it has changed across IDF versions. Verify against the pinned version before writing code.
 

@@ -69,7 +69,7 @@ Short definitions; ask for more depth on any of them.
 |---|---|
 | **Encoder: 4× decoding in a GPIO ISR**, state-table decoder in IRAM (chosen 2026-10-17) | The C3 has no PCNT. Full resolution plus missed-edge detection. Estimated load at full speed: about 8–14 k interrupts/s, a few % CPU (estimate: speed and ISR cost are both unmeasured). Measured in item D; fallback is 2× (interrupt on A only). |
 | **Bench power:** motor supply from the bench PSU at 7.4 V (2S nominal) with a 1.5 A current limit; C3 from USB; all grounds joined | A stall at ~3 Ω would draw ~2.4 A, above the DRV8833's 1.5 A RMS per bridge (TI datasheet; its overcurrent trip is 2 A minimum, 3.3 A typical). The PSU limit is the hardware protection on the bench; the firmware protections come on top. |
-| **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` (not set yet: still the default 100; set it with the control loop in item D) | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
+| **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` (set in item D, PR #6) | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
 | **Units:** setpoints and reported speed in wheel rpm, signed (+ forward) | Same unit later in CAN setpoints; no wheel diameter needed yet. |
 | **PWM:** LEDC at 20 kHz, 10-bit duty (1024 steps); slow decay first, fast decay compared as an experiment | 20 kHz is above hearing. 10 bits is within the C3's limit at 20 kHz (80 MHz / 20 kHz = 4000 timer counts, so up to 11 bits). |
 | **Commands are timed runs:** `DUTY` and `SPEED` hold for at most N seconds (default 5, max 30), then the motor ramps to a stop | A first fail-safe (motion needs a fresh command), and it makes every run a clean recording window for tuning. |
@@ -95,7 +95,7 @@ Re-mapped 2026-10-22 (was AIN1/AIN2 = 6/7, encoder = 5/10, STBY = 20): the C3 da
 | Driver fault output | none | The module doesn't bring nFAULT out |
 
 ## Work items
-Each item is one branch and PR, CI must pass, the user reviews and merges it (not Claude), and each ends with a short bench check logged in `progress.md`.
+Each item is one branch and PR (item D is split into two: D.1–D.2, then D.3–D.4), CI must pass, the user reviews and merges it (not Claude), and each ends with a short bench check logged in `progress.md`.
 
 ### A. Bench wiring
 1. Module pins are recorded (photos, 2026-10-17). Unpowered, measure STBY–GND and STBY–VM resistance to see whether the board pulls STBY up or down. (Done 2026-10-21: pulled down, no pull-up; `findings.md`.)
@@ -121,6 +121,8 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
+PR #6 (D.1–D.2): reviewed 2026-10-31, awaiting merge and the bench check. D.3–D.4 follow in a second PR.
+
 1. LEDC PWM on IN1/IN2, signed duty, slow decay. Command `DUTY <−100…100>` as a timed run.
 2. Protections (pure logic, host-tested where possible): duty cap (start at 80 %), slew limit, stall detection (|duty| above ~30 % with near-zero speed for 300 ms → stop and latch a fault until `STOP`).
 3. Speed estimation from counts per control period; added to telemetry. Resolution: at 100 Hz one count per period = 1.39 wheel rpm, so below roughly 20 rpm the reading flickers between neighbouring steps (at 5 rpm the count per period is 0 or 1). Start with the plain 10 ms window, look at low-speed telemetry, and add a moving average over several periods (or a period method: timing the gap between edges) only if the noise shows up in the data.
