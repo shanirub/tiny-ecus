@@ -156,6 +156,11 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - **Unmounted motor:** for a stall test hold the motor body and the wheel. Held by the wheel alone, the body turns, the encoder (which measures shaft vs body) sees motion and the stall check never trips.
 - Positive duty counts negative on the encoder with this wiring. The forward convention is decided in D.4.
 
+### Telemetry on the bench (D.3 check, 2026-10-31, PR #7)
+- **Speed resolution at 30 %:** the hold reads −26 or −27 counts per 10 ms (mean −26.4, −36.6 rpm), so the plain window flickers by one count, ≈ ±0.7 rpm (2 %) at this speed. Low-speed behaviour still to be seen in D.4.
+- **Stall wind-up:** with the motor body and wheel held by hand at 50 % duty, the wheel still turned ≈ 112 counts (≈ 9°) during the first 150 ms, peaking at 12 counts per period, before stopping. The stall timer only starts once the counts drop to ≤ 1, so the trip came 450 ms after the start instead of the configured 300 ms. After the cut the wheel swung back ≈ 200 counts, past its start, then ≈ 70 the other way, settling within ~0.3 s. Cause not separated: elastic give (tyre rubber, grip, gearbox slack) and the user's hand tightening its hold (the user felt the wheel move at the start); the swing back past the start suggests the hand was pushing against the motor when it went limp. A rigid clamp would separate the two.
+- **Correction:** the D.1–D.2 stall check read the encoder only once, about 1 s after the run (8 / 17 counts), and called it slack. That was the net after the wind-up and swing back, not the size of the movement.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

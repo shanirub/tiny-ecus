@@ -4,7 +4,7 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item D (open-loop drive and protections), split into two PRs. D.1 PWM drive + D.2 protections are done (2026-10-31, PR #6, merged as `39c1e68`; all six bench checks pass). Next: PR 2 (D.3 speed estimation and real telemetry columns), then the D.4 measurements. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
+Phase 1 item D (open-loop drive and protections), split into two PRs. D.1 PWM drive + D.2 protections are done (2026-10-31, PR #6, merged as `39c1e68`; all six bench checks pass). D.3 (speed estimation and real telemetry columns) is in PR #7 (`phase1/d-speed`), bench-checked before merge and CI green, waiting for the user's review. Then the D.4 measurements. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
 Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it; part of it is with a local carrier, expected the week of 2026-11-02) and the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
@@ -27,7 +27,7 @@ Full diagrams (power chain with battery, PCM, fuse, switch and rails; CAN topolo
 - **Gateway (ESP32-CAM):** translates operator commands into CAN messages and aggregates status back. Owns the operator-link watchdog. Streams video later.
 - **Wheel nodes:** run a local closed-loop speed controller. The gateway sends *setpoints*, not PWM duty. Each node has its own fail-safe: it stops if setpoints stop arriving. Each node also drives its corner LEDs.
 - **Application protocol on raw CAN:** 11-bit IDs encode priority. Safety and sync messages get the lowest IDs, then setpoints, then telemetry.
-- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`, `tiny_qdec`, `tiny_motor`; later `protocol`; see `components/README.md`), host unit tests in `test/host` (`test/README.md`), bench scripts in `tools/`, and `docs/` (protocol spec later).
+- **Monorepo layout:** `firmware/wheel_node`, `firmware/gateway`, shared ESP-IDF components in `components/` (`tiny_common`, `tiny_cmd`, `tiny_qdec`, `tiny_motor`, `tiny_speed`; later `protocol`; see `components/README.md`), host unit tests in `test/host` (`test/README.md`), bench scripts in `tools/`, and `docs/` (protocol spec later).
 
 ## Phases
 
@@ -49,7 +49,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [x] Detailed planning pass (approved 2026-10-17)
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [x] Encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT): item C done 2026-10-29 (PR #5)
-- [ ] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections done (PR #6, bench check passed 2026-10-31); D.3–D.4 next
+- [ ] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections done (PR #6, bench check passed 2026-10-31); D.3 in PR #7 (bench check passed, awaiting merge); D.4 next
 - [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools

@@ -163,9 +163,15 @@
   3. `DUTY -30 3` after a `DUTY 30 3`: turns the other way (seen), +7900 vs −7972 counts; PSU 0.034 A.
   4. `DUTY 50 30`, `STOP` after 1.5 s and after 3 s: stops at once (seen), then coasts 379 / 397 counts (≈ 32°); ≈ 66–68 rpm; PSU 0.059 A.
   5. `DUTY 100 3` (3 s instead of 2, to read the PSU): `OK duty=80 for 3 s (capped from 100)`, mid-run `STATUS` `duty=80`; ≈ 100 rpm; PSU 0.104 A, 0.116 A briefly at the start.
-  6. Stall, motor body and wheel held by hand (the motor isn't mounted; holding only the wheel turns the body): `DUTY 50 3` (3 s instead of 10, so a failed trip ends sooner) → `drive=stall duty=0` within 1 s, encoder moved 8 / 17 counts (slack), `DUTY 30 2` refused, `STOP` back to idle. Felt as a short push, then limp. PSU flashed 0.368 A (estimate was ≈ 0.6 A; the display probably averages over more than the ~0.4 s pulse, not checked).
+  6. Stall, motor body and wheel held by hand (the motor isn't mounted; holding only the wheel turns the body): `DUTY 50 3` (3 s instead of 10, so a failed trip ends sooner) → `drive=stall duty=0` within 1 s, encoder moved 8 / 17 counts net (first read as slack; the D.3 telemetry later showed ≈ 9° of wind-up and a swing back, see `findings.md`), `DUTY 30 2` refused, `STOP` back to idle. Felt as a short push, then limp. PSU flashed 0.368 A (estimate was ≈ 0.6 A; the display probably averages over more than the ~0.4 s pulse, not checked).
   - `invalid=0` in every run. PSU current ÷ duty ≈ 0.11–0.13 A, the motor's free-running current. Opening the serial port doesn't reset the C3 (`up_ms` kept counting). Positive duty counts negative on the encoder; the direction convention is D.4.
 - Mistake caught: the user's "all checks work" meant only check 1 (meter); I had logged all six as passed before running any `DUTY`. Corrected before commit.
+- Branches cleaned up (user request): `phase1/b-console`, `tools/plot-window`, `phase1/c-encoder` and `phase1/d-drive` deleted locally and on GitHub after checking each tip against its merged PR's head. `imgbot` (open PR #4) left for the user.
+- Item D.3 on `phase1/d-speed`, PR #7 (user choices: the drive task sends the rows; new component `tiny_speed`; columns `t_ms,mode,duty_permille,counts,rpm_milli`). `tiny_speed_rpm_milli()` (8 host tests, 7 mutants), one row per 10 ms period pushed after `apply()`, sine sampler removed. Host tests 5/5, mutants 34/34, CI green. Bench check before merge this time (user choice), firmware `33b6f45`:
+  1. Idle, 2 s: 201 rows, every gap 10 ms, all zero, `drops=0`.
+  2. `DUTY 30`, 7 s: 702 rows, gaps 10 ms, `drops=0`; ramp 50 → 300 ‰ in 50 ‰ steps, 494 hold periods (499 run steps), same ramp down, then idle; hold counts −26 / −27 (−36.6 rpm); coasting visible in the first idle rows.
+  3. Stall (body and wheel held), `DUTY 50 3`: ≈ 9° wind-up in the first 150 ms, then 30 periods at ≤ 1 count, `mode` 2 and duty 0 at 450 ms; swing back after the cut. `STOP` cleared it.
+  Logs: `logs/20261031-221759-d3-idle.*`, `logs/20261031-222102-d3-duty30.*`, `logs/20261031-223625-d3-stall.*`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -198,6 +204,7 @@
 | A.4 pre-power checks (2026-10-24) | Unpowered, PSU leads and USB disconnected, 200 Ω range | C3 GND–module GND ≈ 0; 3V3–VM OL; 3V3–AO1 OL (reds not swapped); AO1–AO2 ≈ motor winding; GPIO5–AIN1, GPIO7–AIN2, GPIO10–STBY ≈ 0; VM–GND OL | 0.05 Ω; OL; OL; first wandering then OL (motor lead coupler loose), after re-seating 4.2 Ω (motor alone 3.2 Ω at its cable, so ~1 Ω in couplers and breadboard contacts); ≈ 0.05 Ω each; OL | pass after fix |
 | A.5 first power-up (2026-10-25) | PSU 7.4 V / 1.5 A, C3 on USB; meter 20 V DC, black on the GND rail; item B firmware, then download mode (BOOT held through RST, confirmed by esptool) | STBY, AIN1, AIN2 ≈ 0 V; motor still; current a few mA at most | Both states: 0 V on all three; motor still; 0.000 A; VM–GND 7.4 V | pass |
 | D.1–D.2 bench check (2026-10-31) | Firmware `39c1e68`, PSU 7.4 V / 1.5 A; the six checks in PR #6 via `send_cmd.py` (check 5 for 3 s, check 6 as `DUTY 50 3`) | Idle 0 V on STBY/AIN1/AIN2; ±30 % runs ramp down; `STOP` cuts at once; 100 % capped to 80; held motor trips `drive=stall`, latched until `STOP` | All as expected; `invalid=0` throughout. PSU: 0.032 A at 30 %, 0.059 A at 50 %, 0.104 A at 80 % (0.116 A at start), 0.368 A flash at the stall trip. ≈ 36 / 67 / 100 wheel rpm at 30 / 50 / 80 %. VM–GND 7.41 V | pass |
+| D.3 telemetry bench check (2026-10-31, PR #7) | Firmware `33b6f45`, PSU 7.4 V / 1.5 A; `plot_run.py` idle 2 s, `DUTY 30` 7 s, `DUTY 50 3` stall with body and wheel held | One row per 10 ms, columns as in the header; ramp/hold/ramp-down visible; stall → `mode` 2, duty 0 | All rows 10 ms apart, `drops=0`; hold at 30 % −26/−27 counts (−36.6 rpm); stall trip at 450 ms after ≈ 9° wind-up | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
