@@ -83,4 +83,4 @@ Exactly two terminators are fitted, one at each physical end of the bus. With th
                  └─────────────────────────────────────────────┘      Phase 1 commands
 ```
 
-Encoder motor connector, from the silkscreen: `+ GND A B V -`, wire colors red, yellow, green, blue, red, black (same on all 5 motors). `+`/`-` are the motor winding, and `V`/`GND` power the Hall encoder. Two wires are red: the outer one is motor `+`, the inner one is encoder `V`. GPIO numbers are assigned in Phase 1.
+Encoder motor connector, from the silkscreen: `+ GND A B V -`, wire colors red, yellow, green, blue, red, black (same on all 5 motors). `+`/`-` are the motor winding, and `V`/`GND` power the Hall encoder. Two wires are red: the outer one is motor `+`, the inner one is encoder `V`. GPIO numbers are in `firmware/wheel_node/main/pins.h`. The node's firmware modules and the motor drive's states and sequences: `firmware/wheel_node/README.md`.

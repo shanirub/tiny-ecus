@@ -18,7 +18,7 @@
 #define ENC_A_GPIO        GPIO_NUM_6
 #define ENC_B_GPIO        GPIO_NUM_20
 
-// DRV8833 module (item D, not driven yet): no pull at reset, so the module's
+// DRV8833 module, driven by drive.c: no pull at reset, so the module's
 // pull-downs keep the motor off until the firmware drives them.
 #define MOTOR_IN1_GPIO    GPIO_NUM_5   // module AIN1 (PWM)
 #define MOTOR_IN2_GPIO    GPIO_NUM_7   // module AIN2 (PWM)

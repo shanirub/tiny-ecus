@@ -41,14 +41,14 @@ Nothing in CI touches hardware; see [What the tests don't cover](#what-the-tests
 |---|---|---|
 | Unit tests | Does each hardware-free component do what its header promises? | `test/host/test_*.c` |
 | Exhaustive tests | Is every possible input handled right, not only the examples? | `test_every_transition` in `test_tiny_qdec.c` |
-| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all three suites |
+| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all four suites |
 | Sanitizers | Does any test, passing or not, touch memory out of bounds or hit undefined behavior? | the `SANITIZE` option in `test/host/CMakeLists.txt` |
 | Mutation tests | Would the tests notice a realistic bug? | `test/host/mutate.py` |
 | Bench checks | Does it work on the real board, motor and encoder? | the Phase 1 plan, run by hand |
 
 ## Strategy
 
-Only code that needs no chip is unit-tested. That code (the parser, the line reader and the decoder) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock).
+Only code that needs no chip is unit-tested. That code (the parser, the line reader, the decoder and the motor run logic) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock), and the motor into `tiny_motor` (runs, cap, slew, stall, pin mapping) and `drive.c` (PWM, driver pins, the 100 Hz loop).
 
 Each component has one test file, built into its own executable and registered with CTest. The framework is [Unity](https://github.com/ThrowTheSwitch/Unity) v2.7.0, which CMake fetches at a pinned commit.
 
@@ -76,7 +76,7 @@ It compiles with `-fsanitize=undefined -fsanitize-undefined-trap-on-error`. In t
 
 ### Current mutants
 
-All in `tiny_qdec.c`.
+`tiny_qdec.c`:
 
 | # | Mutant | Killed by |
 |---|---|---|
@@ -95,13 +95,33 @@ All in `tiny_qdec.c`.
 
 Mutant 9 shows why the sanitizers are part of the tests: without UBSan it survives, because the PC's CPU happens to wrap to exactly the value the test expects.
 
+`tiny_motor.c`:
+
+| # | Mutant | Killed by |
+|---|---|---|
+| 1 | duty cap not applied | `test_duty_is_capped_both_ways` |
+| 2 | a run of 0 steps holds its duty | `test_zero_step_run_ramps_down` |
+| 3 | no slew limit: the duty jumps to the target | the ramp tests |
+| 4 | a FAULT doesn't refuse new runs | `test_fault_refuses_runs_until_stop` |
+| 5 | `stop` leaves the old duty, so the next run starts from it | `test_stop_is_immediate`, and other tests through `setUp` |
+| 6 | stall check only above `stall_duty`, not at it | `test_stall_judges_the_previous_period` |
+| 7 | stall check ignores the sign of the counts | `test_stall_counts_threshold_both_directions`, `test_extreme_counts_are_moving` |
+| 8 | a new run resets the stall count | `test_new_run_keeps_the_stall_count` |
+| 9 | `abs32(counts)` instead of the range test (overflows at `INT32_MIN`) | `test_extreme_counts_are_moving` (UBSan; without it, the stall check trips) |
+| 10 | movement doesn't reset the stall count | `test_movement_resets_the_stall_count` |
+| 11 | the stall trips one step late | `test_stall_trips_after_stall_steps` |
+| 12 | the run ends one step late | `test_run_ends_with_ramp_then_idle` |
+| 13 | never returns to IDLE after a run | the same, and `test_zero_step_run_ramps_down` |
+| 14 | forward and reverse swapped on the pins | the pin tests |
+| 15 | fast decay instead of slow on the pins | the pin tests |
+
 ### Adding mutants
 
 Add a `(description, original text, replacement)` line to the component's `mutants` list in `mutate.py`. A new component gets its own entry in `TARGETS` (source, include directory, test file). A good mutant is a bug someone could realistically write, in code whose behavior matters. Add one whenever a test is written to guard a specific rule, to prove that the test can fail.
 
-Only `tiny_qdec` has mutants; `tiny_cmd` has none.
+`tiny_qdec` and `tiny_motor` have mutants; `tiny_cmd` has none.
 
-A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up.
+A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up; it is to be reconsidered for the CAN protocol code in Phase 3 (`.planning/can-rc-car/task_plan.md`).
 
 ## What the tests don't cover
 
@@ -109,13 +129,14 @@ The host tests prove the logic. Everything that depends on the chip, the wiring 
 
 | Not covered by host tests | Checked by |
 |---|---|
-| Firmware code in `firmware/*/main/` (console task, telemetry, `encoder.c`, `main.c`) | CI only builds it; bench use of the console commands |
+| Firmware code in `firmware/*/main/` (console task, telemetry, `encoder.c`, `drive.c`, `main.c`) | CI only builds it; bench use of the console commands |
 | `tiny_common` (boot banner; needs ESP-IDF) | seen in the boot log |
 | Encoder wiring, pin numbers, pull-ups, which channel leads | C.3 (10 hand turns ≈ 43 200 counts), D.4 direction convention |
 | The ISR keeping up at full speed; edges missed under load | D.4: ISR load on the logic analyzer, invalid count at full speed |
 | IRAM placement of the ISR path | checked by hand with `nm`; not automated |
 | Concurrency: the ISR and tasks sharing the decoder under the lock | code review; no test can force the interleavings |
-| Motor drive, protections, speed control | items D and E, recorded with `tools/plot_run.py` |
+| The PWM output and the DRV8833's response: direction, decay mode, that the motor actually stops on `STOP`, a timeout and a stall | D.4 and the PR bench checks, recorded with `tools/plot_run.py` |
+| Speed control | item E |
 
 The firmware doesn't run sanitizers. ESP-IDF can enable UBSan for one component on the chip for debugging (`docs/en/api-guides/fatal-errors.rst` in ESP-IDF); this project doesn't use it.
 
@@ -141,6 +162,25 @@ The quadrature decoder (`components/tiny_qdec`), 15 tests. The helper `turn(n)` 
 - **Inputs:** only the low two bits of a state are used.
 - **Zero:** clears position and invalid, keeps the state (tested at a state that is neither 0 nor the init state).
 - **Wrap:** `INT32_MAX` + 1 becomes `INT32_MIN` and back, without undefined behavior; the difference between two positions stays right across the wrap (what speed estimation relies on).
+
+### `host/test_tiny_motor.c`
+
+The motor run logic (`components/tiny_motor`), 18 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
+
+- **Runs:**
+  - idle outputs 0
+  - the duty ramps by at most the slew per step, both directions, and is capped both ways
+  - a run of N steps holds for N−1 steps, then ramps to 0 and turns idle; a run of 0 steps just ramps down
+  - reversing ramps through 0 without ending the run
+  - `stop` is immediate, and the next run ramps from 0 again
+- **Stall:**
+  - trips after exactly the configured number of stalled steps, then stays off
+  - movement resets the count; below the stall duty nothing trips
+  - the counts are judged against the duty of the period they come from (the previous step), so a ramp doesn't trip early
+  - ±1 count is "not moving", ±2 is moving, and the `INT32_MIN`/`INT32_MAX` extremes are moving (without overflowing)
+  - a new run doesn't reset the stall count, so resending `DUTY` to a stuck wheel doesn't hold off the trip
+  - a fault refuses new runs until `stop`
+- **Pins (slow decay):** 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount, out-of-range duties are clamped.
 
 ### `host/test_tiny_cmd.c`
 

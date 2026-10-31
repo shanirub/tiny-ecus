@@ -20,6 +20,7 @@ Each project's top-level `CMakeLists.txt` adds this directory with `set(EXTRA_CO
 | `tiny_common` | Logs the boot banner (role, app version, chip, ESP-IDF version) | wheel node, gateway | no: it needs ESP-IDF |
 | `tiny_cmd` | Text command parser and dispatcher (`tiny_cmd`), and the line reader that assembles console input into lines (`tiny_line`) | wheel node | yes |
 | `tiny_qdec` | Quadrature decoder: turns the encoder's A/B levels into a signed position and counts invalid transitions | wheel node | yes, plus mutation tests |
+| `tiny_motor` | Motor run logic: timed runs, duty cap, slew limit, stall detection, and the duty → DRV8833 pin mapping | wheel node | yes, plus mutation tests |
 
 `tiny_qdec` has a `linker.lf` (an ESP-IDF linker fragment) that places its code in IRAM and its table in DRAM. The encoder interrupt handler calls it and is registered as IRAM-safe, so it keeps running while the flash is busy. Any function it calls must then not be in flash.
 
