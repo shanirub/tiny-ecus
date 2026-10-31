@@ -121,7 +121,9 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
-PR #6 (D.1–D.2): reviewed 2026-10-31, awaiting merge and the bench check. D.3–D.4 follow in a second PR.
+PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). D.3–D.4 follow in a second PR.
+
+Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, duty → pin mapping; 18 host tests, 15 mutants), `drive.c` (LEDC 20 kHz / 10 bit on AIN1/AIN2, STBY, 100 Hz drive task at priority 6), console `DUTY` / `STOP`, `STATUS` with drive mode and duty, `firmware/wheel_node/README.md` (state and sequence diagrams).
 
 1. LEDC PWM on IN1/IN2, signed duty, slow decay. Command `DUTY <−100…100>` as a timed run.
 2. Protections (pure logic, host-tested where possible): duty cap (start at 80 %), slew limit, stall detection (|duty| above ~30 % with near-zero speed for 300 ms → stop and latch a fault until `STOP`).

@@ -135,7 +135,7 @@ The host tests prove the logic. Everything that depends on the chip, the wiring 
 | The ISR keeping up at full speed; edges missed under load | D.4: ISR load on the logic analyzer, invalid count at full speed |
 | IRAM placement of the ISR path | checked by hand with `nm`; not automated |
 | Concurrency: the ISR and tasks sharing the decoder under the lock | code review; no test can force the interleavings |
-| The PWM output and the DRV8833's response: direction, decay mode, that the motor actually stops on `STOP`, a timeout and a stall | D.4 and the PR bench checks, recorded with `tools/plot_run.py` |
+| The PWM output and the DRV8833's response: direction, decay mode, that the motor actually stops on `STOP`, a timeout and a stall | the PR #6 bench checks for `STOP`, the timeout, the cap and a stall (passed 2026-10-31, with `tools/send_cmd.py`); D.4 for direction and decay mode, recorded with `tools/plot_run.py` |
 | Speed control | item E |
 
 The firmware doesn't run sanitizers. ESP-IDF can enable UBSan for one component on the chip for debugging (`docs/en/api-guides/fatal-errors.rst` in ESP-IDF); this project doesn't use it.

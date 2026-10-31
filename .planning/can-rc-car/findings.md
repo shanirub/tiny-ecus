@@ -148,6 +148,14 @@ Technical notes (from general knowledge, verify when relevant):
 - Logic analyzer: 8-channel 24 MHz clone, PulseView/sigrok with the fx2lafw driver; inputs are named D0–D7. PulseView 0.4.2, sigrok-cli 0.7.2 and the libsigrok udev rules are installed on the desktop.
 - Lesson from an earlier I2C project: PulseView decoders assign channels by their own defaults, so check the decoder's channel mapping against the actual wiring.
 
+### Motor drive on the bench (D.1–D.2 check, 2026-10-31)
+First numbers from the timed runs, for planning only; D.4 measures them properly. Readings in `progress.md`.
+- **PSU current ≈ duty × motor current.** 0.032 A at 30 %, 0.059 A at 50 %, 0.104 A at 80 %: about 0.11–0.13 A free-running in the motor, rising a little with speed. Inference: in slow decay the off-part current circulates inside the driver, so the PSU supplies only the on part.
+- **Rough speeds at 7.4 V:** ≈ 36 / 67 / 100 wheel rpm at 30 / 50 / 80 % (encoder counts over a timed run, ramps included). Coast after `STOP` from 50 %: ≈ 32°.
+- **Stall at 50 %:** the PSU display flashed 0.368 A against an estimate of ≈ 0.6 A. Probably the display averaging over more than the ~0.4 s pulse (not checked); the real peak needs a scope or the logic analyzer.
+- **Unmounted motor:** for a stall test hold the motor body and the wheel. Held by the wheel alone, the body turns, the encoder (which measures shaft vs body) sees motion and the stall check never trips.
+- Positive duty counts negative on the encoder with this wiring. The forward convention is decided in D.4.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

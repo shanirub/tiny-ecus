@@ -4,7 +4,7 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item D (open-loop drive and protections), split into two PRs. PR #6 (D.1 PWM drive + D.2 protections, branch `phase1/d-drive`) is reviewed and waits for the user's merge; after it: flash and run the bench checks listed in the PR, then PR 2 (D.3 speed estimation and real telemetry columns), then the D.4 measurements. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
+Phase 1 item D (open-loop drive and protections), split into two PRs. D.1 PWM drive + D.2 protections are done (2026-10-31, PR #6, merged as `39c1e68`; all six bench checks pass). Next: PR 2 (D.3 speed estimation and real telemetry columns), then the D.4 measurements. Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
 Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the wiring order of 2026-10-16 (Phase 1 doesn't need it; part of it is with a local carrier, expected the week of 2026-11-02) and the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
@@ -49,7 +49,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [x] Detailed planning pass (approved 2026-10-17)
 - [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [x] Encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT): item C done 2026-10-29 (PR #5)
-- [ ] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections in PR #6 (awaiting merge and bench check)
+- [ ] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections done (PR #6, bench check passed 2026-10-31); D.3–D.4 next
 - [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
 - [ ] Speed measurement, then a PI speed controller
 - [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools
@@ -116,7 +116,7 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.
 - **Gateway overload:** camera + WiFi + CAN + UART on one ESP32. Measure in Phase 7.
-- **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice. Phase 1 part: 80 % duty cap, slew ramp and latched stall trip in item D (PR #6; bench check pending).
+- **Current budget (worse than planned):** the first two motors measure R ≈ 3.0 / 3.1 Ω (Phase 0 F.2, 2026-10-14), so stall ≈ 2.8 A per motor at 8.4 V and ≈ 11 A for 4. The listing's 0.82 A was wrong, or quoted at a lower voltage. That is far above the PCM's 3 A continuous rating and the planned 5 A fuse, and above the DRV8833's per-channel rating (about 1.5 A continuous / 2 A peak; check the datasheet for its overcurrent behavior). Phase 1 and Phase 5 must plan current limiting (e.g. a PWM duty cap, soft-start ramps, stall detection from the encoder) and revisit the fuse and PCM choice. Phase 1 part: 80 % duty cap, slew ramp and latched stall trip in item D (PR #6; bench check passed 2026-10-31, values to revisit with the D.4 data).
 - **Encoder interrupt load (new 2026-10-17):** with no PCNT, every encoder edge interrupts the single C3 core (estimated 8–14 k/s at full speed). Together with CAN interrupts from Phase 2 it must leave the control loop on time. Measured in Phase 1 item D; fallback 2× decoding.
 - **ESP-IDF TWAI API:** it has changed across IDF versions. Verify against the pinned version before writing code.
 
