@@ -17,7 +17,7 @@
 
 #define CONSOLE_STACK     4096
 #define CONSOLE_PRIORITY  3
-#define USJ_TX_BUFFER     1024  // telemetry at 100 Hz is ~2 kB/s
+#define USJ_TX_BUFFER     1024  // telemetry at 100 Hz is ~3 kB/s (rows of ~30 bytes)
 #define USJ_RX_BUFFER     256
 
 static const char *mode_name(tiny_motor_mode_t mode)

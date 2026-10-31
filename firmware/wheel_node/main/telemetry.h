@@ -3,11 +3,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// One telemetry row. Phase 1 B carries a synthetic test signal; items C–E
-// replace it with real columns (position, speed, duty, setpoint).
+#include "tiny_motor.h"
+
+// One telemetry row per 10 ms control period, sent by the drive task: what the
+// motor output was during the period and what the encoder saw. Item E adds
+// the setpoint.
 typedef struct {
-    uint32_t t_ms;
-    int32_t sine_milli;  // test signal, amplitude 1000
+    uint32_t t_ms;               // end of the period
+    tiny_motor_mode_t mode;      // 0 idle, 1 run, 2 stall fault
+    int32_t duty_permille;       // signed duty output during the period
+    int32_t counts;              // encoder counts during the period
+    int32_t rpm_milli;           // wheel speed from those counts (tiny_speed)
 } telemetry_sample_t;
 
 /** Create the sample queue and the low-priority writer task. */
