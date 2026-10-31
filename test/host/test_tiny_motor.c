@@ -166,6 +166,31 @@ static void test_stall_counts_threshold_both_directions(void)
     TEST_ASSERT_EQUAL(TINY_MOTOR_FAULT, s_m.mode);
 }
 
+// Resending DUTY to a stuck wheel must not hold off the trip.
+static void test_new_run_keeps_the_stall_count(void)
+{
+    tiny_motor_run(&s_m, &CFG, 500, 1000);
+    steps(10, MOVING);
+    steps(20, 0);
+    tiny_motor_run(&s_m, &CFG, 500, 1000);
+    steps(9, 0);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_RUN, s_m.mode);
+    tiny_motor_step(&s_m, &CFG, 0);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_FAULT, s_m.mode);
+}
+
+// The extremes are moving, and taking their absolute value would overflow
+// (UBSan fails the test).
+static void test_extreme_counts_are_moving(void)
+{
+    tiny_motor_run(&s_m, &CFG, 500, 1000);
+    steps(10, MOVING);
+    steps(40, INT32_MIN);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_RUN, s_m.mode);
+    steps(40, INT32_MAX);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_RUN, s_m.mode);
+}
+
 static void test_fault_refuses_runs_until_stop(void)
 {
     tiny_motor_run(&s_m, &CFG, 500, 1000);
@@ -220,6 +245,8 @@ int main(void)
     RUN_TEST(test_no_stall_below_stall_duty);
     RUN_TEST(test_stall_judges_the_previous_period);
     RUN_TEST(test_stall_counts_threshold_both_directions);
+    RUN_TEST(test_new_run_keeps_the_stall_count);
+    RUN_TEST(test_extreme_counts_are_moving);
     RUN_TEST(test_fault_refuses_runs_until_stop);
     RUN_TEST(test_pins_slow_decay);
     RUN_TEST(test_pins_clamp_out_of_range);

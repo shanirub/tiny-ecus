@@ -85,11 +85,16 @@ static bool cmd_duty(int argc, char *argv[], char *reply, size_t size)
         snprintf(reply, size, "usage: DUTY <-100..100> [1..%d s]", RUN_MAX_S);
         return false;
     }
-    if (!drive_run((int32_t)duty, (uint32_t)seconds)) {
+    int32_t run;
+    if (!drive_run((int32_t)duty, (uint32_t)seconds, &run)) {
         snprintf(reply, size, "stall fault latched, STOP clears it");
         return false;
     }
-    snprintf(reply, size, "duty=%ld for %ld s", duty, seconds);
+    if (run != duty) {
+        snprintf(reply, size, "duty=%ld for %ld s (capped from %ld)", (long)run, seconds, duty);
+    } else {
+        snprintf(reply, size, "duty=%ld for %ld s", duty, seconds);
+    }
     return true;
 }
 

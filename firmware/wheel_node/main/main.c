@@ -15,7 +15,8 @@
 
 #define BLINK_HALF_PERIOD_MS  500   // 1 Hz blink: the firmware is alive
 
-// Stand-in for the item D/E control loop: same rate, same telemetry path.
+// Placeholder telemetry (a sine wave) until D.3 sends real columns: same rate,
+// same path.
 #define SAMPLE_PERIOD_MS      10    // 100 Hz
 #define SINE_PERIOD_MS        2000
 #define SAMPLE_PRIORITY       5     // below the drive loop (drive.c)

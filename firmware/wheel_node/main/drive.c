@@ -45,16 +45,20 @@ static void set_pins(uint32_t in1, uint32_t in2)
 
 // Only this task writes the driver pins. Running: driver awake, slow-decay PWM.
 // Otherwise: both inputs low (coast) and the driver asleep.
+// STBY is the outer switch: inputs before waking, sleep before the inputs.
+// A new LEDC duty starts at the next PWM period (up to 50 µs) and the two
+// channels may switch in different periods, so the inputs pass through
+// mixed states; with the driver asleep those never reach the motor.
 static void apply(tiny_motor_mode_t mode, int32_t duty)
 {
     if (mode == TINY_MOTOR_RUN) {
         uint32_t in1, in2;
         tiny_motor_pins(duty, PWM_FULL, &in1, &in2);
-        gpio_set_level(MOTOR_STBY_GPIO, 1);  // the driver ignores inputs for up to 1 ms after waking
         set_pins(in1, in2);
+        gpio_set_level(MOTOR_STBY_GPIO, 1);  // the driver ignores inputs for up to 1 ms after waking
     } else {
-        set_pins(0, 0);
         gpio_set_level(MOTOR_STBY_GPIO, 0);
+        set_pins(0, 0);
     }
 }
 
@@ -122,10 +126,11 @@ void drive_start(void)
     ESP_ERROR_CHECK(ok == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
 }
 
-bool drive_run(int32_t duty_pct, uint32_t seconds)
+bool drive_run(int32_t duty_pct, uint32_t seconds, int32_t *run_pct)
 {
     portENTER_CRITICAL(&s_lock);
     bool ok = tiny_motor_run(&s_motor, &s_cfg, duty_pct * 10, seconds * (1000 / PERIOD_MS));
+    *run_pct = s_motor.target / 10;
     portEXIT_CRITICAL(&s_lock);
     return ok;
 }

@@ -105,12 +105,15 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 4 | a FAULT doesn't refuse new runs | `test_fault_refuses_runs_until_stop` |
 | 5 | `stop` leaves the old duty, so the next run starts from it | `test_stop_is_immediate`, and other tests through `setUp` |
 | 6 | stall check only above `stall_duty`, not at it | `test_stall_judges_the_previous_period` |
-| 7 | stall check ignores the sign of the counts | `test_stall_counts_threshold_both_directions` |
-| 8 | movement doesn't reset the stall count | `test_movement_resets_the_stall_count` |
-| 9 | the run ends one step late | `test_run_ends_with_ramp_then_idle` |
-| 10 | never returns to IDLE after a run | the same, and `test_zero_step_run_ramps_down` |
-| 11 | forward and reverse swapped on the pins | the pin tests |
-| 12 | fast decay instead of slow on the pins | the pin tests |
+| 7 | stall check ignores the sign of the counts | `test_stall_counts_threshold_both_directions`, `test_extreme_counts_are_moving` |
+| 8 | a new run resets the stall count | `test_new_run_keeps_the_stall_count` |
+| 9 | `abs32(counts)` instead of the range test (overflows at `INT32_MIN`) | `test_extreme_counts_are_moving` (UBSan; without it, the stall check trips) |
+| 10 | movement doesn't reset the stall count | `test_movement_resets_the_stall_count` |
+| 11 | the stall trips one step late | `test_stall_trips_after_stall_steps` |
+| 12 | the run ends one step late | `test_run_ends_with_ramp_then_idle` |
+| 13 | never returns to IDLE after a run | the same, and `test_zero_step_run_ramps_down` |
+| 14 | forward and reverse swapped on the pins | the pin tests |
+| 15 | fast decay instead of slow on the pins | the pin tests |
 
 ### Adding mutants
 
@@ -118,7 +121,7 @@ Add a `(description, original text, replacement)` line to the component's `mutan
 
 `tiny_qdec` and `tiny_motor` have mutants; `tiny_cmd` has none.
 
-A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up.
+A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up; it is to be reconsidered for the CAN protocol code in Phase 3 (`.planning/can-rc-car/task_plan.md`).
 
 ## What the tests don't cover
 
@@ -162,7 +165,7 @@ The quadrature decoder (`components/tiny_qdec`), 15 tests. The helper `turn(n)` 
 
 ### `host/test_tiny_motor.c`
 
-The motor run logic (`components/tiny_motor`), 16 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
+The motor run logic (`components/tiny_motor`), 18 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
 
 - **Runs:**
   - idle outputs 0
@@ -174,7 +177,8 @@ The motor run logic (`components/tiny_motor`), 16 tests. A small config (cap 800
   - trips after exactly the configured number of stalled steps, then stays off
   - movement resets the count; below the stall duty nothing trips
   - the counts are judged against the duty of the period they come from (the previous step), so a ramp doesn't trip early
-  - ±1 count is "not moving", ±2 is moving
+  - ±1 count is "not moving", ±2 is moving, and the `INT32_MIN`/`INT32_MAX` extremes are moving (without overflowing)
+  - a new run doesn't reset the stall count, so resending `DUTY` to a stuck wheel doesn't hold off the trip
   - a fault refuses new runs until `stop`
 - **Pins (slow decay):** 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount, out-of-range duties are clamped.
 

@@ -43,9 +43,9 @@ typedef struct {
 void tiny_motor_init(tiny_motor_t *m);
 
 /**
- * Start (or change) a timed run: ramp to `duty` (capped to cfg->cap), hold it
- * for `steps` steps from now, then ramp to 0 and go idle. Refused (returns
- * false, nothing changes) while in FAULT.
+ * Start (or change) a timed run: ramp to `duty` (capped to cfg->cap) and hold
+ * it until `steps` steps from now (the ramp up counts toward them), then ramp
+ * to 0 and go idle. Refused (returns false, nothing changes) while in FAULT.
  */
 bool tiny_motor_run(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t duty, uint32_t steps);
 

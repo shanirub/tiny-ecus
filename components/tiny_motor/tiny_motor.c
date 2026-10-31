@@ -42,8 +42,10 @@ int32_t tiny_motor_step(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t co
         return 0;
     }
 
-    // Stall check on the period that just ended, which ran at m->duty.
-    if (abs32(m->duty) >= cfg->stall_duty && abs32(counts) <= cfg->stall_counts) {
+    // Stall check on the period that just ended, which ran at m->duty. Range
+    // test, not abs32(counts): abs32(INT32_MIN) would overflow.
+    if (abs32(m->duty) >= cfg->stall_duty
+        && counts >= -cfg->stall_counts && counts <= cfg->stall_counts) {
         if (++m->stall_steps >= cfg->stall_steps) {
             m->mode = TINY_MOTOR_FAULT;
             m->target = 0;
