@@ -138,7 +138,7 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 
 ### E. PI speed control
 1. PI controller as pure logic with anti-windup and output limits (host-tested: steady state reaches the setpoint, windup stays bounded at saturation).
-2. Command `SPEED <rpm>` as a timed run; `SET KP|KI|FF <value>` for live tuning; gains printed by `STATUS`.
+2. Command `SPEED <rpm>` as a timed run; `SET KP|KI|FF <value>` for live tuning; gains printed by `STATUS`. **`STATUS` is nearly full:** its reply can reach 122 of the 128-byte reply buffer (`TINY_CMD_REPLY_MAX`, counting the `OK ` prefix and the end byte) with long uptime, a `-dirty` version and a large drop count, measured on PR #8. `snprintf` cuts an overlong reply short safely, but adding the gains would push it past the limit. Revisit before adding them, with the user: maybe split `STATUS` into two commands (e.g. system vs drive), or print the gains from their own command.
 3. Tune with step responses recorded by `plot_run.py`: start with P only, add I, check overshoot and settling time. Expect the gearbox's periodic ripple in the data (see `findings.md`); don't tune against it.
 4. **Exit test:** hold e.g. 60 rpm, drag the wheel with a finger, record the run: speed dips and recovers, duty rises, and the reported speed stays within a tolerance to be set from the measured ripple.
 

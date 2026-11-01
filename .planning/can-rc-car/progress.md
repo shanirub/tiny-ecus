@@ -188,6 +188,7 @@
 - PR #8 opened for `phase1/d-measure`; CI: all 3 jobs pass.
 - D.4.4 interrupt load: the analyzer didn't enumerate at first (LED on, absent from `lsusb`); after the user opened it in PulseView it showed up as 0925:3881, and PulseView had to be closed before `sigrok-cli` could claim it. 24 MHz streams only 21 ms; 12 MHz works. Captures at 30 %, 80 % and 80 % with telemetry, probe on: handler 1.0 µs, entry median 2.1 µs / max 8.8 µs, ≥ 2.4 % CPU at 80 %; shortest real edge gap 14.4 µs (uneven A/B phasing); sub-µs edge bounce, harmless. `ENC` after each: invalid 0; `drops=0`. Details in `findings.md`.
 - D.4.5 decay curves (downward sweeps, 80 → 5 %, 4 s per step, PSU photographed each step): fast decay 93 rpm at 80 %, 9 rpm at 50 %, stall trip at 40 % (crawling ≈ 1.7 rpm); slow decay linear 106 → 2.3 rpm, still turning at 5 %. invalid 0 both runs, drops 0. Recommended to keep slow decay (user to decide). Log `logs/20261101-151644-d4-down.*`.
+- PR #8 review: no code findings. The `STATUS` reply can reach 122/128 bytes, which the user noted for item E (see the phase plan, E.2). Pushed `15aa9d5` to the branch, Markdown only: new `firmware/wheel_node/COMMANDS.md` (console usage with real replies from this session and a `HELP` read from the board), the measured decay curves in the README. PR description updated with the D.4.4 and D.4.5 results. CI wasn't rerun or waited for (Markdown only, the user's call).
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
