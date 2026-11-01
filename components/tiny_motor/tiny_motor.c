@@ -67,11 +67,18 @@ int32_t tiny_motor_step(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t co
     return m->duty;
 }
 
-void tiny_motor_pins(int32_t duty, uint32_t full, uint32_t *in1, uint32_t *in2)
+void tiny_motor_pins(int32_t duty, tiny_motor_decay_t decay, uint32_t full, uint32_t *in1, uint32_t *in2)
 {
     duty = clamp(duty, -TINY_MOTOR_DUTY_MAX, TINY_MOTOR_DUTY_MAX);
+    uint32_t drive = (uint32_t)((uint64_t)full * (uint32_t)abs32(duty) / TINY_MOTOR_DUTY_MAX);
+    if (decay == TINY_MOTOR_DECAY_FAST) {
+        // The pulsed pin is high (driving) for the duty, the other stays low.
+        *in1 = duty > 0 ? drive : 0;
+        *in2 = duty < 0 ? drive : 0;
+        return;
+    }
     // The pulsed pin is high (braking) for the part of the period not driving.
-    uint32_t brake = full - (uint32_t)((uint64_t)full * (uint32_t)abs32(duty) / TINY_MOTOR_DUTY_MAX);
+    uint32_t brake = full - drive;
     *in1 = duty < 0 ? brake : full;
     *in2 = duty > 0 ? brake : full;
 }

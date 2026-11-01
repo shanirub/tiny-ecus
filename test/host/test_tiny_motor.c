@@ -204,29 +204,43 @@ static void test_fault_refuses_runs_until_stop(void)
     TEST_ASSERT_EQUAL_INT32(50, tiny_motor_step(&s_m, &CFG, MOVING));  // ramps from 0 again
 }
 
-// --- Pin mapping (slow decay) ---
+// --- Pin mapping ---
 
-static void check_pins(int32_t duty, uint32_t in1, uint32_t in2)
+#define SLOW  TINY_MOTOR_DECAY_SLOW
+#define FAST  TINY_MOTOR_DECAY_FAST
+
+static void check_pins(tiny_motor_decay_t decay, int32_t duty, uint32_t in1, uint32_t in2)
 {
     uint32_t a, b;
-    tiny_motor_pins(duty, 1024, &a, &b);
+    tiny_motor_pins(duty, decay, 1024, &a, &b);
     TEST_ASSERT_EQUAL_UINT32(in1, a);
     TEST_ASSERT_EQUAL_UINT32(in2, b);
 }
 
 static void test_pins_slow_decay(void)
 {
-    check_pins(0, 1024, 1024);      // both high: brake
-    check_pins(1000, 1024, 0);      // forward: IN1 high, IN2 low
-    check_pins(-1000, 0, 1024);     // reverse: IN1 low, IN2 high
-    check_pins(250, 1024, 768);     // IN2 low a quarter of the time
-    check_pins(-500, 512, 1024);
+    check_pins(SLOW, 0, 1024, 1024);      // both high: brake
+    check_pins(SLOW, 1000, 1024, 0);      // forward: IN1 high, IN2 low
+    check_pins(SLOW, -1000, 0, 1024);     // reverse: IN1 low, IN2 high
+    check_pins(SLOW, 250, 1024, 768);     // IN2 low a quarter of the time
+    check_pins(SLOW, -500, 512, 1024);
+}
+
+static void test_pins_fast_decay(void)
+{
+    check_pins(FAST, 0, 0, 0);            // both low: coast
+    check_pins(FAST, 1000, 1024, 0);      // forward: IN1 high, IN2 low
+    check_pins(FAST, -1000, 0, 1024);     // reverse: IN1 low, IN2 high
+    check_pins(FAST, 250, 256, 0);        // IN1 high a quarter of the time
+    check_pins(FAST, -500, 0, 512);
 }
 
 static void test_pins_clamp_out_of_range(void)
 {
-    check_pins(2000, 1024, 0);
-    check_pins(-2000, 0, 1024);
+    check_pins(SLOW, 2000, 1024, 0);
+    check_pins(SLOW, -2000, 0, 1024);
+    check_pins(FAST, 2000, 1024, 0);
+    check_pins(FAST, -2000, 0, 1024);
 }
 
 int main(void)
@@ -249,6 +263,7 @@ int main(void)
     RUN_TEST(test_extreme_counts_are_moving);
     RUN_TEST(test_fault_refuses_runs_until_stop);
     RUN_TEST(test_pins_slow_decay);
+    RUN_TEST(test_pins_fast_decay);
     RUN_TEST(test_pins_clamp_out_of_range);
     return UNITY_END();
 }

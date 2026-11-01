@@ -25,20 +25,27 @@ static const char *mode_name(tiny_motor_mode_t mode)
     return mode == TINY_MOTOR_RUN ? "run" : mode == TINY_MOTOR_FAULT ? "stall" : "idle";
 }
 
+static const char *decay_name(tiny_motor_decay_t decay)
+{
+    return decay == TINY_MOTOR_DECAY_FAST ? "fast" : "slow";
+}
+
 static bool cmd_status(int argc, char *argv[], char *reply, size_t size)
 {
     (void)argc;
     (void)argv;
     tiny_motor_mode_t mode;
     int32_t duty;
-    drive_status(&mode, &duty);
-    snprintf(reply, size, "up_ms=%llu ver=%s heap=%lu telem=%s drops=%lu drive=%s duty=%ld",
+    tiny_motor_decay_t decay;
+    drive_status(&mode, &duty, &decay);
+    snprintf(reply, size, "up_ms=%llu ver=%s heap=%lu telem=%s drops=%lu drive=%s duty=%ld decay=%s probe=%s",
              (unsigned long long)(esp_timer_get_time() / 1000),
              esp_app_get_description()->version,
              (unsigned long)esp_get_free_heap_size(),
              telemetry_enabled() ? "on" : "off",
              (unsigned long)telemetry_dropped(),
-             mode_name(mode), (long)duty);
+             mode_name(mode), (long)duty, decay_name(decay),
+             encoder_probe() ? "on" : "off");
     return true;
 }
 
@@ -107,8 +114,43 @@ static bool cmd_stop(int argc, char *argv[], char *reply, size_t size)
     return true;
 }
 
+static bool cmd_decay(int argc, char *argv[], char *reply, size_t size)
+{
+    (void)argc;
+    tiny_motor_decay_t decay;
+    if (tiny_cmd_equals(argv[1], "SLOW")) {
+        decay = TINY_MOTOR_DECAY_SLOW;
+    } else if (tiny_cmd_equals(argv[1], "FAST")) {
+        decay = TINY_MOTOR_DECAY_FAST;
+    } else {
+        snprintf(reply, size, "usage: DECAY SLOW|FAST");
+        return false;
+    }
+    if (!drive_set_decay(decay)) {
+        snprintf(reply, size, "motor running, change decay when idle");
+        return false;
+    }
+    snprintf(reply, size, "decay=%s", decay_name(decay));
+    return true;
+}
+
+static bool cmd_probe(int argc, char *argv[], char *reply, size_t size)
+{
+    (void)argc;
+    if (tiny_cmd_equals(argv[1], "ON")) {
+        encoder_set_probe(true);
+    } else if (tiny_cmd_equals(argv[1], "OFF")) {
+        encoder_set_probe(false);
+    } else {
+        snprintf(reply, size, "usage: PROBE ON|OFF");
+        return false;
+    }
+    snprintf(reply, size, "probe %s", encoder_probe() ? "on" : "off");
+    return true;
+}
+
 static const tiny_cmd_t s_cmds[] = {
-    {"STATUS", "STATUS", "uptime, firmware version, free heap, telemetry state and drops, drive mode and duty %",
+    {"STATUS", "STATUS", "uptime, firmware version, free heap, telemetry state and drops, drive mode, duty %, decay, probe",
      0, 0, cmd_status},
     {"TELEM", "TELEM ON|OFF", "stream telemetry as CSV lines starting with T,",
      1, 1, cmd_telem},
@@ -118,6 +160,10 @@ static const tiny_cmd_t s_cmds[] = {
      1, 2, cmd_duty},
     {"STOP", "STOP", "stop the motor at once (coast) and clear a stall fault",
      0, 0, cmd_stop},
+    {"DECAY", "DECAY SLOW|FAST", "PWM decay mode for the next runs (slow at boot); only while not running",
+     1, 1, cmd_decay},
+    {"PROBE", "PROBE ON|OFF", "GPIO1 high while the encoder interrupt handler runs, for the logic analyzer",
+     1, 1, cmd_probe},
 };
 
 static const tiny_cmd_table_t s_table = {s_cmds, sizeof s_cmds / sizeof s_cmds[0]};

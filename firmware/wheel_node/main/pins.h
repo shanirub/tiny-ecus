@@ -24,6 +24,12 @@
 #define MOTOR_IN2_GPIO    GPIO_NUM_7   // module AIN2 (PWM)
 #define MOTOR_STBY_GPIO   GPIO_NUM_10  // module STBY: low = driver asleep
 
+// Measurement probe (PROBE ON): high while the encoder interrupt handler runs,
+// for the logic analyzer (Phase 1 D.4). Borrows GPIO1, reserved for the corner
+// LED in Phase 4. No pull at reset; driven only while the probe is on.
+#define ISR_PROBE_GPIO    GPIO_NUM_1
+
 // Reserved, not defined until their code exists:
 //   GPIO3 / 4  CAN TX / RX (Phase 2)
-//   GPIO0 / 1  battery ADC (Phase 5) / corner LED (Phase 4)
+//   GPIO0      battery ADC (Phase 5)
+//   GPIO1      corner LED (Phase 4); the probe above until then
