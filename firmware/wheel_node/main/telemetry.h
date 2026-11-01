@@ -5,12 +5,21 @@
 
 #include "tiny_motor.h"
 
+// The mode column: tiny_motor's modes, with a run split into open loop (DUTY)
+// and closed loop (SPEED). 0-2 keep the meaning they had before item E.
+typedef enum {
+    TELEM_MODE_IDLE = 0,
+    TELEM_MODE_DUTY = 1,   // open-loop run
+    TELEM_MODE_STALL = 2,  // stall fault latched
+    TELEM_MODE_SPEED = 3,  // speed-controlled run
+} telem_mode_t;
+
 // One telemetry row per 10 ms control period, sent by the drive task: what the
-// motor output was during the period and what the encoder saw. Item E adds
-// the setpoint.
+// motor output was during the period and what the encoder saw.
 typedef struct {
     uint32_t t_ms;               // end of the period
-    tiny_motor_mode_t mode;      // 0 idle, 1 run, 2 stall fault
+    telem_mode_t mode;
+    int32_t setpoint_milli;      // wanted speed in a SPEED run, rpm x 1000; else 0
     int32_t duty_permille;       // signed duty output during the period
     int32_t counts;              // encoder counts during the period
     int32_t rpm_milli;           // wheel speed from those counts (tiny_speed)

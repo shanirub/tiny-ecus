@@ -6,24 +6,25 @@ The firmware for one ESP32-C3 wheel node: one motor through a DRV8833, one Hall 
 |---|---|
 | `main/main.c` | `app_main`: starts the modules below and the 1 Hz LED blink |
 | `main/pins.h` | every GPIO the firmware uses, and nowhere else |
-| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, `DECAY`, `PROBE`, …), one `OK`/`ERR` reply per line; how to use them, with real examples: `COMMANDS.md` |
+| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `SPEED`, `SET`, `GAINS`, `STOP`, `DECAY`, `PROBE`), one `OK`/`ERR` reply per line; how to use them, with real examples: `COMMANDS.md` |
 | `main/telemetry.c` | `T,` lines on the USB port through a queue, so a slow port never blocks the drive task |
-| `main/encoder.c` | encoder pins and interrupt handler; decoding in `tiny_qdec` |
-| `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop, which also sends the telemetry rows; run logic in `tiny_motor`, speed in `tiny_speed` |
+| `main/encoder.c` | encoder pins and interrupt handler; decoding in `tiny_qdec`. It feeds B as the decoder's first channel, so positive duty counts up (item E; logs from before have the opposite sign) |
+| `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop, which also runs the speed controller and sends the telemetry rows; run logic in `tiny_motor`, speed in `tiny_speed`, controller in `tiny_pi` |
 
 ## Telemetry
 
 `TELEM ON` streams one CSV row per 10 ms control period, sent by the drive task. Each row describes the period that just ended, so its counts and the duty that produced them are on the same line. `tools/plot_run.py` records and plots them.
 
 ```
-T,t_ms,mode,duty_permille,counts,rpm_milli
-T,123450,1,500,48,66667
+T,t_ms,mode,setpoint_milli,duty_permille,counts,rpm_milli
+T,10827744,3,60000,470,44,61111
 ```
 
 | Column | Meaning |
 |---|---|
 | `t_ms` | time at the end of the period, ms since boot |
-| `mode` | 0 idle, 1 run, 2 stall fault |
+| `mode` | 0 idle, 1 `DUTY` run, 2 stall fault, 3 `SPEED` run (also during its ramp down) |
+| `setpoint_milli` | the `SPEED` setpoint, rpm × 1000, while the controller is active; 0 otherwise, including the ramp down at the end of a `SPEED` run |
 | `duty_permille` | signed duty output during the period, ‰ (+1000 full forward) |
 | `counts` | encoder counts during the period, signed |
 | `rpm_milli` | wheel speed from those counts, rpm × 1000 (`tiny_speed`, 4320 counts per turn) |
@@ -34,19 +35,20 @@ One count per period is 1.389 rpm, so `rpm_milli` moves in steps of about 1389 a
 
 ## Motor drive
 
-Two parts: `tiny_motor` (component) decides, `drive.c` (here) acts. Two tasks share the motor state: the console task changes it on `DUTY` and `STOP`, and the drive task advances it every 10 ms. They only meet inside the `s_lock` critical section in `drive.c`. Only the drive task writes the driver pins.
+Two parts: `tiny_motor` (component) decides, `drive.c` (here) acts. Two tasks share the motor state: the console task changes it on `DUTY`, `SPEED`, `SET` and `STOP`, and the drive task advances it every 10 ms. They only meet inside the `s_lock` critical section in `drive.c`. Only the drive task writes the driver pins.
 
 ### States
 
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE: boot, tiny_motor_init()
-    IDLE --> RUN: DUTY, tiny_motor_run()
-    RUN --> RUN: DUTY again (new target, ramps from the current duty)
+    IDLE --> RUN: DUTY or SPEED, tiny_motor_run()
+    RUN --> RUN: DUTY or SPEED again (new target or setpoint, ramps from the current duty)
+    RUN --> RUN: SPEED run, every period: the controller sets the target
     RUN --> IDLE: run time over and the ramp down reached 0
     RUN --> IDLE: STOP, tiny_motor_stop() (no ramp)
     RUN --> FAULT: stall (duty at least 30 %, at most 1 count per period, for 300 ms)
-    FAULT --> FAULT: DUTY refused
+    FAULT --> FAULT: DUTY and SPEED refused
     FAULT --> IDLE: STOP
 ```
 
@@ -154,6 +156,67 @@ sequenceDiagram
     console-->>you: OK stopped
     Note over motor: IDLE, DUTY accepted again
 ```
+
+### Speed control (`SPEED`)
+
+A `SPEED` run is a `tiny_motor` run whose target duty the speed controller (`tiny_pi`) sets every period, so the cap, the slew limit, the stall trip and the run timer all still apply exactly as for `DUTY`. Each period, in `drive_task`:
+
+1. the speed of the period that just ended is computed from the encoder counts (`tiny_speed`);
+2. if a `SPEED` run is going and its time isn't up, `tiny_pi_step()` turns the setpoint and that speed into a duty, and `tiny_motor_set_target()` makes it the run's target without restarting the timer;
+3. `tiny_motor_step()` moves the output towards the target as usual.
+
+Once the time is up the controller stops and `tiny_motor` ramps down to 0 as after `DUTY`, so the controller never fights the ramp. A `DUTY` or `STOP`, a stall or the end of the run ends the speed run.
+
+```mermaid
+sequenceDiagram
+    actor you
+    participant console as console task
+    participant drive as drive.c
+    participant pi as tiny_pi
+    participant motor as tiny_motor
+    participant task as drive task
+
+    you->>console: SPEED 60 6
+    console->>drive: drive_speed(60, 6)
+    Note over drive: under s_lock
+    drive->>pi: tiny_pi_feedforward(60) = 468 (truncated)
+    drive->>motor: tiny_motor_run(468, 600 steps)
+    drive->>pi: tiny_pi_reset() (not when changing the setpoint of a SPEED run)
+    console-->>you: OK speed=60 rpm for 6 s
+    loop every 10 ms while the run has time left
+        task->>task: rpm from this period's counts
+        task->>pi: tiny_pi_step(setpoint 60, rpm)
+        pi-->>task: duty = ff + kp x error + integral, within +-800
+        task->>motor: tiny_motor_set_target(duty), then tiny_motor_step(counts)
+        task->>task: telemetry row, mode 3, setpoint 60000
+    end
+    Note over motor: time up: target 0, ramp down, IDLE
+```
+
+The controller (`components/tiny_pi`, all in permille duty and wheel rpm):
+
+| Part | Value at boot | Why |
+|---|---|---|
+| feedforward | 7.3 ‰ per rpm × (\|setpoint\| + 4.2 rpm), signed | the measured D.4 line, 1.37 rpm per % with the wheel starting at about 4.2 rpm less; gives about the right duty at once, so the other two only correct the rest |
+| `kp` | 6 ‰ per rpm of error | reacts to the error now |
+| `ki` | 20 ‰ per rpm of error per second | removes a steady error (a load); stored already multiplied by `ki`, so changing `ki` mid-run doesn't make the duty jump |
+| anti-windup | integral limited to ±800 and frozen while the output is past ±800 in the direction the error pushes | after a blocked wheel is released it doesn't race off |
+
+`kp` and `ki` come from a simulation of the D.4 line with a 60 ms time constant (`test/host/test_tiny_pi.c` uses the same model). `SET` changes `kp`, `ki` and `ff` live; `GAINS` shows them. They aren't saved.
+
+Bench check (2026-11-01, 7.4 V, wheel free, boot gains, logs `logs/20261101-2145*-e-*.csv`):
+
+| Check | Result |
+|---|---|
+| sign: `ENC ZERO`, `DUTY 20 2`, `ENC` | `pos=3320`, positive as intended |
+| `SPEED 60 6` and `SPEED -60 6` | 90 % of the setpoint after 120 ms, peak 65 / −64 rpm, then 59.9 to 60.6 rpm in 100 ms averages; supply 53 mA |
+| step: `SPEED 30 6`, then `SPEED 80 3` after 3 s | 90 % after 90 ms, peak 81.9, settled at 80.2 |
+| a finger lightly on the wheel for 5 s at 60 rpm | dipped to about 53, back to 60 while still loaded, at about +130 ‰ duty; 66 rpm for about a second after release |
+| the wheel gripped at 60 rpm | the duty rose to the 800 ‰ cap, the stall trip fired 300 ms after the wheel stopped |
+
+A load heavier than the cap can make up (a firm grip that still lets the wheel turn) leaves the duty at 800 ‰ until the run's time is up; only a full stop trips the stall check.
+
+`SPEED 0` from standstill starts a run with target 0 at duty 0, which `tiny_motor` ends at once; while turning it ramps down and coasts. It never holds the wheel still.
 
 ### Decay mode
 

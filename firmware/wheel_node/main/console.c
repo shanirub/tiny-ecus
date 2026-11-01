@@ -105,6 +105,80 @@ static bool cmd_duty(int argc, char *argv[], char *reply, size_t size)
     return true;
 }
 
+#define SPEED_MAX_RPM  100  // about what the 80 % duty cap reaches (105 rpm, D.4.2)
+
+static bool cmd_speed(int argc, char *argv[], char *reply, size_t size)
+{
+    long rpm;
+    long seconds = RUN_DEFAULT_S;
+    if (!tiny_cmd_parse_long(argv[1], -SPEED_MAX_RPM, SPEED_MAX_RPM, &rpm) ||
+        (argc == 3 && !tiny_cmd_parse_long(argv[2], 1, RUN_MAX_S, &seconds))) {
+        snprintf(reply, size, "usage: SPEED <-%d..%d> [1..%d s]", SPEED_MAX_RPM, SPEED_MAX_RPM, RUN_MAX_S);
+        return false;
+    }
+    if (!drive_speed((int32_t)rpm, (uint32_t)seconds)) {
+        snprintf(reply, size, "stall fault latched, STOP clears it");
+        return false;
+    }
+    snprintf(reply, size, "speed=%ld rpm for %ld s", rpm, seconds);
+    return true;
+}
+
+// Gains as fixed-point text with 3 decimals, without float printf (the C
+// library's printf may be built without float support).
+static void format_gain(char *buf, size_t size, float v)
+{
+    long milli = (long)(v * 1000.0f + 0.5f);  // gains are never negative
+    snprintf(buf, size, "%ld.%03ld", milli / 1000, milli % 1000);
+}
+
+static bool cmd_set(int argc, char *argv[], char *reply, size_t size)
+{
+    (void)argc;
+    static const struct {
+        const char *name;
+        drive_gain_t gain;
+        float max;
+    } gains[] = {
+        {"KP", DRIVE_GAIN_KP, 50.0f},
+        {"KI", DRIVE_GAIN_KI, 500.0f},
+        {"FF", DRIVE_GAIN_FF, 20.0f},
+    };
+    for (size_t i = 0; i < sizeof gains / sizeof gains[0]; i++) {
+        if (!tiny_cmd_equals(argv[1], gains[i].name)) {
+            continue;
+        }
+        float v;
+        if (!tiny_cmd_parse_float(argv[2], 0.0f, gains[i].max, &v)) {
+            char max[16];
+            format_gain(max, sizeof max, gains[i].max);
+            snprintf(reply, size, "%s must be 0..%s", gains[i].name, max);
+            return false;
+        }
+        drive_set_gain(gains[i].gain, v);
+        char text[16];
+        format_gain(text, sizeof text, v);
+        snprintf(reply, size, "%s=%s", gains[i].name, text);
+        return true;
+    }
+    snprintf(reply, size, "usage: SET KP|KI|FF <value>");
+    return false;
+}
+
+static bool cmd_gains(int argc, char *argv[], char *reply, size_t size)
+{
+    (void)argc;
+    (void)argv;
+    float kp, ki, ff;
+    drive_gains(&kp, &ki, &ff);
+    char a[16], b[16], c[16];
+    format_gain(a, sizeof a, kp);
+    format_gain(b, sizeof b, ki);
+    format_gain(c, sizeof c, ff);
+    snprintf(reply, size, "kp=%s ki=%s ff=%s", a, b, c);
+    return true;
+}
+
 static bool cmd_stop(int argc, char *argv[], char *reply, size_t size)
 {
     (void)argc;
@@ -158,6 +232,12 @@ static const tiny_cmd_t s_cmds[] = {
      0, 1, cmd_enc},
     {"DUTY", "DUTY <-100..100> [seconds]", "open-loop run at a duty % (cap 80), default 5 s, max 30, then ramps to a stop",
      1, 2, cmd_duty},
+    {"SPEED", "SPEED <-100..100> [seconds]", "speed-controlled run at wheel rpm, default 5 s, max 30, then ramps to a stop",
+     1, 2, cmd_speed},
+    {"SET", "SET KP|KI|FF <value>", "change a speed controller gain, also mid-run (see GAINS)",
+     2, 2, cmd_set},
+    {"GAINS", "GAINS", "speed controller gains: kp, ki (permille duty per rpm, per rpm*s), ff (permille per rpm)",
+     0, 0, cmd_gains},
     {"STOP", "STOP", "stop the motor at once (coast) and clear a stall fault",
      0, 0, cmd_stop},
     {"DECAY", "DECAY SLOW|FAST", "PWM decay mode for the next runs (slow at boot); only while not running",

@@ -101,6 +101,46 @@ static void test_zero_step_run_ramps_down(void)
     TEST_ASSERT_EQUAL(TINY_MOTOR_IDLE, s_m.mode);
 }
 
+static void test_set_target_keeps_the_timer(void)
+{
+    tiny_motor_run(&s_m, &CFG, 100, 10);
+    steps(2, MOVING);                                 // 8 steps left
+    tiny_motor_set_target(&s_m, &CFG, 300);
+    TEST_ASSERT_EQUAL_INT32(300, s_m.target);
+    TEST_ASSERT_EQUAL_UINT32(8, s_m.steps_left);
+    TEST_ASSERT_EQUAL_INT32(150, tiny_motor_step(&s_m, &CFG, MOVING));  // slews from 100
+    steps(7, MOVING);                                 // the run ends on time
+    TEST_ASSERT_EQUAL_INT32(0, s_m.target);
+}
+
+static void test_set_target_is_capped(void)
+{
+    tiny_motor_run(&s_m, &CFG, 100, 10);
+    tiny_motor_set_target(&s_m, &CFG, 2000);
+    TEST_ASSERT_EQUAL_INT32(800, s_m.target);
+    tiny_motor_set_target(&s_m, &CFG, -2000);
+    TEST_ASSERT_EQUAL_INT32(-800, s_m.target);
+}
+
+static void test_set_target_ignored_unless_running_with_time_left(void)
+{
+    tiny_motor_set_target(&s_m, &CFG, 300);           // idle
+    TEST_ASSERT_EQUAL_INT32(0, s_m.target);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_IDLE, s_m.mode);
+
+    tiny_motor_run(&s_m, &CFG, 200, 3);
+    steps(3, MOVING);                                 // run over, ramping down from 50
+    TEST_ASSERT_EQUAL(TINY_MOTOR_RUN, s_m.mode);
+    tiny_motor_set_target(&s_m, &CFG, 300);
+    TEST_ASSERT_EQUAL_INT32(0, s_m.target);
+
+    tiny_motor_run(&s_m, &CFG, 400, 100);             // stall fault
+    steps(40, 0);
+    TEST_ASSERT_EQUAL(TINY_MOTOR_FAULT, s_m.mode);
+    tiny_motor_set_target(&s_m, &CFG, 300);
+    TEST_ASSERT_EQUAL_INT32(0, s_m.target);
+}
+
 static void test_stop_is_immediate(void)
 {
     tiny_motor_run(&s_m, &CFG, 400, 100);
@@ -253,6 +293,9 @@ int main(void)
     RUN_TEST(test_run_ends_with_ramp_then_idle);
     RUN_TEST(test_reversing_ramps_through_zero);
     RUN_TEST(test_zero_step_run_ramps_down);
+    RUN_TEST(test_set_target_keeps_the_timer);
+    RUN_TEST(test_set_target_is_capped);
+    RUN_TEST(test_set_target_ignored_unless_running_with_time_left);
     RUN_TEST(test_stop_is_immediate);
     RUN_TEST(test_stall_trips_after_stall_steps);
     RUN_TEST(test_movement_resets_the_stall_count);
