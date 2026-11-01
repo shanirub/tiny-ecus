@@ -9,7 +9,7 @@ Setup (once):
     python3 -m venv tools/.venv
     tools/.venv/bin/pip install -r tools/requirements.txt
 Example:
-    tools/.venv/bin/python tools/plot_run.py --seconds 5 --label sine-check
+    tools/.venv/bin/python tools/plot_run.py --seconds 2 --label idle
     tools/.venv/bin/python tools/plot_run.py --cmd "DUTY 30" --seconds 6
 """
 

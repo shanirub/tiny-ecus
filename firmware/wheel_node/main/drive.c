@@ -4,13 +4,19 @@
 #include "driver/ledc.h"
 #include "encoder.h"
 #include "esp_check.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "pins.h"
+#include "telemetry.h"
+#include "tiny_speed.h"
 
 #define PERIOD_MS        10   // 100 Hz control period
 #define DRIVE_PRIORITY   6    // highest of our tasks
 #define DRIVE_STACK      3072
+// 48 counts per motor turn x 1:90 gearbox. C.3 measured 4386 by hand; the
+// nominal value is kept (decided 2026-10-29).
+#define COUNTS_PER_TURN  4320
 
 // LEDC: 20 kHz (above hearing), 10-bit duty. Duty 1 << 10 is constantly high.
 #define PWM_FREQ_HZ      20000
@@ -69,9 +75,14 @@ static void drive_task(void *arg)
     uint32_t invalid;
     encoder_read(&last_pos, &invalid);
 
+    // What the motor output during the period now running, for its telemetry row.
+    tiny_motor_mode_t out_mode = TINY_MOTOR_IDLE;
+    int32_t out_duty = 0;
+
     TickType_t last_wake = xTaskGetTickCount();
     for (;;) {
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(PERIOD_MS));
+        uint32_t t_ms = (uint32_t)(esp_timer_get_time() / 1000);
 
         int32_t pos;
         encoder_read(&pos, &invalid);
@@ -86,6 +97,20 @@ static void drive_task(void *arg)
         portEXIT_CRITICAL(&s_lock);
 
         apply(mode, duty);
+
+        // The row for the period that just ended pairs its counts with the
+        // duty that produced them. Pushed after apply() so it never delays the
+        // output; telemetry_push() doesn't block.
+        telemetry_sample_t s = {
+            .t_ms = t_ms,
+            .mode = out_mode,
+            .duty_permille = out_duty,
+            .counts = counts,
+            .rpm_milli = tiny_speed_rpm_milli(counts, PERIOD_MS, COUNTS_PER_TURN),
+        };
+        telemetry_push(&s);
+        out_mode = mode;
+        out_duty = duty;
     }
 }
 

@@ -7,7 +7,8 @@
 
 /**
  * Configure the motor driver pins (driver asleep, inputs low) and start the
- * 100 Hz drive loop. Call once at startup, after encoder_start().
+ * 100 Hz drive loop, which also sends the telemetry rows. Call once at
+ * startup, after encoder_start() and telemetry_start().
  */
 void drive_start(void);
 

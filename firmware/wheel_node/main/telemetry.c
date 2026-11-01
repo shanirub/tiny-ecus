@@ -10,10 +10,10 @@
 
 // Lines start with "T," so tools/plot_run.py can tell them apart from command
 // replies (OK/ERR) and IDF log lines on the same USB port.
-#define TELEM_HEADER       "T,t_ms,sine_milli\n"
+#define TELEM_HEADER       "T,t_ms,mode,duty_permille,counts,rpm_milli\n"
 #define QUEUE_LEN          64    // 0.64 s of samples at 100 Hz
 #define WRITER_STACK       3072
-#define WRITER_PRIORITY    2     // below the console and the sampling/control task
+#define WRITER_PRIORITY    2     // below the console and the drive task
 
 static QueueHandle_t s_queue;
 static atomic_bool s_enabled;
@@ -40,7 +40,8 @@ static void writer_task(void *arg)
         if (atomic_exchange(&s_header_pending, false)) {
             fputs(TELEM_HEADER, stdout);
         }
-        printf("T,%lu,%ld\n", (unsigned long)s.t_ms, (long)s.sine_milli);
+        printf("T,%lu,%d,%ld,%ld,%ld\n", (unsigned long)s.t_ms, (int)s.mode,
+               (long)s.duty_permille, (long)s.counts, (long)s.rpm_milli);
         fflush(stdout);
     }
 }

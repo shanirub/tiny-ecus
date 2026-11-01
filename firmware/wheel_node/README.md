@@ -4,12 +4,33 @@ The firmware for one ESP32-C3 wheel node: one motor through a DRV8833, one Hall 
 
 | File | What it does |
 |---|---|
-| `main/main.c` | `app_main`: starts the modules below, the 1 Hz LED blink, and a placeholder 100 Hz telemetry sampler |
+| `main/main.c` | `app_main`: starts the modules below and the 1 Hz LED blink |
 | `main/pins.h` | every GPIO the firmware uses, and nowhere else |
 | `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, …), one `OK`/`ERR` reply per line |
-| `main/telemetry.c` | `T,` lines on the USB port through a queue, so a slow port never blocks the sampler |
+| `main/telemetry.c` | `T,` lines on the USB port through a queue, so a slow port never blocks the drive task |
 | `main/encoder.c` | encoder pins and interrupt handler; decoding in `tiny_qdec` |
-| `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop; run logic in `tiny_motor` |
+| `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop, which also sends the telemetry rows; run logic in `tiny_motor`, speed in `tiny_speed` |
+
+## Telemetry
+
+`TELEM ON` streams one CSV row per 10 ms control period, sent by the drive task. Each row describes the period that just ended, so its counts and the duty that produced them are on the same line. `tools/plot_run.py` records and plots them.
+
+```
+T,t_ms,mode,duty_permille,counts,rpm_milli
+T,123450,1,500,48,66667
+```
+
+| Column | Meaning |
+|---|---|
+| `t_ms` | time at the end of the period, ms since boot |
+| `mode` | 0 idle, 1 run, 2 stall fault |
+| `duty_permille` | signed duty output during the period, ‰ (+1000 full forward) |
+| `counts` | encoder counts during the period, signed |
+| `rpm_milli` | wheel speed from those counts, rpm × 1000 (`tiny_speed`, 4320 counts per turn) |
+
+One count per period is 1.389 rpm, so `rpm_milli` moves in steps of about 1389 and flickers at low speed. Values are scaled integers, so the node never formats floats.
+
+`ENC ZERO` while telemetry is on makes the position jump, so the next row shows one large false `counts` and `rpm_milli` (minus the position before the reset); the rows after it are normal again.
 
 ## Motor drive
 
@@ -46,7 +67,7 @@ sequenceDiagram
     participant task as drive task
 
     Note over hw: until configured, the DRV8833's pull-downs hold STBY, AIN1, AIN2 low
-    main->>main: encoder_start()
+    main->>main: encoder_start(), telemetry_start()
     main->>drive: drive_start()
     drive->>hw: STBY level low, then STBY as output (never drives high)
     drive->>hw: LEDC timer: 20 kHz, 10 bit
@@ -80,6 +101,7 @@ sequenceDiagram
         task->>motor: tiny_motor_step(counts), under s_lock
         motor-->>task: duty (moves at most 50 permille toward target)
         task->>hw: apply(RUN, duty): tiny_motor_pins() to both channels, then STBY high
+        task->>task: telemetry_push(): the row for the period that ended
     end
     Note over motor: duty 50, 100 ... 500 in 100 ms, hold, after 500 steps target 0, ramp down to 0, then IDLE
     task->>hw: apply(IDLE, 0): STBY low, then both inputs low

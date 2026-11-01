@@ -41,14 +41,14 @@ Nothing in CI touches hardware; see [What the tests don't cover](#what-the-tests
 |---|---|---|
 | Unit tests | Does each hardware-free component do what its header promises? | `test/host/test_*.c` |
 | Exhaustive tests | Is every possible input handled right, not only the examples? | `test_every_transition` in `test_tiny_qdec.c` |
-| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all four suites |
+| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all five suites |
 | Sanitizers | Does any test, passing or not, touch memory out of bounds or hit undefined behavior? | the `SANITIZE` option in `test/host/CMakeLists.txt` |
 | Mutation tests | Would the tests notice a realistic bug? | `test/host/mutate.py` |
 | Bench checks | Does it work on the real board, motor and encoder? | the Phase 1 plan, run by hand |
 
 ## Strategy
 
-Only code that needs no chip is unit-tested. That code (the parser, the line reader, the decoder and the motor run logic) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock), and the motor into `tiny_motor` (runs, cap, slew, stall, pin mapping) and `drive.c` (PWM, driver pins, the 100 Hz loop).
+Only code that needs no chip is unit-tested. That code (the parser, the line reader, the decoder, the motor run logic and the speed conversion) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock), and the motor into `tiny_motor` (runs, cap, slew, stall, pin mapping), `tiny_speed` (counts to rpm) and `drive.c` (PWM, driver pins, the 100 Hz loop, telemetry rows).
 
 Each component has one test file, built into its own executable and registered with CTest. The framework is [Unity](https://github.com/ThrowTheSwitch/Unity) v2.7.0, which CMake fetches at a pinned commit.
 
@@ -115,11 +115,23 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 14 | forward and reverse swapped on the pins | the pin tests |
 | 15 | fast decay instead of slow on the pins | the pin tests |
 
+`tiny_speed.c`:
+
+| # | Mutant | Killed by |
+|---|---|---|
+| 1 | no rounding: truncates toward zero | `test_rounds_to_nearest`, `test_halves_round_away_from_zero` |
+| 2 | negative speeds round toward +infinity | `test_exact_speeds`, `test_rounds_to_nearest` |
+| 3 | adds the whole divisor instead of half | `test_no_counts_is_zero`, `test_exact_speeds` |
+| 4 | no guard for a zero divisor | `test_zero_divisor_is_zero` (UBSan: division by zero) |
+| 5 | no guard for a divisor above `INT64_MAX` | `test_huge_divisor_is_zero` |
+| 6 | no upper clamp | `test_clamps_to_int32` |
+| 7 | no lower clamp | `test_clamps_to_int32` |
+
 ### Adding mutants
 
 Add a `(description, original text, replacement)` line to the component's `mutants` list in `mutate.py`. A new component gets its own entry in `TARGETS` (source, include directory, test file). A good mutant is a bug someone could realistically write, in code whose behavior matters. Add one whenever a test is written to guard a specific rule, to prove that the test can fail.
 
-`tiny_qdec` and `tiny_motor` have mutants; `tiny_cmd` has none.
+`tiny_qdec`, `tiny_motor` and `tiny_speed` have mutants; `tiny_cmd` has none.
 
 A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up; it is to be reconsidered for the CAN protocol code in Phase 3 (`.planning/can-rc-car/task_plan.md`).
 
@@ -181,6 +193,15 @@ The motor run logic (`components/tiny_motor`), 18 tests. A small config (cap 800
   - a new run doesn't reset the stall count, so resending `DUTY` to a stuck wheel doesn't hold off the trip
   - a fault refuses new runs until `stop`
 - **Pins (slow decay):** 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount, out-of-range duties are clamped.
+
+### `host/test_tiny_speed.c`
+
+The counts → speed conversion (`components/tiny_speed`), 8 tests, mostly at the firmware's values (10 ms period, 4320 counts per turn).
+
+- **Values:** 0 counts is 0; 72 counts per period is exactly 100 rpm, both signs.
+- **Rounding:** to the nearest milli-rpm (1 count per period is 1389, not 1388), halves away from zero (+2.5 → 3, −2.5 → −3).
+- **Inputs used:** twice the period or twice the counts per turn halves the speed.
+- **Limits:** a zero period or resolution gives 0; results beyond int32 are clamped; a divisor beyond `INT64_MAX` gives 0, without overflow.
 
 ### `host/test_tiny_cmd.c`
 
