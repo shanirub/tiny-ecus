@@ -234,6 +234,12 @@
 | D.4 firmware bench check (2026-11-01, branch `phase1/d-measure`) | `DECAY`/`PROBE` commands, slow +30 %, fast ±80 %, mid-run decay change, PSU photos | Both modes drive the right way; mid-run change refused | slow +30 % −37.2 rpm; fast +80 % −92.5, −80 % +95.0; fast 30 % and 50 % don't start (stall trip); mid-run `DECAY` → ERR; invalid 0 | Pass |
 | D.4.4 interrupt load (2026-11-01, branch `phase1/d-measure`) | `PROBE ON`, analyzer D0 A / D1 B / D2 GPIO1 at 12 MHz, 0.5 s at `DUTY 30`, `80`, `80` + telemetry | Load and latency measured; every edge handled | body 1.0 µs, entry median 2.1 / max 8.8 µs, ≥ 2.4 % CPU at 80 %; min real edge gap 14.4 µs (margin ≈ 1.5×); bounce 83–500 ns harmless; invalid 0 | Pass |
 | D.4.5 fast vs slow decay (2026-11-01, branch `phase1/d-measure`) | Downward sweep 80 → 5 % while turning, each mode, PSU photos | Both curves; a decay choice | fast: 93/62/33/9 rpm at 80/70/60/50 %, stall at 40 %; slow: linear 106 → 2.3 rpm; invalid 0 | Pass |
+| E sign (2026-11-01, branch `phase1/e-pi`) | PSU 7.4 V / 1.5 A, wheel free; `ENC ZERO`, `DUTY 20 2`, `ENC`, telemetry recorded | Positive count and rpm | `pos=3320`, invalid 0; rpm 0 → +25 | Pass |
+| E `SPEED ±60 6` (2026-11-01) | Boot gains kp 6, ki 20, ff 7.3; telemetry; PSU photos | Reaches and holds ±60 rpm | 90 % at 120 ms, peak 65.3 / −63.9, then 59.9..60.6 rpm (100 ms averages); 53–54 mA | Pass |
+| E step 30 → 80 rpm (2026-11-01) | `SPEED 30 6`, `SPEED 80 3` after 3 s | Small overshoot, settles | 90 % at 90 ms, peak 81.9, settled mean 80.17 (1.0–2.9 s after the step); no tuning needed | Pass |
+| E exit test, finger as load (2026-11-01) | `SPEED 60 15`, the user's finger on the wheel | Dips, recovers while loaded | First try (hard, 1.5 s): duty to 798 ‰, speed back only to ≈ 55, 73 rpm after release. Second (light, 5 s): dip to ≈ 53, back to 59–61 while loaded, duty 460 → 590 ‰, 66 rpm after release, settled in ≈ 1.5 s | Pass (second try) |
+| E stall during `SPEED` (2026-11-01) | `SPEED 60 10`, the user grips the wheel; script sends STOP on a mode-2 row | Stall trip fires, STOP | Duty 478 → 800 ‰ within ≈ 80 ms as the wheel slowed, trip exactly 300 ms after it stopped, `OK stopped`, `STATUS` idle; the wheel sprang back slightly after the cut | Pass |
+| E console replies (2026-11-01) | `HELP`, `HELP SPEED/SET/GAINS`, `GAINS`, `SET` valid / out of range / bad name, `SPEED 150`, `SPEED 60 40` | One OK/ERR each as designed | All as in `COMMANDS.md` | Pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

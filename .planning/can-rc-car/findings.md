@@ -226,6 +226,16 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - The PSU current isn't the motor current: in slow decay the off-time current circulates inside the driver, in fast decay it returns to the supply. So the two current rows can't be compared directly.
 - **Decision (user, 2026-11-01): slow decay**, already the default. Linear, symmetric, usable down to a few rpm, and it gives the PI controller an almost constant gain.
 
+### Encoder sign flipped (Phase 1 E, 2026-11-01)
+- Since item E, `encoder.c` feeds B as the decoder's first channel, so positive duty counts **up** and gives positive rpm (`DUTY 20 2` → `pos=3320`). The D.4.1 finding above (positive duty counts down) describes the firmware before the flip; all logs up to D.4 have the opposite sign. The per-side sign for left and right wheels on the car is still open (Phase 2 or when the chassis motors are wired).
+
+### PI speed control on the bench (Phase 1 E, 2026-11-01, spare motor, wheel free, PSU 7.4 V)
+- **Model vs reality:** the plant model used to pick the gains (rpm = 0.137 × duty ‰ − 4.2, 60 ms time constant, from D.4) predicted ≈ 7 % overshoot at kp 6 / ki 20; the bench gave 9 % from rest (65.3 rpm at 60) and 4 % on a 30 → 80 step. Close enough to keep the gains.
+- **Steady state:** the duty needed for 60 rpm drifted 470 → 456 ‰ over 15 s (≈ 3 %), presumably the gearbox warming (as in D.4.2); the integral absorbs it. The feedforward predicts 469.
+- **Load:** a light finger cost ≈ 130 ‰ duty at 60 rpm. A firm press needs more than the 800 ‰ cap can give; the controller then sits at the cap with the integral frozen (anti-windup), and after release overshoots to ≈ 73 rpm while the integral bleeds off (≈ 1.5 s at ki 20). Faster recovery would need a larger ki, which overshoots more on steps.
+- **Stall during `SPEED`:** the trip fires 300 ms after the wheel stops, as with `DUTY`; the controller drives the duty to the cap first (≈ 80 ms). A slowed but turning wheel at the cap is not caught by the stall check; on the car only the run timer or (Phase 2) the setpoint watchdog limits it.
+- **Bench method:** the camera can't take two photos 2 s apart (the second fails with "device busy" while the first ffmpeg still runs); space them ≥ 4 s.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 
