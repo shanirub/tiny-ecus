@@ -6,7 +6,7 @@ The firmware for one ESP32-C3 wheel node: one motor through a DRV8833, one Hall 
 |---|---|
 | `main/main.c` | `app_main`: starts the modules below and the 1 Hz LED blink |
 | `main/pins.h` | every GPIO the firmware uses, and nowhere else |
-| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, `DECAY`, `PROBE`, …), one `OK`/`ERR` reply per line |
+| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, `DECAY`, `PROBE`, …), one `OK`/`ERR` reply per line; how to use them, with real examples: `COMMANDS.md` |
 | `main/telemetry.c` | `T,` lines on the USB port through a queue, so a slow port never blocks the drive task |
 | `main/encoder.c` | encoder pins and interrupt handler; decoding in `tiny_qdec` |
 | `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop, which also sends the telemetry rows; run logic in `tiny_motor`, speed in `tiny_speed` |
@@ -162,7 +162,7 @@ What the motor does in the off part of each 50 µs PWM period. `DECAY SLOW|FAST`
 | Mode | Forward pins | Off part | Effect |
 |---|---|---|---|
 | slow (default) | IN1 high, IN2 PWM (low = drive) | both high: the driver shorts the motor | the current fades slowly and brakes a little; speed follows duty almost linearly |
-| fast | IN1 PWM (high = drive), IN2 low | both low: coast | the current returns to the supply through the driver's diodes; much weaker at the same duty: on the bench motor it doesn't start at 50 % and reaches ≈ 92 rpm at 80 % (slow: 105); the full curve is D.4 |
+| fast | IN1 PWM (high = drive), IN2 low | both low: coast | the current returns to the supply through the driver's diodes; much weaker at the same duty. Bench motor, swept down while turning (D.4.5): 93 / 62 / 33 / 9 rpm at 80 / 70 / 60 / 50 %, stops below ≈ 45 %; from standstill it doesn't start even at 50 %. Slow decay at the same steps: 106 / 93 / 79 / 65 rpm, linear down to 2.3 rpm at 5 % |
 
 ## Interrupt probe
 
