@@ -132,7 +132,7 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 4. **Measure:**
    - direction convention: does positive duty turn the wheel forward, and which channel leads? Recorded for left and right mounting; (done 2026-11-01: + duty turns clockwise seen from the wheel's outer side, counts fall, B leads A; see `findings.md`)
    - no-load speed vs duty curve at 7.4 V (data for the feedforward and the PI); (done 2026-11-01: linear 10–80 %, ≈ 1.37 rpm/%, 105 rpm at 80 %, no start at 5 %; warm-up ≈ +1 %, direction < 1 %)
-   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer; (firmware ready: `PROBE ON`, GPIO1; analyzer D0 = A, D1 = B, D2 = GPIO1, GND to the C3)
+   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer; (firmware ready: `PROBE ON`, GPIO1. Not measured yet; analyzer to connect: D0 = A, D1 = B, D2 = GPIO1, GND to the C3)
    - invalid transitions at full speed (should stay 0); (done 2026-11-01 at the 80 % cap: 0 after 30 s each way)
    - fast vs slow decay: the speed-vs-duty curve for both. (firmware ready: `DECAY SLOW|FAST`. First look 2026-11-01: fast decay doesn't start from rest at 30 % or 50 % and reaches ≈ 92 rpm at 80 %, slow 105. From rest the stall check trips before fast decay starts, so its curve has to be swept downward from 80 % while the wheel turns)
 
