@@ -113,7 +113,10 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 12 | the run ends one step late | `test_run_ends_with_ramp_then_idle` |
 | 13 | never returns to IDLE after a run | the same, and `test_zero_step_run_ramps_down` |
 | 14 | forward and reverse swapped on the pins | the pin tests |
-| 15 | fast decay instead of slow on the pins | the pin tests |
+| 15 | slow decay pulses like fast: the pulse is the drive, not the brake | the slow-decay pin tests |
+| 16 | the decay argument is ignored: always slow | `test_pins_fast_decay` |
+| 17 | fast decay: forward and reverse swapped on the pins | the fast-decay pin tests |
+| 18 | fast decay holds the idle pin high, so the off part drives in reverse | the fast-decay pin tests |
 
 `tiny_speed.c`:
 
@@ -177,7 +180,7 @@ The quadrature decoder (`components/tiny_qdec`), 15 tests. The helper `turn(n)` 
 
 ### `host/test_tiny_motor.c`
 
-The motor run logic (`components/tiny_motor`), 18 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
+The motor run logic (`components/tiny_motor`), 19 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
 
 - **Runs:**
   - idle outputs 0
@@ -192,7 +195,10 @@ The motor run logic (`components/tiny_motor`), 18 tests. A small config (cap 800
   - ±1 count is "not moving", ±2 is moving, and the `INT32_MIN`/`INT32_MAX` extremes are moving (without overflowing)
   - a new run doesn't reset the stall count, so resending `DUTY` to a stuck wheel doesn't hold off the trip
   - a fault refuses new runs until `stop`
-- **Pins (slow decay):** 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount, out-of-range duties are clamped.
+- **Pins:**
+  - slow decay: 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount (high = brake)
+  - fast decay: 0 coasts (both low), ±1000 the same as slow, part duties PWM the driving pin (high = drive) while the other stays low
+  - out-of-range duties are clamped in both modes
 
 ### `host/test_tiny_speed.c`
 

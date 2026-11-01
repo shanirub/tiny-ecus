@@ -39,6 +39,7 @@ static const tiny_motor_cfg_t s_cfg = {
 
 // Shared between the drive task and the console; only touched inside s_lock.
 static tiny_motor_t s_motor;
+static tiny_motor_decay_t s_decay = TINY_MOTOR_DECAY_SLOW;
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 
 static void set_pins(uint32_t in1, uint32_t in2)
@@ -49,17 +50,17 @@ static void set_pins(uint32_t in1, uint32_t in2)
     ESP_ERROR_CHECK(ledc_update_duty(PWM_MODE, PWM_CH_IN2));
 }
 
-// Only this task writes the driver pins. Running: driver awake, slow-decay PWM.
-// Otherwise: both inputs low (coast) and the driver asleep.
+// Only this task writes the driver pins. Running: driver awake, PWM in the
+// selected decay mode. Otherwise: both inputs low (coast) and the driver asleep.
 // STBY is the outer switch: inputs before waking, sleep before the inputs.
 // A new LEDC duty starts at the next PWM period (up to 50 µs) and the two
 // channels may switch in different periods, so the inputs pass through
 // mixed states; with the driver asleep those never reach the motor.
-static void apply(tiny_motor_mode_t mode, int32_t duty)
+static void apply(tiny_motor_mode_t mode, int32_t duty, tiny_motor_decay_t decay)
 {
     if (mode == TINY_MOTOR_RUN) {
         uint32_t in1, in2;
-        tiny_motor_pins(duty, PWM_FULL, &in1, &in2);
+        tiny_motor_pins(duty, decay, PWM_FULL, &in1, &in2);
         set_pins(in1, in2);
         gpio_set_level(MOTOR_STBY_GPIO, 1);  // the driver ignores inputs for up to 1 ms after waking
     } else {
@@ -94,9 +95,10 @@ static void drive_task(void *arg)
         portENTER_CRITICAL(&s_lock);
         int32_t duty = tiny_motor_step(&s_motor, &s_cfg, counts);
         tiny_motor_mode_t mode = s_motor.mode;
+        tiny_motor_decay_t decay = s_decay;
         portEXIT_CRITICAL(&s_lock);
 
-        apply(mode, duty);
+        apply(mode, duty, decay);
 
         // The row for the period that just ended pairs its counts with the
         // duty that produced them. Pushed after apply() so it never delays the
@@ -167,10 +169,22 @@ void drive_stop(void)
     portEXIT_CRITICAL(&s_lock);
 }
 
-void drive_status(tiny_motor_mode_t *mode, int32_t *duty_pct)
+bool drive_set_decay(tiny_motor_decay_t decay)
+{
+    portENTER_CRITICAL(&s_lock);
+    bool ok = s_motor.mode != TINY_MOTOR_RUN;
+    if (ok) {
+        s_decay = decay;
+    }
+    portEXIT_CRITICAL(&s_lock);
+    return ok;
+}
+
+void drive_status(tiny_motor_mode_t *mode, int32_t *duty_pct, tiny_motor_decay_t *decay)
 {
     portENTER_CRITICAL(&s_lock);
     *mode = s_motor.mode;
     *duty_pct = s_motor.duty / 10;
+    *decay = s_decay;
     portEXIT_CRITICAL(&s_lock);
 }

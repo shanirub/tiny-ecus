@@ -6,7 +6,7 @@ The firmware for one ESP32-C3 wheel node: one motor through a DRV8833, one Hall 
 |---|---|
 | `main/main.c` | `app_main`: starts the modules below and the 1 Hz LED blink |
 | `main/pins.h` | every GPIO the firmware uses, and nowhere else |
-| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, …), one `OK`/`ERR` reply per line |
+| `main/console.c` | the serial commands (`HELP`, `STATUS`, `ENC`, `DUTY`, `STOP`, `DECAY`, `PROBE`, …), one `OK`/`ERR` reply per line |
 | `main/telemetry.c` | `T,` lines on the USB port through a queue, so a slow port never blocks the drive task |
 | `main/encoder.c` | encoder pins and interrupt handler; decoding in `tiny_qdec` |
 | `main/drive.c` | motor PWM, driver pins and the 100 Hz drive loop, which also sends the telemetry rows; run logic in `tiny_motor`, speed in `tiny_speed` |
@@ -53,7 +53,7 @@ stateDiagram-v2
 | State | Driver | Pins |
 |---|---|---|
 | `IDLE` | asleep (STBY low) | both inputs low: coast |
-| `RUN` | awake (STBY high) | slow-decay PWM from `tiny_motor_pins()` |
+| `RUN` | awake (STBY high) | PWM from `tiny_motor_pins()` in the decay mode set by `DECAY` (slow at boot) |
 | `FAULT` | asleep (STBY low) | both inputs low: coast; latched until `STOP` (or a reset) |
 
 ### Boot
@@ -154,3 +154,22 @@ sequenceDiagram
     console-->>you: OK stopped
     Note over motor: IDLE, DUTY accepted again
 ```
+
+### Decay mode
+
+What the motor does in the off part of each 50 µs PWM period. `DECAY SLOW|FAST` picks it; it is refused while a run is going, so the mapping never changes mid-run, and `STATUS` shows it.
+
+| Mode | Forward pins | Off part | Effect |
+|---|---|---|---|
+| slow (default) | IN1 high, IN2 PWM (low = drive) | both high: the driver shorts the motor | the current fades slowly and brakes a little; speed follows duty almost linearly |
+| fast | IN1 PWM (high = drive), IN2 low | both low: coast | the current returns to the supply through the driver's diodes; much weaker at the same duty: on the bench motor it doesn't start at 50 % and reaches ≈ 92 rpm at 80 % (slow: 105); the full curve is D.4 |
+
+## Interrupt probe
+
+`PROBE ON` makes GPIO1 an output that is high while `encoder_isr` runs; `PROBE OFF` (the default) leaves it undriven. With the logic analyzer on A, B and GPIO1:
+
+- the width of each probe pulse is the handler's own run time;
+- the gap from an A or B edge to the probe's rising edge is the interrupt entry: the CPU saving the task and ESP-IDF's GPIO dispatcher finding the pin;
+- the return after the probe falls (dispatcher exit, task restore) isn't visible, so the measured total is a lower bound.
+
+The interrupt load at a given speed is about edges per second × time per interrupt. GPIO1 is reserved for the corner LED in Phase 4; the probe moves or goes away then.

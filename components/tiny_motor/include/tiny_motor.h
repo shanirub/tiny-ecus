@@ -7,7 +7,8 @@
 // tiny_motor_step() once per control period and applies its result.
 //
 // Duty is signed, in permille: +1000 is full forward, -1000 full reverse.
-// Which direction "forward" means on the wheel is decided in Phase 1 D.4.
+// On the bench motor, positive duty turns the wheel clockwise seen from its
+// outer side, and the encoder counts down (Phase 1 D.4.1).
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,6 +26,15 @@ typedef struct {
     int32_t stall_counts;    // |encoder counts| per step at or below this = not moving
     uint32_t stall_steps;    // that many steps in a row = stalled
 } tiny_motor_cfg_t;
+
+// What the motor does in the off part of each PWM period (DRV8833 datasheet,
+// "PWM control"). Slow decay shorts the motor through the driver: the current
+// fades slowly and brakes a little. Fast decay lets both pins go low: the
+// current falls quickly back into the supply and the motor coasts.
+typedef enum {
+    TINY_MOTOR_DECAY_SLOW,
+    TINY_MOTOR_DECAY_FAST,
+} tiny_motor_decay_t;
 
 typedef enum {
     TINY_MOTOR_IDLE,   // stopped, output off
@@ -61,12 +71,15 @@ void tiny_motor_stop(tiny_motor_t *m);
 int32_t tiny_motor_step(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t counts);
 
 /**
- * DRV8833 slow-decay mapping: the duty for each input pin, in 0..full (full =
- * 2^resolution of the PWM timer, i.e. constantly high). Forward holds IN1 high
- * and PWMs IN2: IN2 low drives forward, IN2 high brakes (both high). Reverse
- * mirrors it. Duty 0 gives both high: brake.
+ * DRV8833 mapping from a signed duty to the duty of each input pin, in 0..full
+ * (full = 2^resolution of the PWM timer, i.e. constantly high). Reverse mirrors
+ * forward in both modes.
+ *  - Slow decay: forward holds IN1 high and PWMs IN2: IN2 low drives forward,
+ *    IN2 high brakes (both high). Duty 0 gives both high: brake.
+ *  - Fast decay: forward PWMs IN1 and holds IN2 low: IN1 high drives forward,
+ *    IN1 low coasts (both low). Duty 0 gives both low: coast.
  */
-void tiny_motor_pins(int32_t duty, uint32_t full, uint32_t *in1, uint32_t *in2);
+void tiny_motor_pins(int32_t duty, tiny_motor_decay_t decay, uint32_t full, uint32_t *in1, uint32_t *in2);
 
 #ifdef __cplusplus
 }

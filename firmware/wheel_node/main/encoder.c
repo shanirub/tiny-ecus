@@ -1,5 +1,7 @@
 #include "encoder.h"
 
+#include <stdatomic.h>
+
 #include "driver/gpio.h"
 #include "esp_attr.h"
 #include "esp_check.h"
@@ -12,6 +14,7 @@
 // Shared between the ISR and tasks; only touched inside s_lock.
 static tiny_qdec_t s_qdec;
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
+static atomic_bool s_probe;
 
 // Both levels from one register read, so A and B are sampled at the same
 // instant. gpio_get_level() would be two reads and isn't guaranteed to be in
@@ -42,12 +45,24 @@ static inline IRAM_ATTR uint8_t read_state(void)
 // If both pins changed before it ran, it is called once per pin: the first
 // call sees both changed (counted as invalid), the second sees no change and
 // adds 0.
+//
+// The probe (PROBE ON) is high from here to the end of this handler only. The
+// time from an encoder edge to the probe's rising edge shows steps 1-4; the
+// time after it (the dispatcher's return and the task restore) isn't visible.
+// Plain register writes: one store each, in IRAM like the rest.
 static void IRAM_ATTR encoder_isr(void *arg)
 {
     (void)arg;
+    bool probe = atomic_load_explicit(&s_probe, memory_order_relaxed);
+    if (probe) {
+        REG_WRITE(GPIO_OUT_W1TS_REG, 1u << ISR_PROBE_GPIO);
+    }
     portENTER_CRITICAL_ISR(&s_lock);
     tiny_qdec_update(&s_qdec, read_state());
     portEXIT_CRITICAL_ISR(&s_lock);
+    if (probe) {
+        REG_WRITE(GPIO_OUT_W1TC_REG, 1u << ISR_PROBE_GPIO);
+    }
 }
 
 void encoder_start(void)
@@ -85,4 +100,36 @@ void encoder_zero(void)
     portENTER_CRITICAL(&s_lock);
     tiny_qdec_zero(&s_qdec);
     portEXIT_CRITICAL(&s_lock);
+}
+
+// Called from the console task only. The pin is an output before the handler
+// can drive it, and the handler has stopped driving it before it goes back to
+// an input; a handler already running may still clear the pin once, harmless.
+void encoder_set_probe(bool on)
+{
+    if (on == atomic_load(&s_probe)) {
+        return;
+    }
+    if (on) {
+        gpio_set_level(ISR_PROBE_GPIO, 0);
+        const gpio_config_t cfg = {
+            .pin_bit_mask = 1ULL << ISR_PROBE_GPIO,
+            .mode = GPIO_MODE_OUTPUT,
+        };
+        ESP_ERROR_CHECK(gpio_config(&cfg));
+        atomic_store(&s_probe, true);
+    } else {
+        atomic_store(&s_probe, false);
+        // Off: neither input nor output and no pulls, like the pin after reset.
+        // gpio_reset_pin() also releases the output reservation that
+        // gpio_config() took (re-configuring a reserved pin logs a conflict),
+        // but turns the pull-up on, so that goes off again.
+        ESP_ERROR_CHECK(gpio_reset_pin(ISR_PROBE_GPIO));
+        ESP_ERROR_CHECK(gpio_pullup_dis(ISR_PROBE_GPIO));
+    }
+}
+
+bool encoder_probe(void)
+{
+    return atomic_load(&s_probe);
 }
