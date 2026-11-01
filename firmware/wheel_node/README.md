@@ -30,6 +30,8 @@ T,123450,1,500,48,66667
 
 One count per period is 1.389 rpm, so `rpm_milli` moves in steps of about 1389 and flickers at low speed. Values are scaled integers, so the node never formats floats.
 
+`ENC ZERO` while telemetry is on makes the position jump, so the next row shows one large false `counts` and `rpm_milli` (minus the position before the reset); the rows after it are normal again.
+
 ## Motor drive
 
 Two parts: `tiny_motor` (component) decides, `drive.c` (here) acts. Two tasks share the motor state: the console task changes it on `DUTY` and `STOP`, and the drive task advances it every 10 ms. They only meet inside the `s_lock` critical section in `drive.c`. Only the drive task writes the driver pins.
