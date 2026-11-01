@@ -198,6 +198,11 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
   - Conclusion: most of the 2 % gap in the 30 s sweep was warm-up (its − half ran 5 min later); direction adds under 1 %. Both are well within what item E's PI controller corrects.
   - Camera: 48 photos, 47 read cleanly; run 2 reads 0.045 or 0.049 A (the display was mid-update, one segment half lit). The camera had moved between the test shot and the run, so the crop is chosen from a full photo each session.
 
+### Fast decay, first look (D.4.5, 2026-11-01, branch `phase1/d-measure`)
+- Same motor, PSU 7.4 V, no load. Fast decay (IN1 PWM, IN2 low forward; off part coasts) drives the right way, but much more weakly than slow decay: no start from rest at 30 % or 50 % (the stall check tripped both times, as designed), ≈ 92 rpm at +80 % and 95 rpm at −80 % against ≈ 105 in slow decay. PSU 0.075 A at fast −80 % (slow 80 %: 0.104 A, 2026-10-31).
+- Likely cause (textbook, not measured here): in fast decay the winding current collapses during each off-time instead of circulating, so the average current, and with it the torque, is lower for the same duty. Slow decay keeps the current flowing and gives the near-linear curve measured in D.4.2.
+- For the full curve: from rest the stall check (≥ 30 % duty, ≤ 1 count, 300 ms) trips before fast decay starts, so sweep downward from 80 % while the wheel is turning and find where it stops.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

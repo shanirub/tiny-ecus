@@ -91,6 +91,7 @@ Re-mapped 2026-10-22 (was AIN1/AIN2 = 6/7, encoder = 5/10, STBY = 20): the C3 da
 | Onboard status LED | 8 | Already used, active-low; a strapping pin, but fine as an output after boot |
 | Reserved: CAN TX / RX (Phase 2) | 3 / 4 | Keeps CAN off GPIO21, which the boot ROM drives with log output at power-up; that would put garbage on the bus |
 | Reserved: battery ADC (Phase 5, one node) / corner LED (Phase 4) | 0 / 1 | ADC1 pins |
+| Measurement probe (`PROBE ON`, D.4) | 1 (borrowed) | High while the encoder interrupt handler runs, for the logic analyzer; undriven when off. Moves or goes away when the corner LED takes GPIO1 in Phase 4 |
 | Module STBY (driver sleep) | 10 | No pull at reset, so the driver's internal 500 kΩ pull-down keeps it asleep until the firmware wakes it (A.1: no pull-up on the board). Also gives firmware a hard "all outputs off" |
 | Driver fault output | none | The module doesn't bring nFAULT out |
 
@@ -121,7 +122,7 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
-PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): bench check run before merge this time (user choice) and passed; merged 2026-11-01 (`5da32d8`), `main` flashed and `STATUS` checked. D.4 next.
+PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): bench check run before merge this time (user choice) and passed; merged 2026-11-01 (`5da32d8`), `main` flashed and `STATUS` checked. D.4 measurements 1–3 ran on `main`; the firmware for 4–5 (`DECAY`, `PROBE`) is on branch `phase1/d-measure` (`f11ca27`), bench-checked 2026-11-01, PR not opened yet.
 
 Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, duty → pin mapping; 18 host tests, 15 mutants), `drive.c` (LEDC 20 kHz / 10 bit on AIN1/AIN2, STBY, 100 Hz drive task at priority 6), console `DUTY` / `STOP`, `STATUS` with drive mode and duty, `components/tiny_speed` (counts per period → milli-rpm; 8 host tests, 7 mutants), telemetry rows `t_ms,mode,duty_permille,counts,rpm_milli` sent by the drive task (sine placeholder removed), `firmware/wheel_node/README.md` (state and sequence diagrams).
 
@@ -131,9 +132,9 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 4. **Measure:**
    - direction convention: does positive duty turn the wheel forward, and which channel leads? Recorded for left and right mounting; (done 2026-11-01: + duty turns clockwise seen from the wheel's outer side, counts fall, B leads A; see `findings.md`)
    - no-load speed vs duty curve at 7.4 V (data for the feedforward and the PI); (done 2026-11-01: linear 10–80 %, ≈ 1.37 rpm/%, 105 rpm at 80 %, no start at 5 %; warm-up ≈ +1 %, direction < 1 %)
-   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer;
+   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer; (firmware ready: `PROBE ON`, GPIO1; analyzer D0 = A, D1 = B, D2 = GPIO1, GND to the C3)
    - invalid transitions at full speed (should stay 0); (done 2026-11-01 at the 80 % cap: 0 after 30 s each way)
-   - fast vs slow decay: the speed-vs-duty curve for both.
+   - fast vs slow decay: the speed-vs-duty curve for both. (firmware ready: `DECAY SLOW|FAST`. First look 2026-11-01: fast decay doesn't start from rest at 30 % or 50 % and reaches ≈ 92 rpm at 80 %, slow 105. From rest the stall check trips before fast decay starts, so its curve has to be swept downward from 80 % while the wheel turns)
 
 ### E. PI speed control
 1. PI controller as pure logic with anti-windup and output limits (host-tested: steady state reaches the setpoint, windup stays bounded at saturation).

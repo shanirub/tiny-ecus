@@ -180,6 +180,11 @@
 - D.4.2 speed vs duty: `ENC ZERO`, `TELEM ON`, then `DUTY d 3` for d = 5, 10, 15, 20, 30…80 %, then the same negative, 1 s gaps, no stall trip; `ENC` after: `pos=-51 invalid=0`, `drops=0`. Linear from 10 to 80 % (≈ 1.367 rpm/%, 105 rpm at 80 %), 5 % doesn't start. Log `logs/20261101-123741-d4-sweep.*`, table in `findings.md`.
 - D.4.2 repeated at 30 s per step (user request): + duty matches the 3 s sweep within 0.4 rpm; − duty (run second, after 5 min) 0.3–2 % faster, probably warm-up, not separated yet. 5 % never started. `pos=13807 invalid=0`, `drops=0`: D.4.3 covered at 80 %. Log `logs/20261101-124339-d4-sweep30.*`.
 - D.4.2 warm-up check (user request): alternating ±40 %, 10 s each, 24 pairs from cold, PSU current read by camera (first use; `ffmpeg` one frame per run, `logs/` is git-ignored). Both directions sped up ≈ 1 % while the current fell 0.045 → 0.043 A: warm-up. − duty 0.4–0.7 % faster: small direction offset. `pos=4042 invalid=0`, `drops=0`. Log `logs/20261101-135018-d4-alt.*`.
+- D.4 firmware on branch `phase1/d-measure` (user choices: probe on GPIO1, `PROBE ON|OFF` and `DECAY SLOW|FAST` as console commands). `tiny_motor_pins()` takes a decay mode (19 host tests, 18 mutants, all killed); `drive.c` keeps the mode under `s_lock` and refuses changes while running; the encoder ISR sets/clears GPIO1 by register write when the probe is on (still in IRAM, no new calls). First flash: `PROBE OFF` logged "conflict found for GPIO[1]" (IDF reserves an output pin; re-`gpio_config` warns); fixed with `gpio_reset_pin()` + `gpio_pullup_dis()`.
+- Bench check of the branch (PSU 7.4 V, wheel free, photos of the PSU):
+  1. First script: fast decay `DUTY 30 3` didn't move the wheel (0 counts), the stall trip latched as designed, and **my script had no conditional `STOP`**, so the next two runs were refused (`ERR stall fault latched`). Cleared with `STOP`; the later scripts send `STOP` when a stall row appears.
+  2. Fast decay `DUTY 50 2`: no movement either, stall trip, `STOP`. Fast `DUTY 80 2`: runs, −91.9 rpm, same direction as slow decay. So the mapping is right and fast decay needs far more duty to start (a D.4.5 result, not a bug).
+  3. Slow `DUTY 30 3` → −37.2 rpm, `DECAY FAST` mid-run → `ERR motor running`; fast `DUTY 80 3` → −92.5 rpm, `DECAY SLOW` mid-run refused; fast `DUTY -80 3` → +95.0 rpm. Invalid 0 throughout, drops 0. PSU 0.075 A at fast −80 % (slow 80 % was 0.104 A on 2026-10-31). Two photos read 0.000 A because the camera takes ≈ 3 s from launch to frame, so they landed after the 3 s runs ended (file times checked). Logs `logs/20261101-1413*-d4-decay-*`, `logs/20261101-141502-d4-decay-check2*`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -219,6 +224,7 @@
 | D.4.2 speed vs duty, 30 s per step (2026-11-01) | as above, `DUTY ±d 30`, ≈ 10.5 min continuous | Same curve, tighter means | + duty 1.370 rpm/%, 105.4 rpm at 80 %; − duty 0.3–2 % faster (likely warm-up); 5 % doesn't start; invalid 0, drops 0 | Pass (direction vs warm-up open) |
 | D.4.3 invalid at full speed (2026-11-01) | Covered by the 30 s sweep: 30 s at each of ±80 % | invalid stays 0 | `invalid=0` after ≈ 450 k edges at 80 % | Pass |
 | D.4.2 warm-up vs direction (2026-11-01) | Cold start, `DUTY ±40 10` alternating ×24, camera photo of the PSU per run | Warm-up: both directions drift together; direction: constant offset | + 50.52 → 51.06 rpm, − 50.89 → 51.27; current 0.045 → 0.043 A both ways; invalid 0 | Pass: mostly warm-up, direction < 1 % |
+| D.4 firmware bench check (2026-11-01, branch `phase1/d-measure`) | `DECAY`/`PROBE` commands, slow +30 %, fast ±80 %, mid-run decay change, PSU photos | Both modes drive the right way; mid-run change refused | slow +30 % −37.2 rpm; fast +80 % −92.5, −80 % +95.0; fast 30 % and 50 % don't start (stall trip); mid-run `DECAY` → ERR; invalid 0 | Pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
