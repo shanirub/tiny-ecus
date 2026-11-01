@@ -191,6 +191,7 @@
 - PR #8 review: no code findings. The `STATUS` reply can reach 122/128 bytes, which the user noted for item E (see the phase plan, E.2). Pushed `15aa9d5` to the branch, Markdown only: new `firmware/wheel_node/COMMANDS.md` (console usage with real replies from this session and a `HELP` read from the board), the measured decay curves in the README. PR description updated with the D.4.4 and D.4.5 results. CI wasn't rerun or waited for (Markdown only, the user's call).
 - Decay decision: the user chose slow decay (the default); recorded in the Decisions table.
 - PR #8 merged (`8db685b`), including `15aa9d5` (COMMANDS.md, README decay curves). The planning updates for the decay decision were still uncommitted at merge time; they go to `main` directly anyway, so nothing was lost. Committed after the merge.
+- `main` (`3e2a542`) built with no warnings and flashed: `STATUS` → `ver=3e2a542 … drive=idle duty=0 decay=slow probe=off`, `HELP` lists `DECAY` and `PROBE`, `ENC` → `pos=0 invalid=0`. PR #8 was a squash merge; the branch head `15aa9d5` has no differences from `main` outside `.planning/`. Branch `phase1/d-measure` deleted locally and on GitHub.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
