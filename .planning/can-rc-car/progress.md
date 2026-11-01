@@ -176,6 +176,10 @@
 ## Session: 2026-11-01
 - PR #7 reviewed (firmware and `tiny_speed` diff): no blocking issues. Two notes: `ENC ZERO` with telemetry on gives one false `counts`/`rpm_milli` row (README line added on the branch, `14d246c`); `rpm_milli` assumes a 10 ms period (a late period would show in `t_ms`, not seen on the bench). The user merged it as `5da32d8`.
 - `main` built and flashed: `STATUS` → `ver=5da32d8 telem=off drops=0 drive=idle duty=0`, `ENC` → `pos=0 invalid=0`. No motor run (code unchanged since the bench check).
+- D.4.1 direction convention: `ENC ZERO`, `DUTY 20 2`, `ENC`, 5 s pause, `ENC ZERO`, `DUTY -20 2`, `ENC`, run twice (the first time the user read the PSU, 0.023 A both ways, because my message asked for it alongside the wheel; the second time they watched the wheel). +20 % → clockwise seen from the wheel's outer side, −3304 / −3299 counts; −20 % → counter-clockwise, +3284 / +3288; invalid 0. Details in `findings.md`.
+- D.4.2 speed vs duty: `ENC ZERO`, `TELEM ON`, then `DUTY d 3` for d = 5, 10, 15, 20, 30…80 %, then the same negative, 1 s gaps, no stall trip; `ENC` after: `pos=-51 invalid=0`, `drops=0`. Linear from 10 to 80 % (≈ 1.367 rpm/%, 105 rpm at 80 %), 5 % doesn't start. Log `logs/20261101-123741-d4-sweep.*`, table in `findings.md`.
+- D.4.2 repeated at 30 s per step (user request): + duty matches the 3 s sweep within 0.4 rpm; − duty (run second, after 5 min) 0.3–2 % faster, probably warm-up, not separated yet. 5 % never started. `pos=13807 invalid=0`, `drops=0`: D.4.3 covered at 80 %. Log `logs/20261101-124339-d4-sweep30.*`.
+- D.4.2 warm-up check (user request): alternating ±40 %, 10 s each, 24 pairs from cold, PSU current read by camera (first use; `ffmpeg` one frame per run, `logs/` is git-ignored). Both directions sped up ≈ 1 % while the current fell 0.045 → 0.043 A: warm-up. − duty 0.4–0.7 % faster: small direction offset. `pos=4042 invalid=0`, `drops=0`. Log `logs/20261101-135018-d4-alt.*`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -210,6 +214,11 @@
 | D.1–D.2 bench check (2026-10-31) | Firmware `39c1e68`, PSU 7.4 V / 1.5 A; the six checks in PR #6 via `send_cmd.py` (check 5 for 3 s, check 6 as `DUTY 50 3`) | Idle 0 V on STBY/AIN1/AIN2; ±30 % runs ramp down; `STOP` cuts at once; 100 % capped to 80; held motor trips `drive=stall`, latched until `STOP` | All as expected; `invalid=0` throughout. PSU: 0.032 A at 30 %, 0.059 A at 50 %, 0.104 A at 80 % (0.116 A at start), 0.368 A flash at the stall trip. ≈ 36 / 67 / 100 wheel rpm at 30 / 50 / 80 %. VM–GND 7.41 V | pass |
 | D.3 telemetry bench check (2026-10-31, PR #7) | Firmware `33b6f45`, PSU 7.4 V / 1.5 A; `plot_run.py` idle 2 s, `DUTY 30` 7 s, `DUTY 50 3` stall with body and wheel held | One row per 10 ms, columns as in the header; ramp/hold/ramp-down visible; stall → `mode` 2, duty 0 | All rows 10 ms apart, `drops=0`; hold at 30 % −26/−27 counts (−36.6 rpm); stall trip at 450 ms after ≈ 9° wind-up | pass |
 | D.3 after merge (2026-11-01) | `main` at `5da32d8` flashed; `send_cmd.py STATUS ENC` | Boots, version matches, idle | `ver=5da32d8`, `drive=idle duty=0`, `drops=0`, `pos=0 invalid=0` | Pass |
+| D.4.1 direction (2026-11-01) | `main` `5da32d8`, PSU 7.4 V / 1.5 A, wheel free; `DUTY ±20 2` with `ENC ZERO`/`ENC`, twice | Opposite signs and directions for ± duty, invalid 0 | +20 % clockwise (outer side), −3304/−3299; −20 % counter-clockwise, +3284/+3288; invalid 0; 0.023 A | Pass |
+| D.4.2 speed vs duty (2026-11-01) | `main` `5da32d8`, PSU 7.4 V / 1.5 A, wheel free; `DUTY ±d 3`, d = 5–80 %, telemetry logged | A monotonic curve, symmetric both ways | 0 rpm at 5 %, 9.4 at 10 %, 105 at 80 %, linear (max 0.23 rpm off), ± within 0.2 rpm; invalid 0, drops 0 | Pass |
+| D.4.2 speed vs duty, 30 s per step (2026-11-01) | as above, `DUTY ±d 30`, ≈ 10.5 min continuous | Same curve, tighter means | + duty 1.370 rpm/%, 105.4 rpm at 80 %; − duty 0.3–2 % faster (likely warm-up); 5 % doesn't start; invalid 0, drops 0 | Pass (direction vs warm-up open) |
+| D.4.3 invalid at full speed (2026-11-01) | Covered by the 30 s sweep: 30 s at each of ±80 % | invalid stays 0 | `invalid=0` after ≈ 450 k edges at 80 % | Pass |
+| D.4.2 warm-up vs direction (2026-11-01) | Cold start, `DUTY ±40 10` alternating ×24, camera photo of the PSU per run | Warm-up: both directions drift together; direction: constant offset | + 50.52 → 51.06 rpm, − 50.89 → 51.27; current 0.045 → 0.043 A both ways; invalid 0 | Pass: mostly warm-up, direction < 1 % |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

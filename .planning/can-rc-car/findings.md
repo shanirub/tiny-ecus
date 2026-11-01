@@ -161,6 +161,43 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - **Stall wind-up:** with the motor body and wheel held by hand at 50 % duty, the wheel still turned ≈ 112 counts (≈ 9°) during the first 150 ms, peaking at 12 counts per period, before stopping. The stall timer only starts once the counts drop to ≤ 1, so the trip came 450 ms after the start instead of the configured 300 ms. After the cut the wheel swung back ≈ 200 counts, past its start, then ≈ 70 the other way, settling within ~0.3 s. Cause not separated: elastic give (tyre rubber, grip, gearbox slack) and the user's hand tightening its hold (the user felt the wheel move at the start); the swing back past the start suggests the hand was pushing against the motor when it went limp. A rigid clamp would separate the two.
 - **Correction:** the D.1–D.2 stall check read the encoder only once, about 1 s after the run (8 / 17 counts), and called it slack. That was the net after the wind-up and swing back, not the size of the movement.
 
+### Direction convention (D.4.1, 2026-11-01, bench spare motor, unmounted)
+- Seen from the wheel's outer side, looking along the shaft toward the motor body: positive duty (IN1 driven, IN2 PWM) turns the wheel **clockwise** and the count goes **down**; negative duty turns it counter-clockwise and the count goes up. By the `tiny_qdec` convention (+1 when A leads B), positive duty means B leads A. That comes from the decoder table; the analyzer didn't look at it.
+- Readings: `DUTY 20 2` → −3304 / −3299, `DUTY -20 2` → +3284 / +3288 (two runs each), invalid 0 throughout; the two directions agree within 0.6 %. PSU 0.023 A at ±20 % (fits duty × ≈ 0.115 A free-running current).
+- On the car (inference, assumes every motor is mounted the same way with its wheel facing outward, mirrored left to right): forward is clockwise for a right-side wheel seen from outside and counter-clockwise for a left-side one. So with this wiring a right wheel goes forward on positive duty with falling counts, and a left wheel needs negative duty and sees rising counts. Each node will need a per-side sign for duty and for counts so that "forward" and positive speed agree; where that sign lives is decided later (item E or Phase 2), and the chassis motors' wiring has to be checked when they're connected.
+
+### Speed vs duty, no load, slow decay (D.4.2, 2026-11-01, bench spare motor, PSU 7.4 V)
+- Sweep 5–80 % both ways, 3 s per step, mean over the hold after skipping 0.3 s (≈ 255–268 periods per step). Log: `logs/20261101-123741-d4-sweep.csv` / `.png`.
+
+  | \|duty\| % | 5 | 10 | 15 | 20 | 30 | 40 | 50 | 60 | 70 | 80 |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | wheel rpm, + duty | 0 | 9.46 | 16.38 | 23.16 | 36.98 | 50.64 | 64.47 | 77.98 | 91.57 | 105.00 |
+  | wheel rpm, − duty | 0.06 | 9.28 | 16.28 | 23.12 | 36.95 | 50.64 | 64.41 | 78.00 | 91.54 | 105.15 |
+
+- From 10 to 80 % the speed is a straight line: ≈ 1.367 rpm per % duty, crossing 0 at ≈ 3 % (+ duty: 1.3665 rpm/%, intercept −4.09 rpm; − duty: 1.3693, −4.24); the largest point off the line is 0.23 rpm. The two directions agree within 0.2 rpm.
+- At 5 % the wheel doesn't start (static friction holds it), though the line says it would turn at ≈ 2.7 rpm once moving. So the start threshold is between 5 and 10 %; the controller (item E) needs a minimum duty or must accept that targets below ≈ 10 rpm aren't reachable from rest.
+- Spread within a step: standard deviation ≈ 0.4–0.6 counts per period, i.e. the ±1-count flicker of the plain window (D.3), not real speed ripple that this method could see.
+- Extrapolated to 100 %: ≈ 133 rpm (not measured; duty is capped at 80 %).
+- Invalid transitions: 0 after the whole sweep, including 3 s at ±80 % (≈ 7.6 k edges/s).
+
+- **30 s per step (user request, same day, log `logs/20261101-124339-d4-sweep30.csv` / `.png`):** ≈ 2950 periods per step, so each mean is good to ≈ ±0.01 rpm (standard error); the sweep ran continuously for ≈ 10.5 min, + duty first.
+
+  | \|duty\| % | 5 | 10 | 15 | 20 | 30 | 40 | 50 | 60 | 70 | 80 |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | wheel rpm, + duty (min 0–5) | 0 | 9.47 | 16.35 | 23.15 | 36.94 | 50.46 | 64.32 | 77.95 | 91.63 | 105.38 |
+  | wheel rpm, − duty (min 5–10) | 0 | 9.50 | 16.52 | 23.48 | 37.64 | 51.48 | 65.40 | 79.12 | 92.58 | 106.31 |
+
+  - + duty: 1.3697 rpm/%, intercept −4.22 rpm (zero at 3.1 %), largest point off the line 0.11 rpm; within 0.4 rpm of the 3 s sweep at every step.
+  - − duty: 1.3837 rpm/%, intercept −4.10 rpm, 0.3–2.0 % faster than + duty (most in the middle, 30–40 %). The 3 s sweep had both directions within 0.2 rpm, so this is likely not direction but warm-up: the − half ran after 5 min of continuous running. A warmer gearbox (thinner lubricant, less friction) would do this; not confirmed. Within each 30 s step the two halves agree within 0.2 rpm, so the change is slow. An alternating ± run after a warm-up would separate the two causes.
+  - 5 % stayed at 0 counts for the full 30 s both ways.
+  - Invalid transitions 0 over the whole sweep (`pos=13807 invalid=0` at the end), including 30 s at each of ±80 % (≈ 7.6 k edges/s, ≈ 450 k edges at 80 %). This covers D.4.3 (invalid transitions at full speed) at the 80 % cap.
+
+- **Warm-up vs direction (alternating check, same day, log `logs/20261101-135018-d4-alt.csv`):** motor cold (≈ 1 h rest), then +40 % and −40 % alternating, 10 s each, 24 pairs (≈ 9 min), PSU current read from a camera photo 4 s into each run.
+  - Both directions speed up together: + from 50.52 rpm (first 3 runs) to 51.06 (last 3), +1.1 %; − from 50.89 to 51.27, +0.7 %. Meanwhile the current falls from 0.044–0.046 A to 0.043 A in both directions. Less current with more speed means less friction torque, which fits the gearbox warming up (thinner lubricant). Still an inference, but now with two consistent signs.
+  - − duty is a little faster all along: 0.37 rpm (0.7 %) at the start, 0.21 rpm (0.4 %) at the end. The 3 s sweep didn't show it (both 50.64 at 40 %), so a direction offset exists but is under 1 % and not repeatable between runs.
+  - Conclusion: most of the 2 % gap in the 30 s sweep was warm-up (its − half ran 5 min later); direction adds under 1 %. Both are well within what item E's PI controller corrects.
+  - Camera: 48 photos, 47 read cleanly; run 2 reads 0.045 or 0.049 A (the display was mid-update, one segment half lit). The camera had moved between the test shot and the run, so the crop is chosen from a full photo each session.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

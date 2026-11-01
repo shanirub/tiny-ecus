@@ -129,10 +129,10 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 2. Protections (pure logic, host-tested where possible): duty cap (start at 80 %), slew limit, stall detection (|duty| above ~30 % with near-zero speed for 300 ms → stop and latch a fault until `STOP`).
 3. Speed estimation from counts per control period; added to telemetry. Resolution: at 100 Hz one count per period = 1.39 wheel rpm, so below roughly 20 rpm the reading flickers between neighbouring steps (at 5 rpm the count per period is 0 or 1). Start with the plain 10 ms window, look at low-speed telemetry, and add a moving average over several periods (or a period method: timing the gap between edges) only if the noise shows up in the data.
 4. **Measure:**
-   - direction convention: does positive duty turn the wheel forward, and which channel leads? Recorded for left and right mounting;
-   - no-load speed vs duty curve at 7.4 V (data for the feedforward and the PI);
+   - direction convention: does positive duty turn the wheel forward, and which channel leads? Recorded for left and right mounting; (done 2026-11-01: + duty turns clockwise seen from the wheel's outer side, counts fall, B leads A; see `findings.md`)
+   - no-load speed vs duty curve at 7.4 V (data for the feedforward and the PI); (done 2026-11-01: linear 10–80 %, ≈ 1.37 rpm/%, 105 rpm at 80 %, no start at 5 %; warm-up ≈ +1 %, direction < 1 %)
    - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer;
-   - invalid transitions at full speed (should stay 0);
+   - invalid transitions at full speed (should stay 0); (done 2026-11-01 at the 80 % cap: 0 after 30 s each way)
    - fast vs slow decay: the speed-vs-duty curve for both.
 
 ### E. PI speed control
