@@ -185,6 +185,9 @@
   1. First script: fast decay `DUTY 30 3` didn't move the wheel (0 counts), the stall trip latched as designed, and **my script had no conditional `STOP`**, so the next two runs were refused (`ERR stall fault latched`). Cleared with `STOP`; the later scripts send `STOP` when a stall row appears.
   2. Fast decay `DUTY 50 2`: no movement either, stall trip, `STOP`. Fast `DUTY 80 2`: runs, −91.9 rpm, same direction as slow decay. So the mapping is right and fast decay needs far more duty to start (a D.4.5 result, not a bug).
   3. Slow `DUTY 30 3` → −37.2 rpm, `DECAY FAST` mid-run → `ERR motor running`; fast `DUTY 80 3` → −92.5 rpm, `DECAY SLOW` mid-run refused; fast `DUTY -80 3` → +95.0 rpm. Invalid 0 throughout, drops 0. PSU 0.075 A at fast −80 % (slow 80 % was 0.104 A on 2026-10-31). Two photos read 0.000 A because the camera takes ≈ 3 s from launch to frame, so they landed after the 3 s runs ended (file times checked). Logs `logs/20261101-1413*-d4-decay-*`, `logs/20261101-141502-d4-decay-check2*`.
+- PR #8 opened for `phase1/d-measure`; CI: all 3 jobs pass.
+- D.4.4 interrupt load: the analyzer didn't enumerate at first (LED on, absent from `lsusb`); after the user opened it in PulseView it showed up as 0925:3881, and PulseView had to be closed before `sigrok-cli` could claim it. 24 MHz streams only 21 ms; 12 MHz works. Captures at 30 %, 80 % and 80 % with telemetry, probe on: handler 1.0 µs, entry median 2.1 µs / max 8.8 µs, ≥ 2.4 % CPU at 80 %; shortest real edge gap 14.4 µs (uneven A/B phasing); sub-µs edge bounce, harmless. `ENC` after each: invalid 0; `drops=0`. Details in `findings.md`.
+- D.4.5 decay curves (downward sweeps, 80 → 5 %, 4 s per step, PSU photographed each step): fast decay 93 rpm at 80 %, 9 rpm at 50 %, stall trip at 40 % (crawling ≈ 1.7 rpm); slow decay linear 106 → 2.3 rpm, still turning at 5 %. invalid 0 both runs, drops 0. Recommended to keep slow decay (user to decide). Log `logs/20261101-151644-d4-down.*`.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -225,6 +228,8 @@
 | D.4.3 invalid at full speed (2026-11-01) | Covered by the 30 s sweep: 30 s at each of ±80 % | invalid stays 0 | `invalid=0` after ≈ 450 k edges at 80 % | Pass |
 | D.4.2 warm-up vs direction (2026-11-01) | Cold start, `DUTY ±40 10` alternating ×24, camera photo of the PSU per run | Warm-up: both directions drift together; direction: constant offset | + 50.52 → 51.06 rpm, − 50.89 → 51.27; current 0.045 → 0.043 A both ways; invalid 0 | Pass: mostly warm-up, direction < 1 % |
 | D.4 firmware bench check (2026-11-01, branch `phase1/d-measure`) | `DECAY`/`PROBE` commands, slow +30 %, fast ±80 %, mid-run decay change, PSU photos | Both modes drive the right way; mid-run change refused | slow +30 % −37.2 rpm; fast +80 % −92.5, −80 % +95.0; fast 30 % and 50 % don't start (stall trip); mid-run `DECAY` → ERR; invalid 0 | Pass |
+| D.4.4 interrupt load (2026-11-01, branch `phase1/d-measure`) | `PROBE ON`, analyzer D0 A / D1 B / D2 GPIO1 at 12 MHz, 0.5 s at `DUTY 30`, `80`, `80` + telemetry | Load and latency measured; every edge handled | body 1.0 µs, entry median 2.1 / max 8.8 µs, ≥ 2.4 % CPU at 80 %; min real edge gap 14.4 µs (margin ≈ 1.5×); bounce 83–500 ns harmless; invalid 0 | Pass |
+| D.4.5 fast vs slow decay (2026-11-01, branch `phase1/d-measure`) | Downward sweep 80 → 5 % while turning, each mode, PSU photos | Both curves; a decay choice | fast: 93/62/33/9 rpm at 80/70/60/50 %, stall at 40 %; slow: linear 106 → 2.3 rpm; invalid 0 | Pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

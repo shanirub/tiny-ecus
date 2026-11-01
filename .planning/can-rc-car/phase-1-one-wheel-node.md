@@ -67,7 +67,7 @@ Short definitions; ask for more depth on any of them.
 ## Decisions for this phase
 | Decision | Rationale |
 |---|---|
-| **Encoder: 4× decoding in a GPIO ISR**, state-table decoder in IRAM (chosen 2026-10-17) | The C3 has no PCNT. Full resolution plus missed-edge detection. Estimated load at full speed: about 8–14 k interrupts/s, a few % CPU (estimate: speed and ISR cost are both unmeasured). Measured in item D; fallback is 2× (interrupt on A only). |
+| **Encoder: 4× decoding in a GPIO ISR**, state-table decoder in IRAM (chosen 2026-10-17) | The C3 has no PCNT. Full resolution plus missed-edge detection. Measured in D.4 (2026-11-01): 7650 interrupts/s at the 80 % cap, ≥ 2.4 % CPU; the uneven edge spacing leaves a latency margin of ≈ 1.5× (`findings.md`). Fallback is 2× (interrupt on A only). |
 | **Bench power:** motor supply from the bench PSU at 7.4 V (2S nominal) with a 1.5 A current limit; C3 from USB; all grounds joined | A stall at ~3 Ω would draw ~2.4 A, above the DRV8833's 1.5 A RMS per bridge (TI datasheet; its overcurrent trip is 2 A minimum, 3.3 A typical). The PSU limit is the hardware protection on the bench; the firmware protections come on top. |
 | **Control loop:** one FreeRTOS task at 100 Hz to start, with `CONFIG_FREERTOS_HZ=1000` (set in item D, PR #6) | 100 Hz is ample for a motor this slow, and the finer tick keeps the period steady. The rate is a tunable, revisited with the measured data. |
 | **Units:** setpoints and reported speed in wheel rpm, signed (+ forward) | Same unit later in CAN setpoints; no wheel diameter needed yet. |
@@ -122,7 +122,7 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
-PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): bench check run before merge this time (user choice) and passed; merged 2026-11-01 (`5da32d8`), `main` flashed and `STATUS` checked. D.4 measurements 1–3 ran on `main`; the firmware for 4–5 (`DECAY`, `PROBE`) is on branch `phase1/d-measure` (`f11ca27`), bench-checked 2026-11-01, PR not opened yet.
+PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): bench check run before merge this time (user choice) and passed; merged 2026-11-01 (`5da32d8`), `main` flashed and `STATUS` checked. D.4 measurements 1–3 ran on `main`; the firmware for 4–5 (`DECAY`, `PROBE`) is on branch `phase1/d-measure` (`f11ca27`), bench-checked 2026-11-01, PR #8 opened (CI pass); measurements 4–5 ran on that branch the same day.
 
 Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, duty → pin mapping; 18 host tests, 15 mutants), `drive.c` (LEDC 20 kHz / 10 bit on AIN1/AIN2, STBY, 100 Hz drive task at priority 6), console `DUTY` / `STOP`, `STATUS` with drive mode and duty, `components/tiny_speed` (counts per period → milli-rpm; 8 host tests, 7 mutants), telemetry rows `t_ms,mode,duty_permille,counts,rpm_milli` sent by the drive task (sine placeholder removed), `firmware/wheel_node/README.md` (state and sequence diagrams).
 
@@ -132,9 +132,9 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 4. **Measure:**
    - direction convention: does positive duty turn the wheel forward, and which channel leads? Recorded for left and right mounting; (done 2026-11-01: + duty turns clockwise seen from the wheel's outer side, counts fall, B leads A; see `findings.md`)
    - no-load speed vs duty curve at 7.4 V (data for the feedforward and the PI); (done 2026-11-01: linear 10–80 %, ≈ 1.37 rpm/%, 105 rpm at 80 %, no start at 5 %; warm-up ≈ +1 %, direction < 1 %)
-   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer; (firmware ready: `PROBE ON`, GPIO1. Not measured yet; analyzer to connect: D0 = A, D1 = B, D2 = GPIO1, GND to the C3)
+   - ISR load at full speed: toggle a spare pin in the ISR and measure its duty on the logic analyzer; (done 2026-11-01, `PROBE ON` on GPIO1, analyzer D0 = A, D1 = B, D2 = GPIO1: handler 1.0 µs, entry median 2.1 / max 8.8 µs, ≥ 2.4 % CPU at 80 %; A/B edges unevenly spaced, shortest gap 14.4 µs, margin ≈ 1.5×; see `findings.md`)
    - invalid transitions at full speed (should stay 0); (done 2026-11-01 at the 80 % cap: 0 after 30 s each way)
-   - fast vs slow decay: the speed-vs-duty curve for both. (firmware ready: `DECAY SLOW|FAST`. First look 2026-11-01: fast decay doesn't start from rest at 30 % or 50 % and reaches ≈ 92 rpm at 80 %, slow 105. From rest the stall check trips before fast decay starts, so its curve has to be swept downward from 80 % while the wheel turns)
+   - fast vs slow decay: the speed-vs-duty curve for both. (firmware ready: `DECAY SLOW|FAST`. First look 2026-11-01: fast decay doesn't start from rest at 30 % or 50 % and reaches ≈ 92 rpm at 80 %, slow 105. From rest the stall check trips before fast decay starts, so its curve has to be swept downward from 80 % while the wheel turns. Done 2026-11-01, downward sweeps: fast 93/62/33/9 rpm at 80/70/60/50 %, stall at 40 %; slow linear 106 → 2.3 rpm. Recommendation: keep slow decay, the user decides)
 
 ### E. PI speed control
 1. PI controller as pure logic with anti-windup and output limits (host-tested: steady state reaches the setpoint, windup stays bounded at saturation).
@@ -145,9 +145,9 @@ Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, d
 ## Unverified (check during implementation)
 - DRV8833 module: STBY reads as a pull-down to GND, 222 kΩ unpowered (A.1, 2026-10-21; `findings.md`); no pull-up to VM (one-way reading only, 1.81 MΩ / OL). Powered check done in A.5 (2026-10-25): STBY 0 V with VM on. What the two small SMD parts are.
 - ~~DRV8833 figures from memory or third-party sources.~~ Checked against the TI datasheet 2026-10-21 (`findings.md`): 1.5 A RMS / 2 A peak per bridge, 2.7–10.8 V, input pull-downs (500 kΩ on nSLEEP, 150 kΩ on the others), input thresholds, 1 ms wake-up, overcurrent trip 2 A min / 3.3 A typ with 1.35 ms auto-retry.
-- GPIO0/1 are free on this board (no 32 kHz crystal fitted).
-- The no-load speed (estimated 110–190 wheel rpm) and so the interrupt rate; measured in D.
-- The GPIO ISR cost in IDF (estimated 1–3 µs per interrupt); measured in D.
+- GPIO0/1 are free on this board (no 32 kHz crystal fitted). GPIO1 confirmed in D.4: the probe toggled it cleanly on the analyzer.
+- ~~The no-load speed (estimated 110–190 wheel rpm) and so the interrupt rate.~~ Measured in D.4: 105 rpm at the 80 % cap (≈ 133 extrapolated to 100 %), 7650 interrupts/s.
+- ~~The GPIO ISR cost in IDF (estimated 1–3 µs per interrupt).~~ Measured in D.4: ≈ 3.1 µs entry + body typical (lower bound, return not visible), 9.8 µs worst seen.
 - The C3 glitch filter only removes spikes of a few clock cycles; real noise immunity comes from clean wiring and the state table.
 
 ## Out of scope for Phase 1

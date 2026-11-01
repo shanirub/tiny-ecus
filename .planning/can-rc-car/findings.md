@@ -203,6 +203,29 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - Likely cause (textbook, not measured here): in fast decay the winding current collapses during each off-time instead of circulating, so the average current, and with it the torque, is lower for the same duty. Slow decay keeps the current flowing and gives the near-linear curve measured in D.4.2.
 - For the full curve: from rest the stall check (≥ 30 % duty, ≤ 1 count, 300 ms) trips before fast decay starts, so sweep downward from 80 % while the wheel is turning and find where it stops.
 
+### Encoder interrupt load (D.4.4, 2026-11-01, branch `phase1/d-measure`, logic analyzer)
+- Setup: `PROBE ON` (GPIO1 high while `encoder_isr` runs), analyzer D0 = A, D1 = B, D2 = GPIO1, `sigrok-cli` fx2lafw, 0.5 s per capture. The clone only streams 21 ms at 24 MHz ("Device only sent 504320 samples"); 12 MHz (83 ns resolution) and 8 MHz capture the full 0.5 s. Captures: `logs/20261101-1512*-d4-isr-*.sr` (open in PulseView). Slow decay, no load.
+- Handler body (probe width): 0.92–1.08 µs, median 1.00, identical at every speed.
+- Entry (encoder edge → probe rise: CPU entry + IDF GPIO dispatcher): median 2.08 µs, p99 2.5 µs at 80 % (4.1 µs with telemetry on), max 8.3–8.8 µs in all three captures. The return path isn't visible.
+- Load: 7650 edges/s at 80 % (≈ 105 rpm): body alone 0.76 % of the time; entry + body ≈ 3.1 µs per interrupt → ≥ 2.4 % CPU (lower bound). At 30 %: 2690 edges/s, ≥ 0.8 %. Telemetry on doesn't change the load, only stretches the latency tail.
+- **Edge spacing is far from even.** A and B aren't 90° apart: at 80 % the A→B gap has median 84 µs, B→A 180 µs, and the pattern repeats every motor turn (48 edges, std 6.6 µs across turns), so the magnet disc's poles are uneven. Shortest gap between real edges: 14.4 µs (p0.1 18.9, p1 24 µs). Against the worst entry + body seen (≈ 9.8 µs), the margin at 80 % is ≈ 1.5×; at 100 % duty (≈ 133 rpm, gaps × 0.79) it would be ≈ 1.15×. Two edges inside one handler's latency read as one invalid step, so this is the number to watch when Phase 2 adds CAN (TWAI) interrupts, or if a wheel is driven faster than the motor drives it (pushed, downhill).
+- **Edge bounce:** some real edges (mostly A) bounce for 83–500 ns (8 at 30 %, 14 at 80 %, 22 with telemetry). The handler reads the pins ≥ 1.8 µs later, when they've settled, so the bounce adds at most one extra interrupt that counts 0; `invalid` stayed 0 in every run. Whether the bounce is on the wire or in the analyzer's input (no hysteresis) isn't known. If it ever matters, the C3 has a per-pin GPIO glitch filter.
+
+### Fast vs slow decay, downward sweep (D.4.5, 2026-11-01, branch `phase1/d-measure`)
+- Method: one run per mode, the duty stepped down every 4 s while the wheel turns (`DUTY d 30` resent as a new target), mean of the last 2 s; PSU photographed ≈ 3 s into each step. Log `logs/20261101-151644-d4-down.csv`, photos `…-d4-down-*.jpg`, current sheet `…-d4-down-amps.png`. No load, 7.4 V.
+
+  | duty % | 80 | 70 | 60 | 50 | 40 | 30 | 25 | 20 | 15 | 10 | 5 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | fast: rpm | 93.3 | 61.8 | 33.2 | 9.2 | ≈ 1.7, stall trip | | | | | | |
+  | fast: PSU A | 0.100 | 0.074 | 0.053 | 0.036 | | | | | | | |
+  | slow: rpm | 106.3 | 92.9 | 79.1 | 65.3 | 51.4 | 37.5 | 30.6 | 23.4 | 16.5 | 9.6 | 2.3 |
+  | slow: PSU A | 0.099 | 0.083 | 0.068 | 0.054 | 0.042 | 0.030 | 0.025 | 0.020 | 0.016 | 0.012 | 0.009 |
+
+- Fast decay is steep and non-linear: ≈ 3 rpm per % between 50 and 80 %, nothing usable below ≈ 45 %, so a third of the duty range does nothing and the rest is very sensitive. Slow decay stays linear (≈ 1.37 rpm/%, matches D.4.2 within 0.5 rpm).
+- Slow decay sweeping down keeps turning at 5 % (2.3 rpm), though it never started from rest at 5 % (D.4.2): the static friction is higher than the running friction, so starting needs more duty than keeping going.
+- The PSU current isn't the motor current: in slow decay the off-time current circulates inside the driver, in fast decay it returns to the supply. So the two current rows can't be compared directly.
+- **Recommendation (awaiting the user's decision): keep slow decay**, already the default. Linear, symmetric, usable down to a few rpm, and it gives the PI controller an almost constant gain.
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 
