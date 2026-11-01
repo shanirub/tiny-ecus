@@ -173,6 +173,10 @@
   3. Stall (body and wheel held), `DUTY 50 3`: ≈ 9° wind-up in the first 150 ms, then 30 periods at ≤ 1 count, `mode` 2 and duty 0 at 450 ms; swing back after the cut. `STOP` cleared it.
   Logs: `logs/20261031-221759-d3-idle.*`, `logs/20261031-222102-d3-duty30.*`, `logs/20261031-223625-d3-stall.*`.
 
+## Session: 2026-11-01
+- PR #7 reviewed (firmware and `tiny_speed` diff): no blocking issues. Two notes: `ENC ZERO` with telemetry on gives one false `counts`/`rpm_milli` row (README line added on the branch, `14d246c`); `rpm_milli` assumes a 10 ms period (a late period would show in `t_ms`, not seen on the bench). The user merged it as `5da32d8`.
+- `main` built and flashed: `STATUS` → `ver=5da32d8 telem=off drops=0 drive=idle duty=0`, `ENC` → `pos=0 invalid=0`. No motor run (code unchanged since the bench check).
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -205,6 +209,7 @@
 | A.5 first power-up (2026-10-25) | PSU 7.4 V / 1.5 A, C3 on USB; meter 20 V DC, black on the GND rail; item B firmware, then download mode (BOOT held through RST, confirmed by esptool) | STBY, AIN1, AIN2 ≈ 0 V; motor still; current a few mA at most | Both states: 0 V on all three; motor still; 0.000 A; VM–GND 7.4 V | pass |
 | D.1–D.2 bench check (2026-10-31) | Firmware `39c1e68`, PSU 7.4 V / 1.5 A; the six checks in PR #6 via `send_cmd.py` (check 5 for 3 s, check 6 as `DUTY 50 3`) | Idle 0 V on STBY/AIN1/AIN2; ±30 % runs ramp down; `STOP` cuts at once; 100 % capped to 80; held motor trips `drive=stall`, latched until `STOP` | All as expected; `invalid=0` throughout. PSU: 0.032 A at 30 %, 0.059 A at 50 %, 0.104 A at 80 % (0.116 A at start), 0.368 A flash at the stall trip. ≈ 36 / 67 / 100 wheel rpm at 30 / 50 / 80 %. VM–GND 7.41 V | pass |
 | D.3 telemetry bench check (2026-10-31, PR #7) | Firmware `33b6f45`, PSU 7.4 V / 1.5 A; `plot_run.py` idle 2 s, `DUTY 30` 7 s, `DUTY 50 3` stall with body and wheel held | One row per 10 ms, columns as in the header; ramp/hold/ramp-down visible; stall → `mode` 2, duty 0 | All rows 10 ms apart, `drops=0`; hold at 30 % −26/−27 counts (−36.6 rpm); stall trip at 450 ms after ≈ 9° wind-up | pass |
+| D.3 after merge (2026-11-01) | `main` at `5da32d8` flashed; `send_cmd.py STATUS ENC` | Boots, version matches, idle | `ver=5da32d8`, `drive=idle duty=0`, `drops=0`, `pos=0 invalid=0` | Pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

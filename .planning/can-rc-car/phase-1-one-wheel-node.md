@@ -95,7 +95,7 @@ Re-mapped 2026-10-22 (was AIN1/AIN2 = 6/7, encoder = 5/10, STBY = 20): the C3 da
 | Driver fault output | none | The module doesn't bring nFAULT out |
 
 ## Work items
-Each item is one branch and PR (item D is split into two: D.1–D.2, then D.3–D.4), CI must pass, the user reviews and merges it (not Claude), and each ends with a short bench check logged in `progress.md`.
+Each item is one branch and PR (item D: D.1–D.2 in PR #6, D.3 in PR #7; D.4's firmware changes get their own PR), CI must pass, the user reviews and merges it (not Claude), and each ends with a short bench check logged in `progress.md`.
 
 ### A. Bench wiring
 1. Module pins are recorded (photos, 2026-10-17). Unpowered, measure STBY–GND and STBY–VM resistance to see whether the board pulls STBY up or down. (Done 2026-10-21: pulled down, no pull-up; `findings.md`.)
@@ -121,9 +121,9 @@ Built: `components/tiny_cmd` (parser with built-in `HELP`, line assembler), cons
 Built: `components/tiny_qdec` (state-table decoder, placed in IRAM by `linker.lf`), `encoder.c` (IRAM-safe GPIO ISR on both edges of A and B, decoder under a spinlock), console `ENC` / `ENC ZERO`, `pins.h`. Host tests: 15 decoder tests plus 12 mutation tests in CI. Docs: `test/README.md`, `components/README.md`.
 
 ### D. Open-loop drive and protections
-PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): opened 2026-10-31, bench check run before merge this time (user choice) and passed, awaiting review. D.4 follows.
+PR #6 (D.1–D.2): merged 2026-10-31 (`39c1e68`), bench check passed (readings in `progress.md`). PR #7 (D.3): bench check run before merge this time (user choice) and passed; merged 2026-11-01 (`5da32d8`), `main` flashed and `STATUS` checked. D.4 next.
 
-Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, duty → pin mapping; 18 host tests, 15 mutants), `drive.c` (LEDC 20 kHz / 10 bit on AIN1/AIN2, STBY, 100 Hz drive task at priority 6), console `DUTY` / `STOP`, `STATUS` with drive mode and duty, `firmware/wheel_node/README.md` (state and sequence diagrams).
+Built so far: `components/tiny_motor` (timed runs, cap, slew, stall detection, duty → pin mapping; 18 host tests, 15 mutants), `drive.c` (LEDC 20 kHz / 10 bit on AIN1/AIN2, STBY, 100 Hz drive task at priority 6), console `DUTY` / `STOP`, `STATUS` with drive mode and duty, `components/tiny_speed` (counts per period → milli-rpm; 8 host tests, 7 mutants), telemetry rows `t_ms,mode,duty_permille,counts,rpm_milli` sent by the drive task (sine placeholder removed), `firmware/wheel_node/README.md` (state and sequence diagrams).
 
 1. LEDC PWM on IN1/IN2, signed duty, slow decay. Command `DUTY <−100…100>` as a timed run.
 2. Protections (pure logic, host-tested where possible): duty cap (start at 80 %), slew limit, stall detection (|duty| above ~30 % with near-zero speed for 300 ms → stop and latch a fault until `STOP`).
