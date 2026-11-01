@@ -224,7 +224,7 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - Fast decay is steep and non-linear: ≈ 3 rpm per % between 50 and 80 %, nothing usable below ≈ 45 %, so a third of the duty range does nothing and the rest is very sensitive. Slow decay stays linear (≈ 1.37 rpm/%, matches D.4.2 within 0.5 rpm).
 - Slow decay sweeping down keeps turning at 5 % (2.3 rpm), though it never started from rest at 5 % (D.4.2): the static friction is higher than the running friction, so starting needs more duty than keeping going.
 - The PSU current isn't the motor current: in slow decay the off-time current circulates inside the driver, in fast decay it returns to the supply. So the two current rows can't be compared directly.
-- **Recommendation (awaiting the user's decision): keep slow decay**, already the default. Linear, symmetric, usable down to a few rpm, and it gives the PI controller an almost constant gain.
+- **Decision (user, 2026-11-01): slow decay**, already the default. Linear, symmetric, usable down to a few rpm, and it gives the PI controller an almost constant gain.
 
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
