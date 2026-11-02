@@ -195,6 +195,7 @@
 
 ## Session: 2026-11-02
 - Parts: the wiring order of 2026-10-16 arrived (user): JST-XH pigtails with male and female housings, 22 AWG solid core in several colors, 20 AWG stranded red + black, assorted WAGO connectors; all as ordered. Parts list and plan updated; only the 470 µF caps (Phase 5) are still missing.
+- PR #9 review started (user): `tiny_pi` (float kept, user decision over fixed point), `test_tiny_pi.c`, the `tiny_motor` change and mutants reviewed; `drive.c` finding: the controller's soft-float math ran inside `s_lock`, which masks the encoder interrupt. Measured with a temporary cycle-counter build (longest locked section): idle 8 µs, `DUTY 80` 15 µs, `SPEED 100` 50 µs; invalid 0. Fixed (user: measure and fix, CAN will add interrupt load): controller stepped on copies outside the lock, written back only if no command came in (`s_cmd_seq`). After: idle 2.3 µs, `DUTY 80` 6.6 µs, `SPEED 100` 8.8 µs (+1.1 µs copy), control identical (t90 180 ms, mean 100.0 rpm), invalid 0. Also `test_changing_ki_keeps_the_output` (17 tiny_pi tests) and a comment value fixed. Committed `95325a9` on the branch, pushed; board flashed with it, STATUS ok. Not done: rendering the edited Mermaid diagram (podman call blocked by the permission check). Remaining review files: `console.c`, `encoder.c`, `telemetry.c/.h`, docs.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

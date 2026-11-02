@@ -248,3 +248,8 @@ See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 - `docs/can-rc-car-project-overview.md`: goals, learning goals, principles
 - `docs/can-rc-car-parts-list-final.md`: bill of materials
 - `~/.claude/plans/recursive-waddling-robin.md`: original plan-mode output for the roadmap, now mirrored in `task_plan.md`
+
+### Locked-section length vs the encoder (2026-11-02, PR #9 review)
+- On the C3 (single core), `portENTER_CRITICAL` raises the interrupt threshold to level 4 (ESP-IDF `xPortSetInterruptMaskFromISR`, `RVHAL_EXCM_LEVEL`), so the GPIO/encoder interrupt waits until the lock is released.
+- Measured with `esp_cpu_get_cycle_count()` inside the lock, max per 10 s run, 160 MHz: idle 1275 cycles (8 µs), `DUTY 80` 2466 (15 µs), `SPEED 100` with the PI inside 7984 (50 µs). After moving the PI out: 365 / 1052 / 1414 cycles (2.3 / 6.6 / 8.8 µs). Even integer-only code costs µs here; likely flash-cache misses (the loop runs every 10 ms), not verified.
+- Encoder edges can be 14.4 µs apart at full speed (D.4.4), so the lock should stay short; CAN will add another interrupt.
