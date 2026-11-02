@@ -37,6 +37,8 @@ One count per period is 1.389 rpm, so `rpm_milli` moves in steps of about 1389 a
 
 Two parts: `tiny_motor` (component) decides, `drive.c` (here) acts. Two tasks share the motor state: the console task changes it on `DUTY`, `SPEED`, `SET` and `STOP`, and the drive task advances it every 10 ms. They only meet inside the `s_lock` critical section in `drive.c`. Only the drive task writes the driver pins.
 
+`s_lock` masks interrupts, the encoder's too, so an encoder edge that arrives inside it waits until the lock is released; if a second edge comes first, the decoder sees a jump of two steps and counts it as `invalid`. So only short integer work happens under the lock, and the controller's float math (software float: the C3 has no FPU) runs on copies outside it. Measured 2026-11-02 with the CPU cycle counter, longest locked section per run: 50 µs with the controller inside it, 8.8 µs after moving it out (`SPEED 100`), against encoder edges as close as 14.4 µs apart at full speed (D.4.4). `invalid` stayed 0 in all those runs.
+
 ### States
 
 ```mermaid
@@ -178,16 +180,17 @@ sequenceDiagram
 
     you->>console: SPEED 60 6
     console->>drive: drive_speed(60, 6)
+    drive->>pi: tiny_pi_feedforward(60) = 468 (truncated), outside s_lock
     Note over drive: under s_lock
-    drive->>pi: tiny_pi_feedforward(60) = 468 (truncated)
     drive->>motor: tiny_motor_run(468, 600 steps)
     drive->>pi: tiny_pi_reset() (not when changing the setpoint of a SPEED run)
     console-->>you: OK speed=60 rpm for 6 s
     loop every 10 ms while the run has time left
         task->>task: rpm from this period's counts
-        task->>pi: tiny_pi_step(setpoint 60, rpm)
+        task->>task: under s_lock: copy the controller state and setpoint
+        task->>pi: tiny_pi_step(setpoint 60, rpm), outside s_lock
         pi-->>task: duty = ff + kp x error + integral, within +-800
-        task->>motor: tiny_motor_set_target(duty), then tiny_motor_step(counts)
+        task->>motor: under s_lock: if no command came in meanwhile, store the state and tiny_motor_set_target(duty), then tiny_motor_step(counts)
         task->>task: telemetry row, mode 3, setpoint 60000
     end
     Note over motor: time up: target 0, ramp down, IDLE

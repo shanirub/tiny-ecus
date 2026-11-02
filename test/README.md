@@ -226,11 +226,12 @@ The motor run logic (`components/tiny_motor`), 22 tests. A small config (cap 800
 
 ### `host/test_tiny_pi.c`
 
-The speed controller (`components/tiny_pi`), 16 tests, at the firmware's boot values (kp 6, ki 20, ff 7.3 with a 4.2 rpm offset, 10 ms, limit 800 ‰). The closed-loop tests use a simulated wheel built from the D.4 measurements: rpm = 0.137 × duty − 4.2, reached with a 60 ms time constant, and an optional load in rpm.
+The speed controller (`components/tiny_pi`), 17 tests, at the firmware's boot values (kp 6, ki 20, ff 7.3 with a 4.2 rpm offset, 10 ms, limit 800 ‰). The closed-loop tests use a simulated wheel built from the D.4 measurements: rpm = 0.137 × duty − 4.2, reached with a 60 ms time constant, and an optional load in rpm.
 
 - **Feedforward:** follows the measured line in both directions, is 0 at setpoint 0, and is off when `ff` is 0.
 - **One step:** at the setpoint the output is the feedforward alone; P and integral values of single steps worked out by hand; negative errors mirror positive ones; the output rounds half away from zero.
 - **Limits:** the output never passes ±800; `reset` clears the integral.
+- **Live gain change:** a new ki mid-run (`SET KI`) doesn't change the next duty, because the integral is kept in permille. No mutant of its own: breaking this takes two edits at once (store the raw integral, multiply by ki at the output), and the check of the stored integral in `test_p_term_and_integral_of_one_step` would also catch it.
 - **Anti-windup:**
   - with the wheel blocked, the integral doesn't grow while the output is at the limit
   - while saturated, an error in the other direction still shrinks the integral

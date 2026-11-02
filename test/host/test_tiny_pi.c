@@ -141,7 +141,7 @@ static void test_integral_still_unwinds_while_saturated(void)
     s_pi.integral = 300.0f;
     TEST_ASSERT_EQUAL_INT32(800, tiny_pi_step(&s_pi, &CFG, 90.0f, 85.0f));  // error +5: frozen
     TEST_ASSERT_EQUAL_FLOAT(300.0f, s_pi.integral);
-    TEST_ASSERT_EQUAL_INT32(800, tiny_pi_step(&s_pi, &CFG, 90.0f, 95.0f));  // error -5: 957.66
+    TEST_ASSERT_EQUAL_INT32(800, tiny_pi_step(&s_pi, &CFG, 90.0f, 95.0f));  // error -5: 956.66
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, 299.0f, s_pi.integral);  // shrank by 20 * 5 * 0.01
 }
 
@@ -158,6 +158,22 @@ static void test_integral_never_exceeds_limit(void)
     }
     TEST_ASSERT_TRUE(s_pi.integral <= 800.0f);
     TEST_ASSERT_TRUE(s_pi.integral > 790.0f);
+}
+
+static void test_changing_ki_keeps_the_output(void)
+{
+    // SET KI mid-run: the integral is kept in permille, already multiplied by
+    // ki, so a new ki changes how fast it grows from now on, not the duty now.
+    tiny_pi_cfg_t cfg = CFG;
+    float rpm = 0.0f;
+    run(&cfg, 60.0f, &rpm, 10.0f, 300);  // under a 10 rpm drag: the integral carries it
+    TEST_ASSERT_TRUE(s_pi.integral > 50.0f);
+    tiny_pi_t saved = s_pi;
+    int32_t old_ki = tiny_pi_step(&s_pi, &cfg, 60.0f, rpm);
+    s_pi = saved;
+    cfg.ki = 2.0f * CFG.ki;
+    int32_t new_ki = tiny_pi_step(&s_pi, &cfg, 60.0f, rpm);
+    TEST_ASSERT_INT32_WITHIN(1, old_ki, new_ki);
 }
 
 // Peak speed of a 2 s run towards `setpoint` from rest.
@@ -245,6 +261,7 @@ int main(void)
     RUN_TEST(test_integral_frozen_while_saturated);
     RUN_TEST(test_integral_still_unwinds_while_saturated);
     RUN_TEST(test_integral_never_exceeds_limit);
+    RUN_TEST(test_changing_ki_keeps_the_output);
     RUN_TEST(test_recovers_from_block_without_big_overshoot);
     RUN_TEST(test_reaches_setpoint);
     RUN_TEST(test_reaches_negative_setpoint);

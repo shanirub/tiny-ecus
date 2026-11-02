@@ -53,11 +53,16 @@ static tiny_pi_cfg_t s_pi_cfg = {
 };
 
 // Shared between the drive task and the console; only touched inside s_lock.
+// s_lock masks interrupts, the encoder's too, so nothing slow runs inside it:
+// the float math works on copies (measured 2026-11-02: with tiny_pi_step()
+// inside, the locked section reached 50 µs, against encoder edges as close as
+// 14.4 µs apart at full speed).
 static tiny_motor_t s_motor;
 static tiny_motor_decay_t s_decay = TINY_MOTOR_DECAY_SLOW;
 static tiny_pi_t s_pi;
 static bool s_speed_run;   // the run in progress is a SPEED run
 static float s_setpoint;   // its wanted speed, rpm
+static uint32_t s_cmd_seq; // bumped by every command that changes the run
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 
 static void set_pins(uint32_t in1, uint32_t in2)
@@ -113,13 +118,30 @@ static void drive_task(void *arg)
 
         int32_t rpm_milli = tiny_speed_rpm_milli(counts, PERIOD_MS, COUNTS_PER_TURN);
 
-        portENTER_CRITICAL(&s_lock);
         // In a SPEED run the controller sets the target and tiny_motor still
         // applies the cap, slew, stall trip and timeout. Once the run's time is
         // up the controller stops, so the ramp down to 0 isn't fought.
+        // Copy its state under the lock, step it outside, write it back only if
+        // no command (SPEED, DUTY, STOP) came in meanwhile; if one did, this
+        // period's result is dropped and the next period uses the new state.
+        portENTER_CRITICAL(&s_lock);
         bool controlling = s_speed_run && s_motor.mode == TINY_MOTOR_RUN && s_motor.steps_left > 0;
+        tiny_pi_t pi = s_pi;
+        tiny_pi_cfg_t pi_cfg = s_pi_cfg;
+        float setpoint_rpm = s_setpoint;
+        uint32_t seq = s_cmd_seq;
+        portEXIT_CRITICAL(&s_lock);
+
+        int32_t target = 0;
+        int32_t setpoint = 0;
         if (controlling) {
-            int32_t target = tiny_pi_step(&s_pi, &s_pi_cfg, s_setpoint, rpm_milli / 1000.0f);
+            target = tiny_pi_step(&pi, &pi_cfg, setpoint_rpm, rpm_milli / 1000.0f);
+            setpoint = (int32_t)(setpoint_rpm * 1000.0f);
+        }
+
+        portENTER_CRITICAL(&s_lock);
+        if (controlling && seq == s_cmd_seq) {
+            s_pi = pi;
             tiny_motor_set_target(&s_motor, &s_cfg, target);
         }
         int32_t duty = tiny_motor_step(&s_motor, &s_cfg, counts);
@@ -131,7 +153,6 @@ static void drive_task(void *arg)
                            : mode == TINY_MOTOR_IDLE  ? TELEM_MODE_IDLE
                            : s_speed_run              ? TELEM_MODE_SPEED
                                                       : TELEM_MODE_DUTY;
-        int32_t setpoint = controlling ? (int32_t)(s_setpoint * 1000.0f) : 0;
         tiny_motor_decay_t decay = s_decay;
         portEXIT_CRITICAL(&s_lock);
 
@@ -198,6 +219,7 @@ bool drive_run(int32_t duty_pct, uint32_t seconds, int32_t *run_pct)
     bool ok = tiny_motor_run(&s_motor, &s_cfg, duty_pct * 10, seconds * (1000 / PERIOD_MS));
     if (ok) {
         s_speed_run = false;
+        s_cmd_seq++;
     }
     *run_pct = s_motor.target / 10;
     portEXIT_CRITICAL(&s_lock);
@@ -206,12 +228,17 @@ bool drive_run(int32_t duty_pct, uint32_t seconds, int32_t *run_pct)
 
 bool drive_speed(int32_t rpm, uint32_t seconds)
 {
+    // The feedforward in floats, outside the lock, from a copy of the gains.
+    portENTER_CRITICAL(&s_lock);
+    tiny_pi_cfg_t pi_cfg = s_pi_cfg;
+    portEXIT_CRITICAL(&s_lock);
+    float setpoint = (float)rpm;
+    int32_t start = (int32_t)tiny_pi_feedforward(&pi_cfg, setpoint);
+
     portENTER_CRITICAL(&s_lock);
     // A new speed run starts with a clear integral; a new setpoint during one
     // keeps it, so the duty doesn't jump.
     bool fresh = !(s_speed_run && s_motor.mode == TINY_MOTOR_RUN);
-    float setpoint = (float)rpm;
-    int32_t start = (int32_t)tiny_pi_feedforward(&s_pi_cfg, setpoint);
     bool ok = tiny_motor_run(&s_motor, &s_cfg, fresh ? start : s_motor.target,
                              seconds * (1000 / PERIOD_MS));
     if (ok) {
@@ -220,6 +247,7 @@ bool drive_speed(int32_t rpm, uint32_t seconds)
         }
         s_speed_run = true;
         s_setpoint = setpoint;
+        s_cmd_seq++;
     }
     portEXIT_CRITICAL(&s_lock);
     return ok;
@@ -230,6 +258,7 @@ void drive_stop(void)
     portENTER_CRITICAL(&s_lock);
     tiny_motor_stop(&s_motor);
     s_speed_run = false;
+    s_cmd_seq++;
     portEXIT_CRITICAL(&s_lock);
 }
 
