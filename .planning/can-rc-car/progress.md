@@ -193,6 +193,9 @@
 - PR #8 merged (`8db685b`), including `15aa9d5` (COMMANDS.md, README decay curves). The planning updates for the decay decision were still uncommitted at merge time; they go to `main` directly anyway, so nothing was lost. Committed after the merge.
 - `main` (`3e2a542`) built with no warnings and flashed: `STATUS` → `ver=3e2a542 … drive=idle duty=0 decay=slow probe=off`, `HELP` lists `DECAY` and `PROBE`, `ENC` → `pos=0 invalid=0`. PR #8 was a squash merge; the branch head `15aa9d5` has no differences from `main` outside `.planning/`. Branch `phase1/d-measure` deleted locally and on GitHub.
 
+## Session: 2026-11-02
+- Parts: the wiring order of 2026-10-16 arrived (user): JST-XH pigtails with male and female housings, 22 AWG solid core in several colors, 20 AWG stranded red + black, assorted WAGO connectors; all as ordered. Parts list and plan updated; only the 470 µF caps (Phase 5) are still missing.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|

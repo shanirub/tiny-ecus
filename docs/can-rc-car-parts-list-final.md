@@ -25,9 +25,9 @@ One cart, about ₪210 in total. The MPU6050 in the same cart is for a separate 
 | 18650 Li-ion cells | 2, matched | Vape shop (arrived 2026-10-21: LiitoKala Lii-35A, 3500 mAh, flat top both ends; both 3.59 V on arrival. Discharge rating unverified, see `findings.md`) | Same model, bought together (e.g. Samsung 30Q, Sony VTC6, LG HG2, Molicel P28A); check flat or button top fits the holder |
 | 5 V USB-C charger, ≥ 2 A | 1 | Probably already owned | Powers the charger board |
 
-## Ordered (wiring, option D), 2026-10-16
+## Ordered (wiring, option D), 2026-10-16, arrived 2026-11-02
 
-Not arrived yet (checked 2026-10-28): part of it is with a local carrier, expected the week of 2026-11-02. These and the 470 µF caps below are the only missing parts (the 18650 cells arrived 2026-10-21).
+Everything in the table arrived as ordered: JST-XH pigtails with both male and female housings, 22 AWG solid core in several colors, 20 AWG stranded in red and black, and assorted WAGO connectors. The 470 µF caps below are now the only missing part.
 
 | Part | Qty | Notes |
 | --- | --- | --- |
