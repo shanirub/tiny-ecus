@@ -236,6 +236,15 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
 - **Stall during `SPEED`:** the trip fires 300 ms after the wheel stops, as with `DUTY`; the controller drives the duty to the cap first (≈ 80 ms). A slowed but turning wheel at the cap is not caught by the stall check; on the car only the run timer or (Phase 2) the setpoint watchdog limits it.
 - **Bench method:** the camera can't take two photos 2 s apart (the second fails with "device busy" while the first ffmpeg still runs); space them ≥ 4 s.
 
+### USB console output dropped when nobody reads the port (2026-11-03, live TUI work)
+
+With telemetry left on and no program holding `/dev/ttyACM0`, the USB-Serial-JTAG TX buffer fills and the driver discards output after one 50 ms wait (as noted in `telemetry.c`). A freshly started `send_cmd.py` then opens the port into that full buffer, and the first reply can be lost, although the command still runs (`TELEM OFF` took effect, `STATUS` showed `telem=off`). It is not replies spliced into telemetry rows: with the port read continuously, 90/90 replies arrived during streaming. Matters for Phase 2 if the gateway or a host tool expects every reply; a tool that reads all the time (`live.py`) is not affected.
+
+### Tool notes (2026-11-03)
+
+- **plotext 6** has a new object API: `plotext.figure.signal(x, y, marker=...).lines()`, `figure.draw(signal)`, `figure.ruler("x"|"y").lim(lo, hi)` and `.ticks(positions, labels)`, `figure.plot_size(w, h)`, `figure.theme("dusk")`, `figure.build().string()` (ANSI text). The 5.x module functions are gone. It caps plots at the detected terminal size unless `plotext.terminal.limit(False, False)`. `textual-plotext` is unmaintained since 2024-11 and caps plotext below 6.
+- **Mermaid:** a subgraph's `direction` is ignored as soon as one of its nodes links to a node outside it; link to the subgraph itself instead. Render check: `podman run --rm -v <dir>:/data:Z docker.io/minlag/mermaid-cli -i /data/x.mmd -o /data/x.png -s 2`, one call per diagram (the user's permission rule matches that form).
+
 ## Technical Decisions
 See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 

@@ -207,6 +207,7 @@
 - Side finding: with telemetry left on and nobody reading the port, the node's USB TX buffer fills and the driver drops output, so a freshly started `send_cmd.py` can miss its first reply (the command still runs). Not a splice of replies into rows: 90/90 replies arrived while the port was read continuously.
 - PR #10 merged (`506fb26`), branch deleted; no firmware change, so nothing to flash. Phase 1 closed (user, 2026-11-03): full-PWM no-load speed noted as not measurable (80 % cap, 105 rpm at the cap); left/right direction convention moved to Phase 3. Next: Mermaid diagrams, then the Phase 2 planning pass.
 - Mermaid: the 3 text diagrams in `docs/architecture.md` (power, control/data, wheel node) redrawn and rendered; the wheel node gained the STBY line it was missing. The 6 wheel-README diagrams re-rendered, unchanged. Mermaid ignores a subgraph's `direction` when its nodes link outside it; linking to the subgraph itself keeps it. Branch `docs/mermaid`, PR #11.
+- PR #11 merged (`b1b451c`), branch deleted. Session ends here (user clears context); next session starts the Phase 2 planning pass.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
