@@ -74,7 +74,7 @@ idf.py build
 idf.py -p /dev/ttyACM0 flash monitor   # Ctrl+] exits the monitor
 ```
 
-Both boards blink their onboard LED at 1 Hz. The gateway still logs a heartbeat every 5 s; the wheel node instead has a text console on the same USB port (see Bench tools). On the ESP32-CAM the blinking red LED faces the expansion board, so only its glow is visible at the edge between the boards.
+Both boards blink their onboard LED at 1 Hz. The gateway still logs a heartbeat every 5 s; the wheel node instead has a text console on the same USB port (see [`tools/README.md`](../tools/README.md)). On the ESP32-CAM the blinking red LED faces the expansion board, so only its glow is visible at the edge between the boards.
 
 Both boards normally enter the bootloader on their own (auto-reset over DTR/RTS). If flashing fails to connect:
 - **ESP32-C3:** hold BOOT, tap RESET, release BOOT, then flash again.
@@ -98,17 +98,7 @@ What each test covers, and what the tests don't cover: `test/README.md`.
 
 ## Bench tools
 
-Python scripts in `tools/` talk to the wheel node's console over USB. Set up their venv once (about 440 MB, most of it PyQt6, which `plot_run.py` needs to open a plot window):
-
-```sh
-python3 -m venv tools/.venv
-tools/.venv/bin/pip install -r tools/requirements.txt
-```
-
-- `tools/send_cmd.py STATUS "HELP TELEM"`: sends each command and prints its one-line reply (`OK ...` or `ERR ...`). Exits non-zero if any reply was `ERR` or missing.
-- `tools/plot_run.py --seconds 5 --label test`: switches telemetry on, records it for a fixed time, then saves a CSV and a PNG under `logs/` and opens a plot window. `--cmd "..."` sends extra commands at the start; `--no-show` skips the window.
-
-Both open the port in a way that doesn't reset the C3 (DTR high, RTS low; see `open_port()` in `plot_run.py`). `idf.py monitor` does reset it, which is useful to see the boot log. Only one program can hold the port at a time.
+The Python tools that talk to the wheel node (live view, scripted commands, recording runs), their setup and the port settings: [`tools/README.md`](../tools/README.md).
 
 ## Git workflow
 

@@ -252,4 +252,4 @@ tools/.venv/bin/python tools/send_cmd.py STATUS "ENC ZERO" "DUTY 40 5"
 tools/.venv/bin/python tools/send_cmd.py ENC STATUS
 ```
 
-If `STATUS` shows `drive=stall`, something stopped the wheel: free it and send `STOP` before the next run. To record and plot a run instead: `tools/plot_run.py --seconds 8 --label test --cmd "SPEED 60 5"` (see `docs/dev-setup.md`, Bench tools).
+If `STATUS` shows `drive=stall`, something stopped the wheel: free it and send `STOP` before the next run. To record and plot a run instead: `tools/plot_run.py --seconds 8 --label test --cmd "SPEED 60 5"` (see `tools/README.md`). For a live plot and a command line in one screen: `tools/live.py`.

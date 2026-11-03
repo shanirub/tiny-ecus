@@ -1,0 +1,5 @@
+# What the tools' tests need (CI installs only this, not the GUI backend)
+pyserial==3.5
+textual==8.2.8
+plotext==6.1.0
+pytest==9.1.1
