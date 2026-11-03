@@ -184,6 +184,9 @@ TARGETS = {
             ("reset leaves the integral",
              "    pi->integral = 0.0f;\n}",
              "}"),
+            ("setpoint 0 means off: output 0, the wheel coasts",
+             "    float error = setpoint - measured;\n",
+             "    if (setpoint == 0.0f) {\n        return 0;\n    }\n    float error = setpoint - measured;\n"),
         ],
     },
     "tiny_speed": {

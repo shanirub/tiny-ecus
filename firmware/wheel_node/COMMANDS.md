@@ -130,7 +130,14 @@ Sending `SPEED` while a `SPEED` run is going changes the setpoint and restarts t
 <<< OK speed=80 rpm for 3 s
 ```
 
-When the time is up the duty ramps down to 0 as after `DUTY`; the controller doesn't fight the ramp. `SPEED 0` doesn't hold the wheel still: it ramps the duty towards 0 and the wheel coasts (from a standstill it ends at once). Use `STOP` to stop.
+When the time is up the duty ramps down to 0 as after `DUTY`; the controller doesn't fight the ramp. `SPEED 0` during a run brakes the wheel actively: the controller drives against the motion (reverse duty) and the wheel stops much faster than it would coasting. It then keeps holding until the run's time is up, usually with a small leftover duty that is too weak to turn the wheel. Bench, 2026-11-03, `SPEED 60 6` then `SPEED 0 6`:
+
+- from 60 rpm to standstill in about 120 ms, at most −13 % duty;
+- then about 1 % of a turn backwards over 0.5 s;
+- then still for the remaining 5 s at −5.7 % duty (11 mA);
+- then the ramp to 0 and idle.
+
+From standstill `SPEED 0` ends at once (`drive=idle` straight after the reply). To switch the motor off without waiting, use `STOP`.
 
 ### SET and GAINS: the speed controller's settings
 

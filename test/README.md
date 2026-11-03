@@ -149,6 +149,7 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 10 | output not limited | `test_output_is_limited`, `test_integral_frozen_while_saturated` |
 | 11 | rounding toward zero | `test_at_setpoint_output_is_feedforward`, `test_output_rounds_half_away_from_zero` |
 | 12 | reset leaves the integral | other tests, through a leftover integral from the test before (`setUp` calls `reset`) |
+| 13 | setpoint 0 means off: output 0, the wheel coasts | `test_setpoint_zero_brakes_to_rest` |
 
 ### Adding mutants
 
@@ -226,7 +227,7 @@ The motor run logic (`components/tiny_motor`), 22 tests. A small config (cap 800
 
 ### `host/test_tiny_pi.c`
 
-The speed controller (`components/tiny_pi`), 17 tests, at the firmware's boot values (kp 6, ki 20, ff 7.3 with a 4.2 rpm offset, 10 ms, limit 800 ‰). The closed-loop tests use a simulated wheel built from the D.4 measurements: rpm = 0.137 × duty − 4.2, reached with a 60 ms time constant, and an optional load in rpm.
+The speed controller (`components/tiny_pi`), 18 tests, at the firmware's boot values (kp 6, ki 20, ff 7.3 with a 4.2 rpm offset, 10 ms, limit 800 ‰). The closed-loop tests use a simulated wheel built from the D.4 measurements: rpm = 0.137 × duty − 4.2, reached with a 60 ms time constant, and an optional load in rpm.
 
 - **Feedforward:** follows the measured line in both directions, is 0 at setpoint 0, and is off when `ff` is 0.
 - **One step:** at the setpoint the output is the feedforward alone; P and integral values of single steps worked out by hand; negative errors mirror positive ones; the output rounds half away from zero.
@@ -237,7 +238,10 @@ The speed controller (`components/tiny_pi`), 17 tests, at the firmware's boot va
   - while saturated, an error in the other direction still shrinks the integral
   - the integral itself never passes the limit
   - after 2 s blocked and a release, the speed overshoots no more than from a fresh start (+2 rpm)
-- **Closed loop:** reaches +60 and −60 rpm within 1 s; with a 10 rpm load, P alone leaves an error and the integral removes it.
+- **Closed loop:**
+  - reaches +60 and −60 rpm within 1 s
+  - with a 10 rpm load, P alone leaves an error and the integral removes it
+  - setpoint 0 from 60 rpm brakes (negative output at once), the wheel stops within 0.3 s, and it doesn't turn back by more than 2 rpm
 
 ### `host/test_tiny_speed.c`
 

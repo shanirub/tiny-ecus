@@ -221,7 +221,13 @@ Bench check (2026-11-01, 7.4 V, wheel free, boot gains, logs `logs/20261101-2145
 
 A load heavier than the cap can make up (a firm grip that still lets the wheel turn) leaves the duty at 800 ‰ until the run's time is up; only a full stop trips the stall check.
 
-`SPEED 0` from standstill starts a run with target 0 at duty 0, which `tiny_motor` ends at once; while turning it ramps down and coasts. It never holds the wheel still.
+`SPEED 0` is an ordinary setpoint, not "off". From standstill it starts a run with target 0 at duty 0, which `tiny_motor` ends at once. During a run the controller stays on with its integral, so it brakes with reverse duty: the P term alone is kp × −rpm. Once the wheel stands, the error is 0 and the integral stays wherever braking left it. That leftover duty is applied until the run's time is up, because `tiny_motor` ends a run early only when target and duty are both exactly 0. Bench, 2026-11-03 (`logs/20261103-150247-speed0.csv`):
+
+- 60 rpm to 0 in about 120 ms, at most −128 ‰;
+- then 43 counts (1 % of a turn) backwards;
+- then held at −57 ‰, below the duty that starts the wheel, for the remaining 5 s.
+
+Host test: `test_setpoint_zero_brakes_to_rest`.
 
 ### Decay mode
 

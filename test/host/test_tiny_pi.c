@@ -229,6 +229,27 @@ static void test_reaches_negative_setpoint(void)
     TEST_ASSERT_FLOAT_WITHIN(0.5f, -60.0f, rpm);
 }
 
+// SPEED 0 during a run keeps the controller on (and its integral): it brakes
+// actively rather than letting the wheel coast, and the wheel comes to rest
+// without turning back noticeably. Bench, 2026-11-03: 60 rpm to 0 in about
+// 120 ms, at most -128 permille, 1 % of a turn backwards, then held still.
+static void test_setpoint_zero_brakes_to_rest(void)
+{
+    float rpm = 0.0f;
+    run(&CFG, 60.0f, &rpm, 0.0f, 100);
+    TEST_ASSERT_TRUE(tiny_pi_step(&s_pi, &CFG, 0.0f, rpm) < 0);  // brakes
+    float lowest = rpm;
+    for (int i = 0; i < 200; i++) {  // 2 s
+        rpm = plant(rpm, tiny_pi_step(&s_pi, &CFG, 0.0f, rpm), 0.0f);
+        lowest = rpm < lowest ? rpm : lowest;
+        if (i == 30) {
+            TEST_ASSERT_FLOAT_WITHIN(1.0f, 0.0f, rpm);  // stopped within 0.3 s
+        }
+    }
+    TEST_ASSERT_TRUE(lowest > -2.0f);  // no real reversal
+    TEST_ASSERT_FLOAT_WITHIN(0.5f, 0.0f, rpm);
+}
+
 static void test_p_only_leaves_an_error_under_load(void)
 {
     // The glossary's point: P alone can't hold the speed against a load.
@@ -265,6 +286,7 @@ int main(void)
     RUN_TEST(test_recovers_from_block_without_big_overshoot);
     RUN_TEST(test_reaches_setpoint);
     RUN_TEST(test_reaches_negative_setpoint);
+    RUN_TEST(test_setpoint_zero_brakes_to_rest);
     RUN_TEST(test_p_only_leaves_an_error_under_load);
     RUN_TEST(test_integral_holds_speed_under_load);
     return UNITY_END();
