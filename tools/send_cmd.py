@@ -3,7 +3,7 @@
 
 Each command waits for its one-line reply (OK ... / ERR ...) or a timeout, then
 the script exits: there is no open-ended monitor. Opening the port does not
-reset the board (see open_port in plot_run.py). Telemetry lines ("T,") are
+reset the board (see open_port in nodelink.py). Telemetry lines ("T,") are
 skipped; IDF log lines that arrive meanwhile are printed as they are.
 
 Example:
@@ -14,20 +14,17 @@ import argparse
 import sys
 import time
 
-from plot_run import open_port, send
+from nodelink import LineReader, is_telemetry, open_port, send
 
 
 def ask(s, cmd: str, timeout: float) -> bool:
     """Send one command, print what comes back; True if the reply was OK."""
     print(f">>> {cmd}")
     end = time.monotonic() + timeout
-    pending = b""
+    reader = LineReader()
     while time.monotonic() < end:
-        pending += s.read(4096)
-        *lines, pending = pending.split(b"\n")
-        for raw in lines:
-            line = raw.decode("utf-8", errors="replace").strip()
-            if not line or line.startswith("T,"):
+        for line in reader.feed(s.read(4096)):
+            if not line or is_telemetry(line):
                 continue
             print(f"<<< {line}")
             if line.startswith(("OK", "ERR")):

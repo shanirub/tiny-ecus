@@ -20,65 +20,28 @@ import pathlib
 import sys
 import time
 
-import serial
+from nodelink import LineReader, Telemetry, is_telemetry, open_port, send
 
 MAX_SECONDS = 60
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
 
-def open_port(port: str) -> serial.Serial:
-    # The ESP32-C3's USB-Serial-JTAG port resets the chip when RTS is high and
-    # DTR low. Linux raises both on open, and pyserial then applies DTR before
-    # RTS, so asking for both low passes through exactly that state and resets
-    # the board (seen 2026-10-20). Keeping DTR high and dropping only RTS never
-    # does: verified on the bench, no reset on open or close.
-    s = serial.Serial()
-    s.port = port
-    s.baudrate = 115200  # ignored by USB-Serial-JTAG, needed by pyserial
-    s.timeout = 0.05
-    s.dtr = True
-    s.rts = False
-    s.open()
-    return s
-
-
-def send(s: serial.Serial, line: str) -> None:
-    s.write((line + "\n").encode("ascii"))
-    s.flush()
-
-
-def capture(s: serial.Serial, commands: list[str], seconds: float):
+def capture(s, commands: list[str], seconds: float):
     """Return (header, rows, other_lines) from a time-bounded capture."""
-    header: list[str] | None = None
+    telemetry = Telemetry()
+    reader = LineReader()
     rows: list[list[str]] = []
     other: list[str] = []
-    pending = b""
-
-    def handle(raw: bytes) -> None:
-        nonlocal header
-        line = raw.decode("utf-8", errors="replace").strip()
-        if not line.startswith("T,"):
-            if line:
-                other.append(line)
-            return
-        fields = line[2:].split(",")
-        if header is None:
-            if not fields[0].isdigit():
-                header = fields  # the first T, line after TELEM ON is the header
-            return  # samples before the header have no column names
-        if not fields[0].isdigit():
-            return  # a repeated header
-        if len(fields) == len(header):
-            rows.append(fields)
 
     def read_for(duration: float) -> None:
-        nonlocal pending
         end = time.monotonic() + duration
         while time.monotonic() < end:
-            pending += s.read(4096)
-            *lines, pending = pending.split(b"\n")
-            for raw in lines:
-                handle(raw)
+            for line in reader.feed(s.read(4096)):
+                if not is_telemetry(line):
+                    if line:
+                        other.append(line)
+                elif (row := telemetry.parse(line)) is not None:
+                    rows.append(row)
 
     s.reset_input_buffer()
     send(s, "TELEM ON")
@@ -89,7 +52,7 @@ def capture(s: serial.Serial, commands: list[str], seconds: float):
     finally:
         send(s, "TELEM OFF")
     read_for(0.3)  # collect the last replies
-    return header, rows, other
+    return telemetry.header, rows, other
 
 
 def save_csv(path: pathlib.Path, header: list[str], rows: list[list[str]]) -> None:

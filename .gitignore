@@ -18,3 +18,4 @@ managed_components/
 tools/.venv/
 logs/
 __pycache__/
+.pytest_cache/

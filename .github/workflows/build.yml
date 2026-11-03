@@ -41,3 +41,16 @@ jobs:
       - name: Mutation tests
         # Deliberate bugs in the components; fails if the tests miss any of them.
         run: python3 test/host/mutate.py
+
+  tools-tests:
+    # The Python bench tools (tools/), run headless against a fake port.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Install test requirements
+        run: pip install -r tools/requirements-test.txt
+      - name: Run tools tests
+        run: python -m pytest -q tools/tests
