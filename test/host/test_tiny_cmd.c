@@ -220,26 +220,49 @@ static void test_parse_long_rejects_and_leaves_output(void)
     TEST_ASSERT_EQUAL_INT32(42, v);
 }
 
+// Most cases don't depend on the decimals limit; 3 is what SET uses.
+static bool parse3(const char *s, float min, float max, float *v)
+{
+    return tiny_cmd_parse_float(s, 3, min, max, v);
+}
+
 static void test_parse_float_valid(void)
 {
     float v = 0;
-    TEST_ASSERT_TRUE(tiny_cmd_parse_float("0.25", 0, 10, &v));
+    TEST_ASSERT_TRUE(parse3("0.25", 0, 10, &v));
     TEST_ASSERT_EQUAL_FLOAT(0.25f, v);
-    TEST_ASSERT_TRUE(tiny_cmd_parse_float("-1.5", -2, 2, &v));
+    TEST_ASSERT_TRUE(parse3("-1.5", -2, 2, &v));
     TEST_ASSERT_EQUAL_FLOAT(-1.5f, v);
-    TEST_ASSERT_TRUE(tiny_cmd_parse_float("2", 0, 10, &v));
+    TEST_ASSERT_TRUE(parse3("2", 0, 10, &v));
     TEST_ASSERT_EQUAL_FLOAT(2.0f, v);
 }
 
 static void test_parse_float_rejects_and_leaves_output(void)
 {
     float v = 7.0f;
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("", 0, 10, &v));
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("1.5x", 0, 10, &v));
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("nan", 0, 10, &v));
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("inf", 0, 10, &v));
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("10.5", 0, 10, &v));
-    TEST_ASSERT_FALSE(tiny_cmd_parse_float("1e40", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("1.5x", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("nan", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("inf", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("10.5", 0, 10, &v));
+    TEST_ASSERT_FALSE(parse3("1e40", 0, 10, &v));
+    TEST_ASSERT_EQUAL_FLOAT(7.0f, v);
+}
+
+static void test_parse_float_decimals_limit(void)
+{
+    float v = 7.0f;
+    TEST_ASSERT_TRUE(tiny_cmd_parse_float("0.001", 3, 0, 10, &v));
+    TEST_ASSERT_EQUAL_FLOAT(0.001f, v);
+    TEST_ASSERT_TRUE(tiny_cmd_parse_float("5", 0, 0, 10, &v));
+    TEST_ASSERT_EQUAL_FLOAT(5.0f, v);
+    v = 7.0f;
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float("0.0004", 3, 0, 10, &v));  // 4 decimals
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float("0.5", 0, 0, 10, &v));
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float("1e-4", 3, 0, 10, &v));    // exponent
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float("1.2.3", 3, 0, 10, &v));
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float(".", 3, 0, 10, &v));       // no digit
+    TEST_ASSERT_FALSE(tiny_cmd_parse_float("-", 3, -10, 10, &v));
     TEST_ASSERT_EQUAL_FLOAT(7.0f, v);
 }
 
@@ -268,5 +291,6 @@ int main(void)
     RUN_TEST(test_parse_long_rejects_and_leaves_output);
     RUN_TEST(test_parse_float_valid);
     RUN_TEST(test_parse_float_rejects_and_leaves_output);
+    RUN_TEST(test_parse_float_decimals_limit);
     return UNITY_END();
 }

@@ -27,6 +27,13 @@ bool tiny_motor_run(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t duty, 
     return true;
 }
 
+void tiny_motor_set_target(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t duty)
+{
+    if (m->mode == TINY_MOTOR_RUN && m->steps_left > 0) {
+        m->target = clamp(duty, -cfg->cap, cfg->cap);
+    }
+}
+
 void tiny_motor_stop(tiny_motor_t *m)
 {
     m->mode = TINY_MOTOR_IDLE;

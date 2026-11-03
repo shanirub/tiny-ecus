@@ -62,8 +62,12 @@ bool tiny_cmd_equals(const char *a, const char *b);
  */
 bool tiny_cmd_parse_long(const char *s, long min, long max, long *out);
 
-/** As tiny_cmd_parse_long, for a decimal number; also rejects NaN and infinity. */
-bool tiny_cmd_parse_float(const char *s, float min, float max, float *out);
+/**
+ * As tiny_cmd_parse_long, for a decimal number in plain notation ("-1.25"):
+ * at most `decimals` digits after the point, no exponent, no NaN or infinity.
+ * The limit lets the caller print the value back exactly as it was given.
+ */
+bool tiny_cmd_parse_float(const char *s, int decimals, float min, float max, float *out);
 
 /**
  * Line assembler: collects bytes from a serial stream into lines.

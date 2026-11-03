@@ -151,9 +151,33 @@ bool tiny_cmd_parse_long(const char *s, long min, long max, long *out)
     return true;
 }
 
-bool tiny_cmd_parse_float(const char *s, float min, float max, float *out)
+// Plain decimal notation: [+-]digits[.digits], at least one digit, at most
+// `decimals` of them after the point.
+static bool is_plain_decimal(const char *s, int decimals)
 {
-    if (s == NULL || *s == '\0') {
+    if (*s == '+' || *s == '-') {
+        s++;
+    }
+    int digits = 0;
+    int after_point = -1;  // -1 until the point is seen
+    for (; *s != '\0'; s++) {
+        if (*s >= '0' && *s <= '9') {
+            digits++;
+            if (after_point >= 0 && ++after_point > decimals) {
+                return false;
+            }
+        } else if (*s == '.' && after_point < 0) {
+            after_point = 0;
+        } else {
+            return false;
+        }
+    }
+    return digits > 0;
+}
+
+bool tiny_cmd_parse_float(const char *s, int decimals, float min, float max, float *out)
+{
+    if (s == NULL || !is_plain_decimal(s, decimals)) {
         return false;
     }
     char *end;

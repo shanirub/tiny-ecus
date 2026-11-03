@@ -19,10 +19,15 @@ static atomic_bool s_probe;
 // Both levels from one register read, so A and B are sampled at the same
 // instant. gpio_get_level() would be two reads and isn't guaranteed to be in
 // IRAM.
+//
+// B goes in the decoder's first channel and A in the second. That reverses the
+// count direction, so positive duty counts up and gives positive rpm, the same
+// sign as the duty (Phase 1 E; before that, positive duty counted down). Data
+// and logs from before the change have the opposite sign.
 static inline IRAM_ATTR uint8_t read_state(void)
 {
     uint32_t in = REG_READ(GPIO_IN_REG);
-    return tiny_qdec_state((in >> ENC_A_GPIO) & 1u, (in >> ENC_B_GPIO) & 1u);
+    return tiny_qdec_state((in >> ENC_B_GPIO) & 1u, (in >> ENC_A_GPIO) & 1u);
 }
 
 // Runs on every edge of A or B. How one edge reaches it, e.g. A rising:

@@ -8,7 +8,8 @@
 //
 // Duty is signed, in permille: +1000 is full forward, -1000 full reverse.
 // On the bench motor, positive duty turns the wheel clockwise seen from its
-// outer side, and the encoder counts down (Phase 1 D.4.1).
+// outer side (Phase 1 D.4.1), and the encoder counts up (sign set in
+// encoder.c, Phase 1 E).
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -58,6 +59,14 @@ void tiny_motor_init(tiny_motor_t *m);
  * to 0 and go idle. Refused (returns false, nothing changes) while in FAULT.
  */
 bool tiny_motor_run(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t duty, uint32_t steps);
+
+/**
+ * Change the target duty of the run in progress without restarting its timer,
+ * e.g. from a speed controller every step. Capped to cfg->cap; the output still
+ * moves there by at most cfg->slew per step. Ignored unless running with time
+ * left, so it can't restart a run that has ended or is ramping down.
+ */
+void tiny_motor_set_target(tiny_motor_t *m, const tiny_motor_cfg_t *cfg, int32_t duty);
 
 /** Stop at once (duty 0, IDLE, no ramp) and clear a FAULT. */
 void tiny_motor_stop(tiny_motor_t *m);

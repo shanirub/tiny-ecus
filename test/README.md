@@ -41,14 +41,14 @@ Nothing in CI touches hardware; see [What the tests don't cover](#what-the-tests
 |---|---|---|
 | Unit tests | Does each hardware-free component do what its header promises? | `test/host/test_*.c` |
 | Exhaustive tests | Is every possible input handled right, not only the examples? | `test_every_transition` in `test_tiny_qdec.c` |
-| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all five suites |
+| Must-fail tests | Is bad input rejected, and does the component recover afterwards? | all six suites |
 | Sanitizers | Does any test, passing or not, touch memory out of bounds or hit undefined behavior? | the `SANITIZE` option in `test/host/CMakeLists.txt` |
 | Mutation tests | Would the tests notice a realistic bug? | `test/host/mutate.py` |
 | Bench checks | Does it work on the real board, motor and encoder? | the Phase 1 plan, run by hand |
 
 ## Strategy
 
-Only code that needs no chip is unit-tested. That code (the parser, the line reader, the decoder, the motor run logic and the speed conversion) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock), and the motor into `tiny_motor` (runs, cap, slew, stall, pin mapping), `tiny_speed` (counts to rpm) and `drive.c` (PWM, driver pins, the 100 Hz loop, telemetry rows).
+Only code that needs no chip is unit-tested. That code (the parser, the line reader, the decoder, the motor run logic, the speed conversion and the speed controller) lives in `components/` with no ESP-IDF dependencies, so `test/host` can compile it with the PC's gcc. Code that uses pins, interrupts or FreeRTOS stays in `firmware/*/main/` and is checked on the bench. The encoder is split along this line into `tiny_qdec` (the decoding, tested here) and `encoder.c` (GPIO, interrupt handler, lock), and the motor into `tiny_motor` (runs, cap, slew, stall, pin mapping), `tiny_speed` (counts to rpm), `tiny_pi` (the speed controller) and `drive.c` (PWM, driver pins, the 100 Hz loop, telemetry rows).
 
 Each component has one test file, built into its own executable and registered with CTest. The framework is [Unity](https://github.com/ThrowTheSwitch/Unity) v2.7.0, which CMake fetches at a pinned commit.
 
@@ -117,6 +117,9 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 16 | the decay argument is ignored: always slow | `test_pins_fast_decay` |
 | 17 | fast decay: forward and reverse swapped on the pins | the fast-decay pin tests |
 | 18 | fast decay holds the idle pin high, so the off part drives in reverse | the fast-decay pin tests |
+| 19 | `set_target` not capped | `test_set_target_is_capped` |
+| 20 | `set_target` also works after the run's time is up | `test_set_target_ignored_unless_running_with_time_left` |
+| 21 | `set_target` also works when not running | the same |
 
 `tiny_speed.c`:
 
@@ -130,11 +133,29 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 | 6 | no upper clamp | `test_clamps_to_int32` |
 | 7 | no lower clamp | `test_clamps_to_int32` |
 
+`tiny_pi.c`:
+
+| # | Mutant | Killed by |
+|---|---|---|
+| 1 | error sign reversed | `test_p_term_and_integral_of_one_step`, `test_negative_error_mirrors` |
+| 2 | no feedforward | `test_at_setpoint_output_is_feedforward`, `test_output_is_limited` |
+| 3 | feedforward offset ignored | `test_feedforward_follows_the_measured_line`, `test_at_setpoint_output_is_feedforward` |
+| 4 | feedforward offset added the wrong way for reverse | `test_feedforward_follows_the_measured_line` |
+| 5 | feedforward not zero at setpoint 0 | the same |
+| 6 | integral ignores dt | `test_p_term_and_integral_of_one_step`, `test_negative_error_mirrors` |
+| 7 | no anti-windup: integral always kept | `test_integral_frozen_while_saturated`, `test_integral_still_unwinds_while_saturated` |
+| 8 | anti-windup also blocks unwinding | `test_integral_still_unwinds_while_saturated` |
+| 9 | integral not limited | `test_integral_never_exceeds_limit` |
+| 10 | output not limited | `test_output_is_limited`, `test_integral_frozen_while_saturated` |
+| 11 | rounding toward zero | `test_at_setpoint_output_is_feedforward`, `test_output_rounds_half_away_from_zero` |
+| 12 | reset leaves the integral | other tests, through a leftover integral from the test before (`setUp` calls `reset`) |
+| 13 | setpoint 0 means off: output 0, the wheel coasts | `test_setpoint_zero_brakes_to_rest` |
+
 ### Adding mutants
 
 Add a `(description, original text, replacement)` line to the component's `mutants` list in `mutate.py`. A new component gets its own entry in `TARGETS` (source, include directory, test file). A good mutant is a bug someone could realistically write, in code whose behavior matters. Add one whenever a test is written to guard a specific rule, to prove that the test can fail.
 
-`tiny_qdec`, `tiny_motor` and `tiny_speed` have mutants; `tiny_cmd` has none.
+`tiny_qdec`, `tiny_motor`, `tiny_speed` and `tiny_pi` have mutants; `tiny_cmd` has none.
 
 A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up; it is to be reconsidered for the CAN protocol code in Phase 3 (`.planning/can-rc-car/task_plan.md`).
 
@@ -151,7 +172,7 @@ The host tests prove the logic. Everything that depends on the chip, the wiring 
 | IRAM placement of the ISR path | checked by hand with `nm`; not automated |
 | Concurrency: the ISR and tasks sharing the decoder under the lock | code review; no test can force the interleavings |
 | The PWM output and the DRV8833's response: direction, decay mode, that the motor actually stops on `STOP`, a timeout and a stall | the PR #6 bench checks for `STOP`, the timeout, the cap and a stall (passed 2026-10-31, with `tools/send_cmd.py`); D.4 for direction and decay mode, recorded with `tools/plot_run.py` |
-| Speed control | item E |
+| Speed control on the real wheel: that the plant model in `test_tiny_pi.c` is close enough, the encoder sign, the controller wiring in `drive.c` | the item E bench check (2026-11-01): ±60 rpm, a 30 → 80 rpm step, a finger as load, a stall during `SPEED`; results in `firmware/wheel_node/README.md` |
 
 The firmware doesn't run sanitizers. ESP-IDF can enable UBSan for one component on the chip for debugging (`docs/en/api-guides/fatal-errors.rst` in ESP-IDF); this project doesn't use it.
 
@@ -180,7 +201,7 @@ The quadrature decoder (`components/tiny_qdec`), 15 tests. The helper `turn(n)` 
 
 ### `host/test_tiny_motor.c`
 
-The motor run logic (`components/tiny_motor`), 19 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
+The motor run logic (`components/tiny_motor`), 22 tests. A small config (cap 800 ‰, slew 50 ‰ per step, stall at ≥ 300 ‰ with ≤ 1 count for 30 steps) keeps the expected values countable by hand. Each test starts idle.
 
 - **Runs:**
   - idle outputs 0
@@ -195,10 +216,32 @@ The motor run logic (`components/tiny_motor`), 19 tests. A small config (cap 800
   - ±1 count is "not moving", ±2 is moving, and the `INT32_MIN`/`INT32_MAX` extremes are moving (without overflowing)
   - a new run doesn't reset the stall count, so resending `DUTY` to a stuck wheel doesn't hold off the trip
   - a fault refuses new runs until `stop`
+- **Target change** (`tiny_motor_set_target`, used by the speed controller):
+  - changes the target without restarting the run's timer
+  - capped like a run
+  - ignored when idle, in a fault, or once the run's time is up and it ramps down
 - **Pins:**
   - slow decay: 0 brakes (both high), ±1000 drives one way or the other, part duties PWM the right pin by the right amount (high = brake)
   - fast decay: 0 coasts (both low), ±1000 the same as slow, part duties PWM the driving pin (high = drive) while the other stays low
   - out-of-range duties are clamped in both modes
+
+### `host/test_tiny_pi.c`
+
+The speed controller (`components/tiny_pi`), 18 tests, at the firmware's boot values (kp 6, ki 20, ff 7.3 with a 4.2 rpm offset, 10 ms, limit 800 ‰). The closed-loop tests use a simulated wheel built from the D.4 measurements: rpm = 0.137 × duty − 4.2, reached with a 60 ms time constant, and an optional load in rpm.
+
+- **Feedforward:** follows the measured line in both directions, is 0 at setpoint 0, and is off when `ff` is 0.
+- **One step:** at the setpoint the output is the feedforward alone; P and integral values of single steps worked out by hand; negative errors mirror positive ones; the output rounds half away from zero.
+- **Limits:** the output never passes ±800; `reset` clears the integral.
+- **Live gain change:** a new ki mid-run (`SET KI`) doesn't change the next duty, because the integral is kept in permille. No mutant of its own: breaking this takes two edits at once (store the raw integral, multiply by ki at the output), and the check of the stored integral in `test_p_term_and_integral_of_one_step` would also catch it.
+- **Anti-windup:**
+  - with the wheel blocked, the integral doesn't grow while the output is at the limit
+  - while saturated, an error in the other direction still shrinks the integral
+  - the integral itself never passes the limit
+  - after 2 s blocked and a release, the speed overshoots no more than from a fresh start (+2 rpm)
+- **Closed loop:**
+  - reaches +60 and −60 rpm within 1 s
+  - with a 10 rpm load, P alone leaves an error and the integral removes it
+  - setpoint 0 from 60 rpm brakes (negative output at once), the wheel stops within 0.3 s, and it doesn't turn back by more than 2 rpm
 
 ### `host/test_tiny_speed.c`
 
@@ -211,7 +254,7 @@ The counts → speed conversion (`components/tiny_speed`), 8 tests, mostly at th
 
 ### `host/test_tiny_cmd.c`
 
-The command parser and dispatcher (`components/tiny_cmd`), 22 tests. It uses a small table of fake commands whose handler records how it was called. `setUp()` fills the reply buffer with `x`, so a missing string terminator shows up.
+The command parser and dispatcher (`components/tiny_cmd`), 23 tests. It uses a small table of fake commands whose handler records how it was called. `setUp()` fills the reply buffer with `x`, so a missing string terminator shows up.
 
 - **Dispatch:**
   - a handler is called with the right arguments; its reply is prefixed `OK` or `ERR` by its return value; an empty reply gives a bare `OK`
@@ -227,6 +270,7 @@ The command parser and dispatcher (`components/tiny_cmd`), 22 tests. It uses a s
 - **Number parsing:**
   - integers and floats within the given range are accepted, with signs
   - rejected: empty, a sign alone, trailing junk, decimals for integers, hex, out of range, overflow, `NULL`, `nan`, `inf`, `1e40`
+  - floats only in plain notation, with at most the given number of decimals: `0.0004` and `1e-4` are rejected with 3, `0.5` with 0; a second point or a point alone too
   - a rejected input leaves the output variable unchanged
 
 ### `host/test_tiny_line.c`
