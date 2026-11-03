@@ -125,7 +125,10 @@ static bool cmd_speed(int argc, char *argv[], char *reply, size_t size)
 }
 
 // Gains as fixed-point text with 3 decimals, without float printf (the C
-// library's printf may be built without float support).
+// library's printf may be built without float support). SET takes at most
+// GAIN_DECIMALS, so the reply shows exactly the value that was set.
+#define GAIN_DECIMALS 3
+
 static void format_gain(char *buf, size_t size, float v)
 {
     long milli = (long)(v * 1000.0f + 0.5f);  // gains are never negative
@@ -149,10 +152,10 @@ static bool cmd_set(int argc, char *argv[], char *reply, size_t size)
             continue;
         }
         float v;
-        if (!tiny_cmd_parse_float(argv[2], 0.0f, gains[i].max, &v)) {
+        if (!tiny_cmd_parse_float(argv[2], GAIN_DECIMALS, 0.0f, gains[i].max, &v)) {
             char max[16];
             format_gain(max, sizeof max, gains[i].max);
-            snprintf(reply, size, "%s must be 0..%s", gains[i].name, max);
+            snprintf(reply, size, "%s must be 0..%s, at most %d decimals", gains[i].name, max, GAIN_DECIMALS);
             return false;
         }
         drive_set_gain(gains[i].gain, v);

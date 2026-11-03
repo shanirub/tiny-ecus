@@ -46,12 +46,15 @@ stateDiagram-v2
     [*] --> IDLE: boot, tiny_motor_init()
     IDLE --> RUN: DUTY or SPEED, tiny_motor_run()
     RUN --> RUN: DUTY or SPEED again (new target or setpoint, ramps from the current duty)
-    RUN --> RUN: SPEED run, every period: the controller sets the target
     RUN --> IDLE: run time over and the ramp down reached 0
     RUN --> IDLE: STOP, tiny_motor_stop() (no ramp)
     RUN --> FAULT: stall (duty at least 30 %, at most 1 count per period, for 300 ms)
     FAULT --> FAULT: DUTY and SPEED refused
     FAULT --> IDLE: STOP
+    note right of RUN
+        SPEED run: every period
+        the controller sets the target
+    end note
 ```
 
 | State | Driver | Pins |
@@ -181,9 +184,8 @@ sequenceDiagram
     you->>console: SPEED 60 6
     console->>drive: drive_speed(60, 6)
     drive->>pi: tiny_pi_feedforward(60) = 468 (truncated), outside s_lock
-    Note over drive: under s_lock
-    drive->>motor: tiny_motor_run(468, 600 steps)
-    drive->>pi: tiny_pi_reset() (not when changing the setpoint of a SPEED run)
+    drive->>motor: tiny_motor_run(468, 600 steps), under s_lock
+    drive->>pi: tiny_pi_reset(), same s_lock (not when changing the setpoint of a SPEED run)
     console-->>you: OK speed=60 rpm for 6 s
     loop every 10 ms while the run has time left
         task->>task: rpm from this period's counts

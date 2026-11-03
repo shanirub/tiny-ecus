@@ -250,7 +250,7 @@ The counts → speed conversion (`components/tiny_speed`), 8 tests, mostly at th
 
 ### `host/test_tiny_cmd.c`
 
-The command parser and dispatcher (`components/tiny_cmd`), 22 tests. It uses a small table of fake commands whose handler records how it was called. `setUp()` fills the reply buffer with `x`, so a missing string terminator shows up.
+The command parser and dispatcher (`components/tiny_cmd`), 23 tests. It uses a small table of fake commands whose handler records how it was called. `setUp()` fills the reply buffer with `x`, so a missing string terminator shows up.
 
 - **Dispatch:**
   - a handler is called with the right arguments; its reply is prefixed `OK` or `ERR` by its return value; an empty reply gives a bare `OK`
@@ -266,6 +266,7 @@ The command parser and dispatcher (`components/tiny_cmd`), 22 tests. It uses a s
 - **Number parsing:**
   - integers and floats within the given range are accepted, with signs
   - rejected: empty, a sign alone, trailing junk, decimals for integers, hex, out of range, overflow, `NULL`, `nan`, `inf`, `1e40`
+  - floats only in plain notation, with at most the given number of decimals: `0.0004` and `1e-4` are rejected with 3, `0.5` with 0; a second point or a point alone too
   - a rejected input leaves the output variable unchanged
 
 ### `host/test_tiny_line.c`

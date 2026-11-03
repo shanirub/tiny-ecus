@@ -2,7 +2,7 @@
 
 How to drive the motor and read the encoder from a PC over the USB cable. What happens inside the firmware for each command is in `README.md`; this page is about using them.
 
-Every example below is real: it was sent to the bench node on 2026-11-01 and the reply is copied as it came back. Most come from the firmware of PR #8; `SPEED`, `SET`, `GAINS` and the `ENC` direction example come from the item E firmware, which flipped the encoder sign (positive duty now counts up).
+Every example below is real: it was sent to the bench node on 2026-11-01 and the reply is copied as it came back. Most come from the firmware of PR #8; `SPEED`, `SET`, `GAINS` and the `ENC` direction example come from the item E firmware, which flipped the encoder sign (positive duty now counts up). The two `SET` rejections with "at most 3 decimals" are from 2026-11-03, after the decimals limit was added in the PR #9 review.
 
 ## Sending commands
 
@@ -29,9 +29,9 @@ Bench supply: 7.4 V, current limit 1.5 A, wheel free to turn. The firmware adds 
 - **Every run ends by itself**, after 5 s by default and 30 s at most, ramping down to a stop. There is no "run forever".
 - **Slew ramp:** the duty changes gradually, never in one jump, including reversals.
 - **Stall trip:** if the duty is 30 % or more and the encoder sees almost no movement for 300 ms, the driver switches off and stays off (`drive=stall`) until `STOP`. Every new `DUTY` or `SPEED` is refused until then.
+- **`STOP` always works** and switches the driver off at once.
 
 These apply to `SPEED` runs too: the speed controller only chooses the duty, so it can't go past the cap, and a blocked wheel trips the stall check. A wheel that is slowed but still turning doesn't trip it; the controller then raises the duty up to the cap, and only the run's time limit ends it.
-- **`STOP` always works** and switches the driver off at once.
 
 When a script runs the motor, it should check for a stall and send `STOP` itself; otherwise the next runs are refused.
 
@@ -156,12 +156,14 @@ The integral is limited and stops growing while the duty is already at the cap a
 >>> SET KP 6
 <<< OK KP=6.000
 >>> SET KI 600
-<<< ERR KI must be 0..500.000
+<<< ERR KI must be 0..500.000, at most 3 decimals
+>>> SET KP 0.0004
+<<< ERR KP must be 0..50.000, at most 3 decimals
 >>> SET XX 1
 <<< ERR usage: SET KP|KI|FF <value>
 ```
 
-Ranges: `KP` 0..50, `KI` 0..500, `FF` 0..20; decimals are allowed. The values at boot (kp 6, ki 20, ff 7.3) passed the bench check, so changing them is for experiments; they aren't saved and a reset brings the boot values back. Rough guide: more `kp` reacts faster but can oscillate; more `ki` removes a load error sooner but overshoots more after a step or when the load goes away; `ff` 0 makes the controller do all the work from the error alone.
+Ranges: `KP` 0..50, `KI` 0..500, `FF` 0..20, with up to 3 decimals, so the reply always shows exactly the value that was set. The values at boot (kp 6, ki 20, ff 7.3) passed the bench check, so changing them is for experiments; they aren't saved and a reset brings the boot values back. Rough guide: more `kp` reacts faster but can oscillate; more `ki` removes a load error sooner but overshoots more after a step or when the load goes away; `ff` 0 makes the controller do all the work from the error alone.
 
 ### STOP
 
