@@ -4,12 +4,12 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
-Phase 1 item E (PI speed control) is done: bench-checked 2026-11-01, reviewed 2026-11-02/03 (fixes `95325a9`, `7b9e1f0`, `d91ad37`), PR #9 merged 2026-11-03 as `b37cf25`; `main` flashed and `STATUS` checked, branch deleted. Now: the live host tool (a TUI in `tools/`: live telemetry plus a command line; `send_cmd.py` and `plot_run.py` stay as the scripted, time-bounded tools Claude uses). Plan approved 2026-11-03: `tool-live-tui.md` (Textual + plotext 6 with the dusk theme, `tools/nodelink.py`, pytest job in CI, `tools/README.md` created in that PR; recording left for later). Built and bench-checked on branch `tools/live-tui` (`d1e206b`), PR #10 open for the user's review. Then the Mermaid diagrams (the `tools/README.md` part moves into the TUI PR), then Phase 2 (CAN).
+Phase 1 is complete (2026-11-03): items A–E done, exit met; the live TUI merged as PR #10 (`506fb26`). Next: convert the ASCII diagrams in the docs to Mermaid and check every diagram with the renderer (user, 2026-11-03; own docs branch and PR). Then the Phase 2 detailed planning pass (CAN bring-up + gateway v0).
 
 Earlier: Phase 1 item D (open-loop drive and protections). D.1 PWM drive + D.2 protections are done (2026-10-31, PR #6, merged as `39c1e68`; all six bench checks pass). D.3 (speed estimation and real telemetry columns) is done (2026-11-01, PR #7, merged as `5da32d8`; bench-checked before merge, `main` flashed and `STATUS` checked after). D.4 measurements 1–3 done on `main` (2026-11-01: direction convention, speed vs duty, invalid transitions at 80 %; results in `findings.md`). The firmware for D.4 measurements 4–5 (`PROBE ON|OFF` on GPIO1 for the logic analyzer, `DECAY SLOW|FAST`) is on branch `phase1/d-measure` (`f11ca27`), bench-checked 2026-11-01, PR #8 merged 2026-11-01 (`8db685b`). D.4 measurements 4–5 done on that branch (2026-11-01): interrupt load ≥ 2.4 % CPU at 80 %, shortest encoder edge gap 14.4 µs (margin ≈ 1.5×); fast decay unusable below ≈ 45 %, slow decay linear down to 5 %; slow decay chosen by the user (2026-11-01). `main` flashed and `STATUS` checked after the merge; branch deleted. Item E is slimmed down (user, 2026-11-01): one PR (PI component, `SPEED`, `SET`, `GAINS`, encoder sign flipped so + duty gives + rpm) plus one short tuning session, then Phase 2. **After E (user request, 2026-11-01):** redraw the ASCII diagrams in the docs as Mermaid in Markdown. Also create `tools/README.md` (user request, 2026-11-01): move the "Bench tools" section of `docs/dev-setup.md` there and leave a one-line link, per the docs layout (move, don't copy). Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1: implementation (plan approved 2026-10-17). Phase 0 complete 2026-10-17. Parts: all here except the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The wiring order of 2026-10-16 arrived 2026-11-02 (JST-XH pigtails male + female, 22 AWG solid core in several colors, 20 AWG stranded red + black, WAGO connectors), all as ordered. The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
+Phase 1 complete 2026-11-03; Phase 2 (CAN bring-up + gateway v0) next, starting with its planning pass. Phase 0 complete 2026-10-17. Parts: all here except the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The wiring order of 2026-10-16 arrived 2026-11-02 (JST-XH pigtails male + female, 22 AWG solid core in several colors, 20 AWG stranded red + black, WAGO connectors), all as ordered. The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -49,14 +49,14 @@ Detail: [`phase-0-foundations.md`](phase-0-foundations.md)
 ### Phase 1: One wheel node on the bench
 Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [x] Detailed planning pass (approved 2026-10-17)
-- [ ] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
+- [x] Uses the bench spare motor (5th motor, tested in Phase 0 F); the chassis motors stay mounted
 - [x] Encoder counting in a GPIO interrupt, 4× quadrature decoding (the C3 has no PCNT): item C done 2026-10-29 (PR #5)
 - [x] DRV8833 PWM via LEDC (item D): D.1 drive and D.2 protections done (PR #6, bench check passed 2026-10-31); D.3 speed and telemetry done (PR #7, merged 2026-11-01); D.4 measurements all done, the firmware for 4–5 in PR #8 (merged 2026-11-01); slow decay chosen
-- [ ] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode), no-load speed at full PWM, and the left/right direction convention (which polarity and leading channel mean forward on each side)
-- [ ] Speed measurement, then a PI speed controller: speed measurement done (D.3); PI done and bench-checked 2026-11-01, PR #9 open
+- [x] Measure with firmware (moved from Phase 0 F.4): counts per output revolution (done 2026-10-29, C.3: 4386 by hand, expected 4320 in 4× mode). No-load speed at full PWM: can't be measured, because the firmware caps the duty at 80 %; at the cap it is 105 rpm (D.4.2, 2026-11-01). The left/right direction convention moved to Phase 3, where all four wheels are mounted (user, 2026-11-03)
+- [x] Speed measurement, then a PI speed controller: speed measurement done (D.3); PI done and bench-checked 2026-11-01, PR #9 merged 2026-11-03
 - [x] Commands over USB serial (temporary): item B done 2026-10-20 (PR #2), with CSV telemetry, host tests in CI and the `plot_run.py` / `send_cmd.py` tools
 - **Learning:** embedded control. **Exit:** the wheel holds a commanded speed under finger-drag load and reports actual speed.
-- **Status:** in progress (plan approved 2026-10-17)
+- **Status:** complete 2026-11-03. Exit met 2026-11-01: 60 rpm held under a finger on the wheel and reported live (E exit test).
 
 ### Phase 2: CAN bring-up + gateway v0
 - [ ] ESP32-CAM and one C3 over TWAI; 120 Ω only at the two end nodes; decode frames in PulseView
@@ -72,6 +72,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [ ] Write the spec: message catalog, ID/priority allocation, node addressing, error and bus-off handling
 - [ ] Reconsider generated mutation testing (Mull, Dextool, universalmutator; see `test/README.md`) for the `protocol` packing code, alongside the hand-picked mutants in `mutate.py` (user request 2026-10-30)
 - [ ] Termination: all 5 adapters have a 120 Ω terminator fitted (Phase 0 E.2). It is a fixed SMD resistor marked "121", beside the "120R" silkscreen label, with no jumper (the 2-pin header is just a second CANH/CANL connector), so lift one end of the resistor on the 3 adapters that aren't at the bus ends. Use the 2-pin headers for daisy-chaining the harness. Then, with the bus unpowered, measure about 60 Ω between CANH and CANL across the whole bus.
+- [ ] Left/right direction convention (moved from Phase 1, user 2026-11-03): the motors on the two sides are mirrored, so "positive duty = forward" can hold on one side only. Decide where the per-side sign lives (node setting in NVS, or the gateway's skid-steer mixing) and check each wheel's direction once mounted
 - [ ] Four wheel nodes plus the gateway on a bench harness, all on one firmware image with node identity in NVS
 - **Learning:** protocol design, failure detection. **Exit:** skid-steer commands drive all four wheels correctly, and losing any single node stops the whole car.
 - **Status:** pending
