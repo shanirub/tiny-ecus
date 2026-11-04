@@ -4,12 +4,14 @@
 A 4WD skid-steer RC car built as a distributed system: an ESP32-C3 node per wheel, all nodes talking over CAN, and an ESP32-CAM gateway. The car is driven remotely and fails safe. Learning comes first (see `docs/can-rc-car-project-overview.md`).
 
 ## Next Step
+**Phase 2 plan approved (2026-11-04):** `phase-2-can-bring-up.md`. It holds every decision made step by step with the user on 2026-11-03/04 (pins, 500 kbit/s, `tiny_can` + `can_probe`, shared `tiny_console` with no copied code, two cyclic frames from a DBC with generated C, 100 ms setpoint timeout with re-arm, interrupt levels, stress check, scripted exit test, auto bus-off recovery, one PR per item), the byte tables, and what was verified during planning (nested interrupts and TWAI priority in IDF 6.1; the cantools generator). Next: wire item A, then the PRs in order (D may go first, it is host-only). Discussed as fallbacks only if the encoder margin fails under CAN (E.5): 2× decoding, an external quadrature counter (LS7366R, too few C3 pins), the ESP32-C6 (has PCNT, 2 TWAI).
+
 Phase 1 complete (2026-11-03). Done since: the live TUI (PR #10, `506fb26`) and the Mermaid diagrams (PR #11, `b1b451c`), both branches deleted. Next: the Phase 2 detailed planning pass (CAN bring-up + gateway v0), written as `phase-2-can-bring-up.md` for the user's approval before any code: TWAI on the ESP32-CAM and one C3, which ESP32-CAM GPIOs are free (see Risks), termination and the first frame decoded in PulseView, gateway text commands reusing `tiny_cmd`, and the heartbeat plus setpoint-timeout fail-safe. Open items carried into it: the left/right direction convention is a Phase 3 item; the full USB TX buffer drops output when nobody reads the port (findings, 2026-11-03).
 
 Earlier: Phase 1 item D (open-loop drive and protections). D.1 PWM drive + D.2 protections are done (2026-10-31, PR #6, merged as `39c1e68`; all six bench checks pass). D.3 (speed estimation and real telemetry columns) is done (2026-11-01, PR #7, merged as `5da32d8`; bench-checked before merge, `main` flashed and `STATUS` checked after). D.4 measurements 1–3 done on `main` (2026-11-01: direction convention, speed vs duty, invalid transitions at 80 %; results in `findings.md`). The firmware for D.4 measurements 4–5 (`PROBE ON|OFF` on GPIO1 for the logic analyzer, `DECAY SLOW|FAST`) is on branch `phase1/d-measure` (`f11ca27`), bench-checked 2026-11-01, PR #8 merged 2026-11-01 (`8db685b`). D.4 measurements 4–5 done on that branch (2026-11-01): interrupt load ≥ 2.4 % CPU at 80 %, shortest encoder edge gap 14.4 µs (margin ≈ 1.5×); fast decay unusable below ≈ 45 %, slow decay linear down to 5 %; slow decay chosen by the user (2026-11-01). `main` flashed and `STATUS` checked after the merge; branch deleted. Item E is slimmed down (user, 2026-11-01): one PR (PI component, `SPEED`, `SET`, `GAINS`, encoder sign flipped so + duty gives + rpm) plus one short tuning session, then Phase 2. **After E (user request, 2026-11-01):** redraw the ASCII diagrams in the docs as Mermaid in Markdown. Also create `tools/README.md` (user request, 2026-11-01): move the "Bench tools" section of `docs/dev-setup.md` there and leave a one-line link, per the docs layout (move, don't copy). Item C is done (2026-10-29, PR #5; C.3 measured 4386 counts per wheel turn, +1.5 % vs 4320). Item A (bench wiring) is done: A.1 2026-10-21, header 2026-10-22, A.2 wiring and A.4 checks 2026-10-24, A.5 first power-up 2026-10-25 (pass). Item B is done (2026-10-20, PR #2). Phase 1 plan: `phase-1-one-wheel-node.md`.
 
 ## Current Phase
-Phase 1 complete 2026-11-03; Phase 2 (CAN bring-up + gateway v0) next, starting with its planning pass. Phase 0 complete 2026-10-17. Parts: all here except the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The wiring order of 2026-10-16 arrived 2026-11-02 (JST-XH pigtails male + female, 22 AWG solid core in several colors, 20 AWG stranded red + black, WAGO connectors), all as ordered. The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
+Phase 1 complete 2026-11-03; Phase 2 (CAN bring-up + gateway v0) in progress: plan approved 2026-11-04, implementation next. Phase 0 complete 2026-10-17. Parts: all here except the 470 µF 50 V bulk caps for Phase 5 (ordered 2026-10-28, in transit). The wiring order of 2026-10-16 arrived 2026-11-02 (JST-XH pigtails male + female, 22 AWG solid core in several colors, 20 AWG stranded red + black, WAGO connectors), all as ordered. The 18650 cells arrived 2026-10-21; their check and first charge (E.4) is a Phase 5 item.
 
 ## Working method
 - Plan top-down, one level at a time. Each phase gets its own detailed planning pass before any implementation starts.
@@ -64,7 +66,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 - [ ] First text commands (`DRIVE`, `STOP`, `STATUS`) on the gateway UART, with a transport-independent parser (reuse `components/tiny_cmd` from Phase 1)
 - [ ] Fail-safe from the start: heartbeat plus setpoint timeout
 - **Learning:** CAN protocol, arbitration, termination. **Exit:** a typed command spins the bench wheel, and pulling the CAN wire stops it within a defined timeout.
-- **Status:** pending
+- **Status:** in progress (plan `phase-2-can-bring-up.md` approved 2026-11-04)
 
 ### Phase 3: Protocol spec + four nodes
 - [ ] **Before starting:** Phase 0 F.1 (strip the 2-deck chassis) and F.5 (fit check, incl. pod space and middle gap, which confirm wiring option D for the harness), then F.6 (mount the 4 motors). Moved from Phase 0 on 2026-10-17
@@ -112,10 +114,11 @@ Future (not committed): image processing, an Android app, a Raspberry Pi CAN sni
 
 ## Key Questions
 1. How is node identity assigned: NVS written at provisioning, or strap pins? (Phase 3)
-2. Which CAN bitrate? 500 kbit/s is assumed. (Phase 2)
+2. ~~Which CAN bitrate?~~ Resolved: 500 kbit/s (Phase 2 step B, 2026-11-04).
 3. Which clock-sync algorithm? (Phase 4)
 4. Which node measures battery voltage? (Phase 5)
 5. ~~Which ESP-IDF version to pin?~~ Resolved: v6.1 (see Decisions).
+6. Where else can host tests keep docs from going stale (docs checked against code or specs, like the `tiny_proto` README vs the DBC)? Reminder from the user (2026-11-04): look for more candidates in each phase planning pass and at the end of Phase 2.
 
 ## Risks (settle in phase plans)
 - **ESP32-CAM GPIO scarcity (likely, unverified):** the camera uses most pins, so TWAI probably needs pins freed from the SD-card interface. Some of those are boot-strapping pins (GPIO12, GPIO2). Verify in Phase 2.

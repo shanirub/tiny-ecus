@@ -209,6 +209,14 @@
 - Mermaid: the 3 text diagrams in `docs/architecture.md` (power, control/data, wheel node) redrawn and rendered; the wheel node gained the STBY line it was missing. The 6 wheel-README diagrams re-rendered, unchanged. Mermaid ignores a subgraph's `direction` when its nodes link outside it; linking to the subgraph itself keeps it. Branch `docs/mermaid`, PR #11.
 - PR #11 merged (`b1b451c`), branch deleted. Session ends here (user clears context); next session starts the Phase 2 planning pass.
 
+## Session: 2026-11-03/04 (Phase 2 planning pass)
+
+- Pre-checks (desk only): IDF 6.1 TWAI node API (legacy driver deprecated; RX only in the `on_rx_done` ISR callback); ESP32-CAM TWAI TX GPIO14 / RX GPIO13 (datasheet reset pulls), C3 TX GPIO4 / RX GPIO3. Results in `findings.md` ("Phase 2 pre-checks").
+- From the user's photos (2026-11-04): the USB-C ESP32-CAM-MB breaks out all 16 module pins on male headers (the user used them in an earlier project), so no soldering; the module goes on with the camera parallel to the USB-C connector (the reverse fit would put reverse polarity on the module's 5V pin). `findings.md` corrected.
+- Planned step by step with the user (summary + options with pros/cons per step), all recommendations approved, plus two user changes: the console becomes a shared `tiny_console` component (no copied code; saved as a feedback memory) and a host test keeps the `tiny_proto` README tables in step with the DBC (new Key Question 6: look for more docs-vs-code tests).
+- Verified during planning: nested interrupts on the C3 in IDF 6.1 (`riscv/vectors.S`), TWAI `intr_priority` 0–3; cantools 45.1.2 parses the DBC, encodes the three byte examples exactly, and `generate_c_source --no-floating-point-numbers` gives integer-only C that compiles clean with `-Wall -Wextra -Werror` (caveats: timestamp line in the header, unused `double` range helpers).
+- Wrote `phase-2-can-bring-up.md`; approved by the user 2026-11-04 and committed to `main`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
