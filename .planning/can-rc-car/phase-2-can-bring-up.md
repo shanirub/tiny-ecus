@@ -78,56 +78,7 @@ Short definitions; ask for more depth on any of them. Phase 1 terms (ISR, IRAM, 
 Bus: CANH–CANH, CANL–CANL, plus a GND wire between the two boards. All five adapters have a fixed 120 Ω, so two nodes on the bench are terminated correctly as they are (Phase 3 deals with the middle nodes).
 
 ## CAN frames (Phase 2)
-These tables and examples move (not copy) to `components/tiny_proto/README.md` when the component is created (D.6). The DBC is authoritative.
-
-### Setpoint: gateway → wheel node, ID `0x100`, DLC 3, every 20 ms
-| Byte | Field | Type | Scale / unit | Range used | Meaning |
-|---|---|---|---|---|---|
-| 0–1 | `target_rpm` | int16, little-endian | 0.1 rpm | −100.0 … +100.0 | Wanted wheel speed; sign = direction; 0 = stop |
-| 2 | `counter` | uint8 | — | 0 … 255, wraps | Alive counter, +1 per frame |
-
-Example: 55.0 rpm, counter 53 → raw 550 = `0x0226` → `ID 0x100  DLC 3  26 02 35`. For −55.0 rpm: raw −550 = `0xFDDA` (two's complement) → `DA FD 35`.
-
-### Status: wheel node → gateway, ID `0x180`, DLC 7, every 20 ms
-| Byte | Field | Type | Scale / unit | Meaning |
-|---|---|---|---|---|
-| 0–1 | `rpm` | int16, little-endian | 0.1 rpm | Measured wheel speed |
-| 2 | `duty` | int8 | 1 % | Duty being applied, −100 … +100 |
-| 3 | `mode` | uint8 | — | 0 = idle, 1 = run, 2 = fault |
-| 4 | `faults` | uint8 bit field | — | bit 0 = stall latched, bit 1 = setpoint timeout, bits 2–7 = 0 |
-| 5 | `counter` | uint8 | — | The node's alive counter |
-| 6 | `setpoint_seen` | uint8 | — | `counter` of the last setpoint received (diagnostics: do the setpoints arrive?) |
-
-Example: 54.3 rpm, 41 %, run, no faults, counter 122, last setpoint 53 → `ID 0x180  DLC 7  1F 02 29 01 00 7A 35`.
-
-Who uses what: the setpoint stream and its timeout are the fail-safe (gateway alive and commanding). The status stream tells the gateway the node is alive. `setpoint_seen` only diagnoses lost setpoints (node alive but `setpoint_seen` stuck). Bus load ≈ 100 frames/s, under 3 % at 500 kbit/s.
-
-### DBC (checked 2026-11-04 with cantools 45.1.2: parses, and encodes the three examples above byte for byte)
-```
-VERSION ""
-
-NS_ :
-
-BS_:
-
-BU_: GATEWAY WHEEL0
-
-BO_ 256 SETPOINT_0: 3 GATEWAY
- SG_ target_rpm : 0|16@1- (0.1,0) [-100|100] "rpm" WHEEL0
- SG_ counter : 16|8@1+ (1,0) [0|255] "" WHEEL0
-
-BO_ 384 STATUS_0: 7 WHEEL0
- SG_ rpm : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" GATEWAY
- SG_ duty : 16|8@1- (1,0) [-100|100] "%" GATEWAY
- SG_ mode : 24|8@1+ (1,0) [0|2] "" GATEWAY
- SG_ fault_stall : 32|1@1+ (1,0) [0|1] "" GATEWAY
- SG_ fault_timeout : 33|1@1+ (1,0) [0|1] "" GATEWAY
- SG_ counter : 40|8@1+ (1,0) [0|255] "" GATEWAY
- SG_ setpoint_seen : 48|8@1+ (1,0) [0|255] "" GATEWAY
-
-VAL_ 384 mode 0 "idle" 1 "run" 2 "fault" ;
-```
-Reading a signal line: `SG_ name : start bit|length @1 (little-endian) -/+ (signed/unsigned) (scale,offset) [min|max] "unit" receiver`.
+Two cyclic frames, every 20 ms: **setpoint** `0x100`, 3 bytes, gateway → wheel node (int16 `target_rpm` in 0.1 rpm, uint8 alive `counter`), and **status** `0x180`, 7 bytes, wheel node → gateway (int16 `rpm`, int8 `duty`, `mode`, fault bits, `counter`, `setpoint_seen`). The byte tables, worked examples and the DBC moved (2026-11-04, item D) to [`components/tiny_proto/README.md`](../../components/tiny_proto/README.md) and [`tiny_proto.dbc`](../../components/tiny_proto/tiny_proto.dbc); the DBC is authoritative.
 
 ## Work items
 Every item that turns the motor asks first (PSU on, wheel free). Serial reads are bounded; no interactive monitor.
@@ -193,7 +144,7 @@ Every item that turns the motor asks first (PSU on, wheel free). Serial reads ar
 - `gpio_install_isr_service()` passing `ESP_INTR_FLAG_LEVEL3` through to the allocator on the C3 (E.5 of the code; check the GPIO driver source or the return value).
 - The DTR/RTS state that is safe with the MB's auto-reset circuit (C.3).
 - Whether the TWAI acceptance filter suppresses the RX interrupt entirely for rejected frames (expected; E.5's stress design relies on it, so the stress frames are ones the filter accepts).
-- The generated code cross-compiles for the ESP32 and C3 inside an IDF component (expected, it's plain C).
+- ~~The generated code cross-compiles for the ESP32 and C3~~: checked 2026-11-04 with `riscv32-esp-elf-gcc` and `xtensa-esp32-elf-gcc`, `-Wall -Wextra -Werror`, clean. (Inside an IDF project build it's first compiled when a firmware requires it, in B/C/E.)
 - Which MB male pin is IO13/IO14 (read off at wiring).
 
 ## Out of scope for Phase 2

@@ -1,0 +1,22 @@
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BU_: GATEWAY WHEEL0
+
+BO_ 256 SETPOINT_0: 3 GATEWAY
+ SG_ target_rpm : 0|16@1- (0.1,0) [-100|100] "rpm" WHEEL0
+ SG_ counter : 16|8@1+ (1,0) [0|255] "" WHEEL0
+
+BO_ 384 STATUS_0: 7 WHEEL0
+ SG_ rpm : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" GATEWAY
+ SG_ duty : 16|8@1- (1,0) [-100|100] "%" GATEWAY
+ SG_ mode : 24|8@1+ (1,0) [0|2] "" GATEWAY
+ SG_ fault_stall : 32|1@1+ (1,0) [0|1] "" GATEWAY
+ SG_ fault_timeout : 33|1@1+ (1,0) [0|1] "" GATEWAY
+ SG_ counter : 40|8@1+ (1,0) [0|255] "" GATEWAY
+ SG_ setpoint_seen : 48|8@1+ (1,0) [0|255] "" GATEWAY
+
+VAL_ 384 mode 0 "idle" 1 "run" 2 "fault" ;

@@ -46,6 +46,8 @@ flowchart TD
 
 The order along the bus and the wiring layout are tentative: option D, gateway → left pod → right pod, confirmed in Phase 3 (see `docs/design/wiring-options.html`). Exactly two terminators are fitted, one at each physical end of the bus. With the bus unpowered, CANH–CANL measures about 60 Ω.
 
+The frames on the bus (IDs, byte layout, rates) are defined in [`components/tiny_proto/README.md`](../components/tiny_proto/README.md).
+
 ## 3. One wheel node (×4, identical firmware, identity in NVS)
 
 ```mermaid
