@@ -10,6 +10,10 @@ A 4WD skid-steer RC car built the way a real car's electronics are: each wheel h
 
 *Recorded on the bench: one wheel node's speed controller following a setpoint step, then holding 60 rpm while a finger brakes the wheel. Drawn by [`tools/pi_figure.py`](tools/pi_figure.py) from the raw telemetry in [`docs/data/`](docs/data/).*
 
+![The one-wheel bench rig: TT motor with Hall encoder, DRV8833 driver and ESP32-C3 on a breadboard, bench PSU leads, USB and logic-analyzer probes](docs/images/bench-one-wheel.jpg)
+
+*The bench rig that recorded it: one wheel node with its motor and encoder, powered from a lab PSU, probed by a logic analyzer.*
+
 ## Goals
 
 - Four independent wheel nodes that drive together smoothly, using closed-loop speed control with encoder feedback.
@@ -46,6 +50,14 @@ What this caught or settled:
 - **A test that passed only by luck.** A mutant that replaces a wrapping unsigned add with a plain signed one survives on the PC, because the CPU happens to wrap to the value the test expects. Only UBSan catches it, which is why the sanitizers are part of the test run rather than an extra.
 - **Expected values from the hardware, not the code.** The encoder's state sequence was recorded on the logic analyzer first. The exhaustive test of all 16 state transitions checks against that recording, so a mistake in the decoder's table can't be copied into its test.
 - **A latent timing bug found in review.** The PI controller's software-float math ran inside an interrupt-masking critical section for up to 50 µs, longer than the shortest gap between encoder edges (14.4 µs). Moving it out brought the section down to 8.8 µs, measured on the chip with the CPU cycle counter.
+
+### Bench tooling
+
+The bench checks use small Python tools written for this project ([`tools/`](tools/README.md)): a recorder that captures the node's 100 Hz telemetry for a fixed time and plots it, a scripted command sender for repeatable runs, and a live terminal dashboard.
+
+![Live terminal dashboard: speed and setpoint plot, duty plot, and a command console](docs/images/tools-live-tui.png)
+
+*`tools/live.py`: live speed and duty plots, link and drop counters, and a command console with a one-key STOP.*
 
 ## Engineering notes
 
