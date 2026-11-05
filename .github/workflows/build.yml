@@ -36,7 +36,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           # Actions runs steps directly, not through the image's entrypoint, so activate IDF here.
           . "$IDF_PATH/export.sh"
-          dir=firmware/${{ matrix.project }}
+          # absolute: idf.py resolves a relative SDKCONFIG from the project directory
+          dir="$PWD/firmware/${{ matrix.project }}"
           if [ -n "$TARGET" ]; then
             idf.py -C "$dir" -B "$dir/build-$TARGET" -D SDKCONFIG="$dir/build-$TARGET/sdkconfig" -D IDF_TARGET="$TARGET" build
           else
