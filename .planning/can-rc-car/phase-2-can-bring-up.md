@@ -48,7 +48,7 @@ Short definitions; ask for more depth on any of them. Phase 1 terms (ISR, IRAM, 
 | B.1 | Bitrate | 500 kbit/s |
 | B.2 | Bring-up order | Each node alone in self-test mode, then gateway → C3, then C3 → gateway |
 | B.3 | Bring-up code | Shared `components/tiny_can` + standalone `firmware/can_probe` app for both chips; wheel node untouched until E |
-| B.4 | Analyzer probes | D0 gateway RX, D1 gateway TX, D2 C3 TX |
+| B.4 | Analyzer probes | D0 gateway TX, D1 C3 TX, D2 gateway RX |
 | C | Console code | Shared `components/tiny_console` with a per-chip transport; **no copied code** (user) |
 | C.1 | Gateway commands | `STATUS`, `DRIVE <rpm> [s]`, `STOP`, `HELP`, `CAN`, `CANMON ON\|OFF`; no raw `CANTX` |
 | C.2 | `DRIVE` semantics | Time-limited like `SPEED` (default 5 s, max 30 s), then setpoint 0 |
@@ -136,7 +136,7 @@ Every item that turns the motor asks first (PSU on, wheel free). Serial reads ar
 1. Wire one SN65HVD230 adapter to each board per the pin map: 3V3, GND, CTX, CRX. Bus: CANH–CANH, CANL–CANL, GND–GND between the boards.
 2. Gateway: ESP32-CAM seated on the MB with the camera parallel to the USB-C connector (the reverse fit puts reverse polarity on the module's 5V input; `findings.md`).
 3. Power off: measure CANH–CANL ≈ 60 Ω. Check no short between 3V3 and GND on either adapter.
-4. Logic analyzer: D0 = gateway RX (GPIO13), D1 = gateway TX (GPIO14), D2 = C3 TX (GPIO4), GND to the bench ground.
+4. Logic analyzer: D0 = gateway TX (GPIO14), D1 = C3 TX (GPIO4), D2 = gateway RX (GPIO13), GND to the bench ground.
 
 Wiring diagram (2026-11-05): [`docs/images/phase2-a-wiring.png`](../../docs/images/phase2-a-wiring.png) (source: `phase2-a-wiring.svg`; edit the SVG and re-render with `magick -density 96 phase2-a-wiring.svg phase2-a-wiring.png`). The adapters' header pins are printed TX / RX (CTX / CRX in the glossary). The 120 Ω terminators are built into the adapters; the bus itself is just CANH–CANH, CANL–CANL.
 
