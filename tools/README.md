@@ -8,6 +8,7 @@ Python programs that talk to the wheel node's console over USB. Only one program
 | `send_cmd.py` | scripted: send commands, print each reply, exit |
 | `plot_run.py` | scripted: record telemetry for a fixed time, save a CSV and a PNG under `logs/` |
 | `nodelink.py` | shared by the three: opening the port, sending, splitting the input into lines and telemetry rows |
+| `pi_figure.py` | no port: redraws the README's PI figure (`docs/images/pi-speed-control.png`) from the two runs kept in `docs/data/` |
 
 `send_cmd.py` and `plot_run.py` always end by themselves, so scripts (and Claude) use them. `live.py` is interactive and never ends by itself.
 

@@ -199,42 +199,19 @@ First numbers from the timed runs, for planning only; D.4 measures them properly
   - Camera: 48 photos, 47 read cleanly; run 2 reads 0.045 or 0.049 A (the display was mid-update, one segment half lit). The camera had moved between the test shot and the run, so the crop is chosen from a full photo each session.
 
 ### Fast decay, first look (D.4.5, 2026-11-01, branch `phase1/d-measure`)
-- Same motor, PSU 7.4 V, no load. Fast decay (IN1 PWM, IN2 low forward; off part coasts) drives the right way, but much more weakly than slow decay: no start from rest at 30 % or 50 % (the stall check tripped both times, as designed), ≈ 92 rpm at +80 % and 95 rpm at −80 % against ≈ 105 in slow decay. PSU 0.075 A at fast −80 % (slow 80 %: 0.104 A, 2026-10-31).
-- Likely cause (textbook, not measured here): in fast decay the winding current collapses during each off-time instead of circulating, so the average current, and with it the torque, is lower for the same duty. Slow decay keeps the current flowing and gives the near-linear curve measured in D.4.2.
-- For the full curve: from rest the stall check (≥ 30 % duty, ≤ 1 count, 300 ms) trips before fast decay starts, so sweep downward from 80 % while the wheel is turning and find where it stops.
+- Moved to [`docs/design/pwm-decay-mode.md`](../../docs/design/pwm-decay-mode.md) (2026-11-05).
 
 ### Encoder interrupt load (D.4.4, 2026-11-01, branch `phase1/d-measure`, logic analyzer)
-- Setup: `PROBE ON` (GPIO1 high while `encoder_isr` runs), analyzer D0 = A, D1 = B, D2 = GPIO1, `sigrok-cli` fx2lafw, 0.5 s per capture. The clone only streams 21 ms at 24 MHz ("Device only sent 504320 samples"); 12 MHz (83 ns resolution) and 8 MHz capture the full 0.5 s. Captures: `logs/20261101-1512*-d4-isr-*.sr` (open in PulseView). Slow decay, no load.
-- Handler body (probe width): 0.92–1.08 µs, median 1.00, identical at every speed.
-- Entry (encoder edge → probe rise: CPU entry + IDF GPIO dispatcher): median 2.08 µs, p99 2.5 µs at 80 % (4.1 µs with telemetry on), max 8.3–8.8 µs in all three captures. The return path isn't visible.
-- Load: 7650 edges/s at 80 % (≈ 105 rpm): body alone 0.76 % of the time; entry + body ≈ 3.1 µs per interrupt → ≥ 2.4 % CPU (lower bound). At 30 %: 2690 edges/s, ≥ 0.8 %. Telemetry on doesn't change the load, only stretches the latency tail.
-- **Edge spacing is far from even.** A and B aren't 90° apart: at 80 % the A→B gap has median 84 µs, B→A 180 µs, and the pattern repeats every motor turn (48 edges, std 6.6 µs across turns), so the magnet disc's poles are uneven. Shortest gap between real edges: 14.4 µs (p0.1 18.9, p1 24 µs). Against the worst entry + body seen (≈ 9.8 µs), the margin at 80 % is ≈ 1.5×; at 100 % duty (≈ 133 rpm, gaps × 0.79) it would be ≈ 1.15×. Two edges inside one handler's latency read as one invalid step, so this is the number to watch when Phase 2 adds CAN (TWAI) interrupts, or if a wheel is driven faster than the motor drives it (pushed, downhill).
-- **Edge bounce:** some real edges (mostly A) bounce for 83–500 ns (8 at 30 %, 14 at 80 %, 22 with telemetry). The handler reads the pins ≥ 1.8 µs later, when they've settled, so the bounce adds at most one extra interrupt that counts 0; `invalid` stayed 0 in every run. Whether the bounce is on the wire or in the analyzer's input (no hysteresis) isn't known. If it ever matters, the C3 has a per-pin GPIO glitch filter.
+- Moved to [`docs/design/encoder-timing-margin.md`](../../docs/design/encoder-timing-margin.md) (2026-11-05).
 
 ### Fast vs slow decay, downward sweep (D.4.5, 2026-11-01, branch `phase1/d-measure`)
-- Method: one run per mode, the duty stepped down every 4 s while the wheel turns (`DUTY d 30` resent as a new target), mean of the last 2 s; PSU photographed ≈ 3 s into each step. Log `logs/20261101-151644-d4-down.csv`, photos `…-d4-down-*.jpg`, current sheet `…-d4-down-amps.png`. No load, 7.4 V.
-
-  | duty % | 80 | 70 | 60 | 50 | 40 | 30 | 25 | 20 | 15 | 10 | 5 |
-  |---|---|---|---|---|---|---|---|---|---|---|---|
-  | fast: rpm | 93.3 | 61.8 | 33.2 | 9.2 | ≈ 1.7, stall trip | | | | | | |
-  | fast: PSU A | 0.100 | 0.074 | 0.053 | 0.036 | | | | | | | |
-  | slow: rpm | 106.3 | 92.9 | 79.1 | 65.3 | 51.4 | 37.5 | 30.6 | 23.4 | 16.5 | 9.6 | 2.3 |
-  | slow: PSU A | 0.099 | 0.083 | 0.068 | 0.054 | 0.042 | 0.030 | 0.025 | 0.020 | 0.016 | 0.012 | 0.009 |
-
-- Fast decay is steep and non-linear: ≈ 3 rpm per % between 50 and 80 %, nothing usable below ≈ 45 %, so a third of the duty range does nothing and the rest is very sensitive. Slow decay stays linear (≈ 1.37 rpm/%, matches D.4.2 within 0.5 rpm).
-- Slow decay sweeping down keeps turning at 5 % (2.3 rpm), though it never started from rest at 5 % (D.4.2): the static friction is higher than the running friction, so starting needs more duty than keeping going.
-- The PSU current isn't the motor current: in slow decay the off-time current circulates inside the driver, in fast decay it returns to the supply. So the two current rows can't be compared directly.
-- **Decision (user, 2026-11-01): slow decay**, already the default. Linear, symmetric, usable down to a few rpm, and it gives the PI controller an almost constant gain.
+- Moved to [`docs/design/pwm-decay-mode.md`](../../docs/design/pwm-decay-mode.md) (2026-11-05).
 
 ### Encoder sign flipped (Phase 1 E, 2026-11-01)
 - Since item E, `encoder.c` feeds B as the decoder's first channel, so positive duty counts **up** and gives positive rpm (`DUTY 20 2` → `pos=3320`). The D.4.1 finding above (positive duty counts down) describes the firmware before the flip; all logs up to D.4 have the opposite sign. The per-side sign for left and right wheels on the car is still open (Phase 2 or when the chassis motors are wired).
 
 ### PI speed control on the bench (Phase 1 E, 2026-11-01, spare motor, wheel free, PSU 7.4 V)
-- **Model vs reality:** the plant model used to pick the gains (rpm = 0.137 × duty ‰ − 4.2, 60 ms time constant, from D.4) predicted ≈ 7 % overshoot at kp 6 / ki 20; the bench gave 9 % from rest (65.3 rpm at 60) and 4 % on a 30 → 80 step. Close enough to keep the gains.
-- **Steady state:** the duty needed for 60 rpm drifted 470 → 456 ‰ over 15 s (≈ 3 %), presumably the gearbox warming (as in D.4.2); the integral absorbs it. The feedforward predicts 469.
-- **Load:** a light finger cost ≈ 130 ‰ duty at 60 rpm. A firm press needs more than the 800 ‰ cap can give; the controller then sits at the cap with the integral frozen (anti-windup), and after release overshoots to ≈ 73 rpm while the integral bleeds off (≈ 1.5 s at ki 20). Faster recovery would need a larger ki, which overshoots more on steps.
-- **Stall during `SPEED`:** the trip fires 300 ms after the wheel stops, as with `DUTY`; the controller drives the duty to the cap first (≈ 80 ms). A slowed but turning wheel at the cap is not caught by the stall check; on the car only the run timer or (Phase 2) the setpoint watchdog limits it.
-- **Bench method:** the camera can't take two photos 2 s apart (the second fails with "device busy" while the first ffmpeg still runs); space them ≥ 4 s.
+- Moved to [`docs/design/pi-speed-control.md`](../../docs/design/pi-speed-control.md) (2026-11-05).
 
 ### USB console output dropped when nobody reads the port (2026-11-03, live TUI work)
 
@@ -285,6 +262,4 @@ See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 - `~/.claude/plans/recursive-waddling-robin.md`: original plan-mode output for the roadmap, now mirrored in `task_plan.md`
 
 ### Locked-section length vs the encoder (2026-11-02, PR #9 review)
-- On the C3 (single core), `portENTER_CRITICAL` raises the interrupt threshold to level 4 (ESP-IDF `xPortSetInterruptMaskFromISR`, `RVHAL_EXCM_LEVEL`), so the GPIO/encoder interrupt waits until the lock is released.
-- Measured with `esp_cpu_get_cycle_count()` inside the lock, max per 10 s run, 160 MHz: idle 1275 cycles (8 µs), `DUTY 80` 2466 (15 µs), `SPEED 100` with the PI inside 7984 (50 µs). After moving the PI out: 365 / 1052 / 1414 cycles (2.3 / 6.6 / 8.8 µs). Even integer-only code costs µs here; likely flash-cache misses (the loop runs every 10 ms), not verified.
-- Encoder edges can be 14.4 µs apart at full speed (D.4.4), so the lock should stay short; CAN will add another interrupt.
+- Moved to [`docs/design/encoder-timing-margin.md`](../../docs/design/encoder-timing-margin.md) (2026-11-05).
