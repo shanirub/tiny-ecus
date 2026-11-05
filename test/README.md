@@ -30,7 +30,7 @@ The sanitizers need their runtime libraries (Fedora: `sudo dnf install libasan l
 
 | Job | Checks |
 |---|---|
-| `build (wheel_node)`, `build (gateway)` | the firmware builds with ESP-IDF v6.1 (in the `espressif/idf` container) |
+| `build (wheel_node)`, `build (gateway)`, `build (can_probe, esp32)`, `build (can_probe, esp32c3)` | the firmware builds with ESP-IDF v6.1 (in the `espressif/idf` container) |
 | `host-tests` | the host tests with AddressSanitizer and UndefinedBehaviorSanitizer, then the mutation tests |
 
 Nothing in CI touches hardware; see [What the tests don't cover](#what-the-tests-dont-cover).
@@ -166,6 +166,7 @@ The host tests prove the logic. Everything that depends on the chip, the wiring 
 | Not covered by host tests | Checked by |
 |---|---|
 | Firmware code in `firmware/*/main/` (console task, telemetry, `encoder.c`, `drive.c`, `main.c`) | CI only builds it; bench use of the console commands |
+| `tiny_can` (the TWAI driver layer) and `firmware/can_probe` | CI only builds them; bench runs with `can_probe` on both boards (Phase 2 B: self-test, both directions for 5 min, a boot capture; results in `.planning/can-rc-car/progress.md`) |
 | `tiny_common` (boot banner; needs ESP-IDF) | seen in the boot log |
 | Encoder wiring, pin numbers, pull-ups, which channel leads | C.3 (10 hand turns ≈ 43 200 counts), D.4 direction convention |
 | The ISR keeping up at full speed; edges missed under load | D.4: ISR load on the logic analyzer, invalid count at full speed |

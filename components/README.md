@@ -23,6 +23,7 @@ Each project's top-level `CMakeLists.txt` adds this directory with `set(EXTRA_CO
 | `tiny_motor` | Motor run logic: timed runs, duty cap, slew limit, stall detection, the target change a speed controller uses, and the duty → DRV8833 pin mapping (slow or fast decay) | wheel node | yes, plus mutation tests |
 | `tiny_speed` | Wheel speed in milli-rpm from the encoder counts of one control period | wheel node | yes, plus mutation tests |
 | `tiny_pi` | PI speed controller with feedforward and anti-windup: wanted and measured rpm in, duty ‰ out (float math) | wheel node | yes, plus mutation tests |
+| `tiny_can` | Thin layer over the ESP-IDF TWAI (CAN) driver: node setup with pins, bitrate, filter and interrupt priority as parameters; a send that keeps each frame's buffer alive until the driver is done with it; received frames copied from the interrupt into a queue; state, TEC/REC and counters; automatic bus-off recovery after 1 s | `can_probe` (gateway and wheel node boards) | no: it needs ESP-IDF; checked on the bench with `firmware/can_probe` |
 
 `tiny_qdec` has a `linker.lf` (an ESP-IDF linker fragment) that places its code in IRAM and its table in DRAM. The encoder interrupt handler calls it and is registered as IRAM-safe, so it keeps running while the flash is busy. Any function it calls must then not be in flash.
 

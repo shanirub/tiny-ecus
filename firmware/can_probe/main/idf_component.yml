@@ -1,0 +1,3 @@
+dependencies:
+  # Pins the toolchain: any other IDF version fails at configure time.
+  idf: "~6.1.0"

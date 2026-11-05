@@ -1,0 +1,2 @@
+# Console on the native USB port (/dev/ttyACM*), as on the wheel node.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

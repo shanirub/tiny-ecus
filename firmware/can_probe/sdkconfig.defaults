@@ -1,0 +1,2 @@
+# 1 ms ticks, so the flood mode can pace frames per millisecond.
+CONFIG_FREERTOS_HZ=1000

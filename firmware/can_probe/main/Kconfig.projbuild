@@ -1,0 +1,33 @@
+menu "can_probe"
+
+    config CAN_PROBE_SELF_TEST
+        bool "Self-test mode (alone on the bus)"
+        default n
+        help
+            Frames need no ACK and the node receives its own frames back, so one
+            node can be checked with nothing else on the bus. Build with
+            sdkconfig.selftest added to SDKCONFIG_DEFAULTS (see README.md).
+
+    config CAN_PROBE_TX_ID
+        hex "ID of the counter frame this node sends (0 = send nothing)"
+        range 0 0x7FE
+        default 0x7E0 if IDF_TARGET_ESP32
+        default 0x7E1
+        help
+            Each board sends its own ID, so the two counters can be told apart.
+            0x7FF is the flood frame.
+
+    config CAN_PROBE_PERIOD_MS
+        int "Counter frame period (ms)"
+        range 1 10000
+        default 100
+
+    config CAN_PROBE_FLOOD_FPS
+        int "Flood frames per second on ID 0x7FF (0 = off)"
+        range 0 4000
+        default 0
+        help
+            For the E.5 stress check. At 500 kbit/s an 8-byte frame takes about
+            0.25 ms, so 4000 frames/s is the whole bus.
+
+endmenu
