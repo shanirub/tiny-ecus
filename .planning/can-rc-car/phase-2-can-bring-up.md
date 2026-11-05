@@ -138,6 +138,8 @@ Every item that turns the motor asks first (PSU on, wheel free). Serial reads ar
 3. Power off: measure CANH–CANL ≈ 60 Ω. Check no short between 3V3 and GND on either adapter.
 4. Logic analyzer: D0 = gateway RX (GPIO13), D1 = gateway TX (GPIO14), D2 = C3 TX (GPIO4), GND to the bench ground.
 
+Wiring diagram (2026-11-05): [`docs/images/phase2-a-wiring.png`](../../docs/images/phase2-a-wiring.png) (source: `phase2-a-wiring.svg`; edit the SVG and re-render with `magick -density 96 phase2-a-wiring.svg phase2-a-wiring.png`). The adapters' header pins are printed TX / RX (CTX / CRX in the glossary). The 120 Ω terminators are built into the adapters; the bus itself is just CANH–CANH, CANL–CANL.
+
 ### B. `tiny_can` + `can_probe`: first frames (PR)
 1. `components/tiny_can`: TWAI node setup on the IDF 6.1 node API (`twai_new_node_onchip`, callbacks, `twai_node_enable`) with pins, bitrate, filter and interrupt priority as parameters; a send helper that keeps the frame buffer alive until `on_tx_done` (the driver queues by pointer); `on_rx_done` copies the frame into a FreeRTOS queue that a task reads (RX is only available in the ISR callback); state/TEC/REC/counters via `twai_node_get_info()`; bus-off recovery per F.3. Needs ESP-IDF, so it isn't host-tested; it stays thin.
 2. `firmware/can_probe`: one app, built for `esp32` and `esp32c3` (separate build dirs), with a small console on `tiny_console` (item C; if C isn't merged yet, B uses a temporary print-only mode, no copied console code): send a counter frame every 100 ms, print every received frame, self-test mode on/off, and a flood mode for E.5.
