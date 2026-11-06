@@ -30,5 +30,6 @@ Each project's top-level `CMakeLists.txt` adds this directory with `set(EXTRA_CO
 ## More
 
 - **API:** each component's header in `include/` describes its functions, types and conventions.
+- **Diagrams:** `tiny_can/README.md` has class, sequence and state diagrams of how `tiny_can` works inside.
 - **Tests:** `test/README.md` lists what the host tests cover and what they don't.
 - **Adding a component:** create the directory with `CMakeLists.txt`, the source and `include/`, then add it to `PRIV_REQUIRES` of the project that uses it. If it's hardware-free, also add it to `test/host/CMakeLists.txt` with a `test_<component>.c`.
