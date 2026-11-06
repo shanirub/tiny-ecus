@@ -216,6 +216,7 @@
 - Planned step by step with the user (summary + options with pros/cons per step), all recommendations approved, plus two user changes: the console becomes a shared `tiny_console` component (no copied code; saved as a feedback memory) and a host test keeps the `tiny_proto` README tables in step with the DBC (new Key Question 6: look for more docs-vs-code tests).
 - Verified during planning: nested interrupts on the C3 in IDF 6.1 (`riscv/vectors.S`), TWAI `intr_priority` 0–3; cantools 45.1.2 parses the DBC, encodes the three byte examples exactly, and `generate_c_source --no-floating-point-numbers` gives integer-only C that compiles clean with `-Wall -Wextra -Werror` (caveats: timestamp line in the header, unused `double` range helpers).
 - Wrote `phase-2-can-bring-up.md`; approved by the user 2026-11-04 and committed to `main`.
+- Item D (`tiny_proto`) on branch `phase2/d-proto` (user: start with D while the wiring waits until 2026-11-05): DBC, `generate.py` (cantools 45.1.2, timestamp line replaced so regeneration is deterministic; pinned in `tools/requirements-test.txt`), generated C committed, 13 host tests (sanitizers on), `tools/tests/test_tiny_proto_docs.py` (README tables/examples vs DBC, generated C up to date; 4 planted errors all caught), README with the tables moved out of the plan, index row, architecture link, `test/README.md`. Generated C cross-compiles clean for riscv32 and xtensa. Host tests 7/7 suites, tools tests 26 passed, all mutants killed.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

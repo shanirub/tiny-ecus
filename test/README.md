@@ -155,7 +155,7 @@ Mutant 9 shows why the sanitizers are part of the tests: without UBSan it surviv
 
 Add a `(description, original text, replacement)` line to the component's `mutants` list in `mutate.py`. A new component gets its own entry in `TARGETS` (source, include directory, test file). A good mutant is a bug someone could realistically write, in code whose behavior matters. Add one whenever a test is written to guard a specific rule, to prove that the test can fail.
 
-`tiny_qdec`, `tiny_motor`, `tiny_speed` and `tiny_pi` have mutants; `tiny_cmd` has none.
+`tiny_qdec`, `tiny_motor`, `tiny_speed` and `tiny_pi` have mutants; `tiny_cmd` and `tiny_proto` have none. `tiny_proto`'s C is generated from the DBC, so a hand-made mutant of it would test the generator rather than our tests; the frame layout itself is pinned by the byte examples in `test_tiny_proto.c` and by `tools/tests/test_tiny_proto_docs.py`.
 
 A clean run covers only the listed mutants, so it doesn't prove that the tests are complete. Generated mutation testing (a tool such as Mull, which mutates everywhere automatically) is not set up; it is to be reconsidered for the CAN protocol code in Phase 3 (`.planning/can-rc-car/task_plan.md`).
 
@@ -273,6 +273,21 @@ The command parser and dispatcher (`components/tiny_cmd`), 23 tests. It uses a s
   - rejected: empty, a sign alone, trailing junk, decimals for integers, hex, out of range, overflow, `NULL`, `nan`, `inf`, `1e40`
   - floats only in plain notation, with at most the given number of decimals: `0.0004` and `1e-4` are rejected with 3, `0.5` with 0; a second point or a point alone too
   - a rejected input leaves the output variable unchanged
+
+### `host/test_tiny_proto.c`
+
+The CAN frame packing (`components/tiny_proto`, generated from `tiny_proto.dbc`), 13 tests. Values are raw (rpm in 0.1 rpm units).
+
+- **The README's examples, byte for byte:** setpoint 55.0 and −55.0 rpm (`26 02 35`, `DA FD 35`), and the status example (`1F 02 29 01 00 7A 35`); one unpacked back.
+- **Round trips:** status at the int16/±100 % extremes and with every fault combination; setpoint at ±100.0 rpm, ±0.1 and 0.
+- **Fault bit field (byte 4):** stall is bit 0, timeout bit 1; a one-bit field given 2 doesn't spill into its neighbor; reserved bits 2–7 are ignored on receive.
+- **Buffer safety:** pack writes only the frame's own bytes; a buffer shorter than the frame gives `-EINVAL` from pack (nothing written) and unpack.
+- **Range helpers** match the DBC's `[min|max]`: ±1000 raw for `target_rpm`, ±100 for `duty`, 0–2 for `mode`.
+- IDs `0x100`/`0x180`, lengths 3/7, standard (11-bit) IDs.
+
+Not covered here, by design: that the DLC of a received frame equals the frame's length. The generated unpack only rejects frames that are too short, so the receiving code (Phase 2 items B and E) must check it.
+
+The Python side (`tools/tests/test_tiny_proto_docs.py`, run by the CI's tools job) checks that the tables and examples in `components/tiny_proto/README.md` match the DBC (byte position, length, signedness, scale, the fault bits, every signal documented, every example encodes and decodes), and that the committed C equals a fresh `generate.py` run. Planted errors in the README (a scale, a bit number, an example byte) and a DBC edit without regenerating each failed it (2026-11-04).
 
 ### `host/test_tiny_line.c`
 
