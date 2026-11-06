@@ -2,6 +2,8 @@
 
 Diagrams of how `tiny_can` works inside. The API itself is described in `include/tiny_can.h`.
 
+Colours: in the sequence diagrams the background says where code runs (blue task context, red interrupt (ISR) context, purple ESP-IDF driver, green hardware); in the class diagram dark blue is the module, light blue its public types, grey a private one and purple the driver; the error states go from green to red.
+
 ## Structure
 
 C has no classes, but a module that keeps file-scope `static` state and exposes functions behaves like a single object (a singleton). The class diagram below draws it that way:
@@ -88,6 +90,13 @@ classDiagram
     tiny_can --> twai_node : s_node
     tiny_can_stats_t --> tiny_can_state_t : state
     twai_node ..> tx_slot_t : holds a pointer until TX done
+    style tiny_can fill:#1f6feb,stroke:#0b3d91,color:#ffffff
+    style tiny_can_config_t fill:#d0e7ff,stroke:#1f6feb,color:#0b1f33
+    style tiny_can_frame_t fill:#d0e7ff,stroke:#1f6feb,color:#0b1f33
+    style tiny_can_stats_t fill:#d0e7ff,stroke:#1f6feb,color:#0b1f33
+    style tiny_can_state_t fill:#d0e7ff,stroke:#1f6feb,color:#0b1f33
+    style tx_slot_t fill:#ececec,stroke:#6e7781,color:#24292f
+    style twai_node fill:#e8d5ff,stroke:#8250df,color:#2a1052
 ```
 
 `tx_slot_t` is private to `tiny_can.c`. It's drawn because it's the reason the module exists: the driver keeps a pointer to each queued frame, so the frame must live in memory the module owns until the driver reports it sent.
@@ -98,12 +107,21 @@ classDiagram
 
 ```mermaid
 sequenceDiagram
-    participant App as app task
-    participant TC as tiny_can_send()
-    participant Pool as s_free_slots
-    participant Drv as TWAI driver
-    participant Bus as controller and bus
-    participant ISR as on_tx_done (ISR)
+    autonumber
+    box rgba(31,111,235,0.15) task context
+        participant App as app task
+        participant TC as tiny_can_send()
+        participant Pool as s_free_slots
+    end
+    box rgba(130,80,223,0.15) ESP-IDF driver
+        participant Drv as TWAI driver
+    end
+    box rgba(26,127,55,0.15) hardware
+        participant Bus as controller and bus
+    end
+    box rgba(207,34,46,0.15) ISR context
+        participant ISR as on_tx_done (ISR)
+    end
 
     App->>TC: tiny_can_send(id, data, len, timeout_ms)
     TC->>Pool: xQueueReceive(idx, timeout_ms)
@@ -130,11 +148,20 @@ The driver gives out a received frame only inside its interrupt callback, so the
 
 ```mermaid
 sequenceDiagram
-    participant App as app task
-    participant Q as s_rx queue
-    participant ISR as on_rx_done (ISR)
-    participant Drv as TWAI driver
-    participant Bus as controller and bus
+    autonumber
+    box rgba(31,111,235,0.15) task context
+        participant App as app task
+        participant Q as s_rx queue
+    end
+    box rgba(207,34,46,0.15) ISR context
+        participant ISR as on_rx_done (ISR)
+    end
+    box rgba(130,80,223,0.15) ESP-IDF driver
+        participant Drv as TWAI driver
+    end
+    box rgba(26,127,55,0.15) hardware
+        participant Bus as controller and bus
+    end
 
     App->>Q: tiny_can_receive(&f, timeout_ms)
     Note over App: blocked until a frame or the timeout
@@ -165,6 +192,14 @@ stateDiagram-v2
     ERROR_PASSIVE --> ERROR_WARNING : both < 128
     ERROR_PASSIVE --> BUS_OFF : TEC ≥ 256
     BUS_OFF --> ERROR_ACTIVE : recovery, counters reset to 0
+    classDef active fill:#1a7f37,stroke:#0f5323,color:#ffffff
+    classDef warning fill:#d4a72c,stroke:#7d4e00,color:#1f1300
+    classDef passive fill:#e16f24,stroke:#953800,color:#ffffff
+    classDef busoff fill:#cf222e,stroke:#82071e,color:#ffffff
+    class ERROR_ACTIVE active
+    class ERROR_WARNING warning
+    class ERROR_PASSIVE passive
+    class BUS_OFF busoff
 ```
 
 A node that is the only one on the bus gets no ACKs and stops at a TEC of about 127, just short of passive: ACK errors alone don't push a node past passive. Bus-off needs real bus errors, such as a short or a wrong bitrate.
@@ -173,11 +208,20 @@ Bus-off is the one state the node doesn't leave by itself. `tiny_can` starts the
 
 ```mermaid
 sequenceDiagram
-    participant Bus as controller and bus
-    participant ISR as on_state_change (ISR)
-    participant R as recover_task
-    participant Drv as TWAI driver
-    participant App as app task
+    autonumber
+    box rgba(26,127,55,0.15) hardware
+        participant Bus as controller and bus
+    end
+    box rgba(207,34,46,0.15) ISR context
+        participant ISR as on_state_change (ISR)
+    end
+    box rgba(130,80,223,0.15) ESP-IDF driver
+        participant Drv as TWAI driver
+    end
+    box rgba(31,111,235,0.15) task context
+        participant R as recover_task
+        participant App as app task
+    end
 
     Bus->>ISR: state change to BUS_OFF (TEC ≥ 256)
     ISR->>ISR: bus_off++
