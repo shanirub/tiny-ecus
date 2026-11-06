@@ -35,7 +35,7 @@ The detailed plans, every decision and the bench log: [`.planning/can-rc-car/`](
 
 ## Verification approach
 
-The firmware is verified at three levels. Each level states what it can't cover, so the next one picks it up; [`test/README.md`](test/README.md) has the full matrix.
+The firmware is verified at three levels. Each level states what it can't cover, so the next one picks it up; [`test/README.md`](test/README.md) has the full matrix. Every requirement is traced to the code that implements it, the test that verifies it and the evidence, including the ones not verified yet: [`docs/requirements.md`](docs/requirements.md).
 
 | Level | Proves | How |
 |---|---|---|
