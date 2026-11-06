@@ -15,18 +15,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [wheel_node, gateway]
+        include:
+          - project: wheel_node
+          - project: gateway
+          # can_probe has no target in its sdkconfig.defaults: one build per chip.
+          - project: can_probe
+            target: esp32
+          - project: can_probe
+            target: esp32c3
+    name: build (${{ matrix.project }}${{ matrix.target && format(', {0}', matrix.target) || '' }})
     steps:
       - uses: actions/checkout@v7
       - name: Build ${{ matrix.project }}
         shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
         run: |
           # The checkout is owned by another uid than the container user; without this,
           # `git describe` (used for the app version) fails with "dubious ownership".
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           # Actions runs steps directly, not through the image's entrypoint, so activate IDF here.
           . "$IDF_PATH/export.sh"
-          idf.py -C firmware/${{ matrix.project }} build
+          # absolute: idf.py resolves a relative SDKCONFIG from the project directory
+          dir="$PWD/firmware/${{ matrix.project }}"
+          if [ -n "$TARGET" ]; then
+            idf.py -C "$dir" -B "$dir/build-$TARGET" -D SDKCONFIG="$dir/build-$TARGET/sdkconfig" -D IDF_TARGET="$TARGET" build
+          else
+            idf.py -C "$dir" build
+          fi
 
   host-tests:
     # Hardware-free logic (test/host), compiled with sanitizers and run on the runner itself.

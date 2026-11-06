@@ -126,9 +126,9 @@
     <circle cx="1010" cy="380" r="5"/>
   </g>
   <g font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">
-    <rect x="384" y="337" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="400" y="350">D0</text>
-    <rect x="384" y="387" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="400" y="400">D1</text>
-    <rect x="994" y="387" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="1010" y="400">D2</text>
+    <rect x="384" y="337" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="400" y="350">D2</text>
+    <rect x="384" y="387" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="400" y="400">D0</text>
+    <rect x="994" y="387" width="32" height="18" rx="4" fill="#7b3fa0"/><text x="1010" y="400">D1</text>
   </g>
 
   <!-- ===== CAN bus ===== -->
@@ -164,9 +164,9 @@
   <rect x="510" y="620" width="300" height="120" rx="10" fill="#f4ecf8" stroke="#7b3fa0" stroke-width="2.5"/>
   <text x="660" y="645" font-size="16" font-weight="bold" text-anchor="middle" fill="#7b3fa0">Logic analyzer (A.4)</text>
   <g font-size="13">
-    <text x="530" y="670">D0 → gateway IO13 (RX)</text>
-    <text x="530" y="690">D1 → gateway IO14 (TX)</text>
-    <text x="530" y="710">D2 → C3 GPIO4 (TX)</text>
+    <text x="530" y="670">D0 → gateway IO14 (TX)</text>
+    <text x="530" y="690">D1 → C3 GPIO4 (TX)</text>
+    <text x="530" y="710">D2 → gateway IO13 (RX)</text>
     <text x="530" y="730">GND → GND wire (above)</text>
   </g>
 
@@ -196,7 +196,7 @@
     <text x="60" y="865">• Power each adapter from 3V3 only, never a 5V pin: the SN65HVD230 is a 3.3 V part, and at 5 V its RX output would drive the GPIO above 3.3 V.</text>
     <text x="60" y="890">• On the ESP32-CAM, 3V3 sits on the other pin row from IO13/IO14; the drawing groups them. No microSD card in the slot (IO13/IO14 are SD pins).</text>
     <text x="60" y="915">• On the C3, the adapter shares 3V3 and GND with the encoder: use the same breadboard rails.</text>
-    <text x="60" y="940">• No 10 kΩ pull-up on the C3's TX for now: B.4 captures D2 across a C3 reset and decides.</text>
+    <text x="60" y="940">• No 10 kΩ pull-up on the C3's TX: B.4 captured D1 across a C3 reset and it stayed recessive.</text>
     <text x="60" y="965">• Leave open: the ESP32-CAM's 5V / VCC pins and every GPIO not shown.</text>
   </g>
 </svg>

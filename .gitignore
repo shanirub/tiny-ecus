@@ -19,3 +19,9 @@ tools/.venv/
 logs/
 __pycache__/
 .pytest_cache/
+
+# ESP-IDF build directories per target or variant (firmware/can_probe)
+build-*/
+# can_probe builds for two targets and the lock records the target; its only
+# dependency is IDF itself, pinned in main/idf_component.yml
+firmware/can_probe/dependencies.lock

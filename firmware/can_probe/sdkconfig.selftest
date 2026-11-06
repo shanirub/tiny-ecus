@@ -1,0 +1,2 @@
+# Bring-up alone on the bus: no ACK needed, own frames received back.
+CONFIG_CAN_PROBE_SELF_TEST=y
