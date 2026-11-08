@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #define TINY_CMD_MAX_TOKENS  8    // command word + up to 7 arguments
-#define TINY_CMD_REPLY_MAX   128  // reply buffer size used by callers, incl. NUL
+#define TINY_CMD_REPLY_MAX   192  // reply buffer size used by callers, incl. NUL
 #define TINY_LINE_MAX        96   // longest accepted input line, excl. NUL
 
 /**

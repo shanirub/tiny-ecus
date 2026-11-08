@@ -274,6 +274,7 @@
 | Phase 2 B.3 gateway self-test (2026-11-05) | Self-test build on the gateway as well; read + capture | Gateway frames on the bus, MB pin mapping works | Gateway receives its own `0x7E0` and the C3's `0x7E1`, error counters 0; analyzer channels identified (D0 gateway TX, D1 C3 TX, D2 gateway RX; not as planned) | pass |
 | Phase 2 B.3 both directions, 5 min (2026-11-05) | Normal builds on both; both consoles logged 5 min (`logs/20261105-173833-b3-*`) | No counter gaps, TEC/REC 0, ACK on every frame | C3 +3040 / +3040 frames, gateway 3194 / 3197; 0 gaps, 0 bus errors, 0 failed sends during the run; TEC/REC 0/0 at the end; ACK set | pass |
 | Phase 2 B.4 C3 boot capture (2026-11-05) | C3 reset via USB-Serial-JTAG during a capture, gateway logged (`logs/20261105-174418-b4-*`) | C3 TX not dominant during boot | TX recessive from reset to the first ACK ≈ 66–82 ms later; gateway's 329 errors = its own NACKed retries; no pull-up needed | pass |
+| Phase 2 C gateway console (2026-11-08, branch `phase2/c-console`) | Gateway flashed; `send_cmd.py --board cam HELP STATUS CAN` ×3, 3 s apart; `CANMON ON` 1 s, `OFF`; 10 open/close cycles with `STATUS`; C3 runs `can_probe` | One OK per command; no reset after the first open; `C,` lines for the C3's frames; none after OFF | All replies OK; first run `up_ms=798` (the one reset after the flash), then uptime +3200 / +3217 ms = wall time; 10 frames `0x7E1` in 1 s, counter +1 each, none after OFF; 10 cycles uptime = wall ±1 ms; `can=active`, TEC/REC 0/0 | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
