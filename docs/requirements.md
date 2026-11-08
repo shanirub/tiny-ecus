@@ -46,7 +46,8 @@ Status: ✅ verified · ⚠️ partly verified (the limit is stated) · ⏳ plan
 
 | ID | Requirement | Implemented in | Verified by | Method | Evidence | Status |
 |---|---|---|---|---|---|---|
-| GW-01 | Opening or closing the gateway's console port shall neither reset it nor leave it in download mode | Phase 2 C | Bounded read through `send_cmd.py` | T | — | ⏳ fails today (findings: the port resets the board on open); fixed in C |
+| GW-01 | Opening or closing the gateway's console port shall neither reset it nor leave it in download mode | `tools/nodelink.py` (`prepare_cam_port`, `open_port(..., "cam")`) | `test_cam_port_is_left_at_b0_once`; bench: 10 open/close cycles, uptime = wall time ±1 ms, every reply arrived | T | CI (`tools-tests`); progress log 2026-11-08 | ⚠️ the first open after a flash or replug resets it once (by design); replug not tried |
+| GW-02 | The gateway shall answer `HELP`, `STATUS`, `CAN` and `CANMON ON\|OFF` with one `OK`/`ERR` line each, and with the monitor on print each received frame as a `C,` line | `tiny_console`, `firmware/gateway` | Bench run through `send_cmd.py`; `test_canmon_line_parses`, `test_other_and_malformed_lines_are_not_frames` | T | progress log 2026-11-08; CI (`tools-tests`) | ✅ |
 | SAFE-01 | A wheel shall stop within 100 ms plus the ramp after the last valid setpoint | Phase 2 E | Exit test: pull CANH/CANL during `DRIVE`, analyzer measures last setpoint → PWM 0 | T | — | ⏳ E/F |
 | SAFE-02 | After a setpoint timeout the wheel shall stay stopped until a 0 setpoint re-arms it | Phase 2 E | `fault_timeout` shown until a 0 setpoint | T | — | ⏳ E |
 | SAFE-03 | CAN traffic shall not make the encoder lose counts | Phase 2 E | E.5: `0x7FF` flood at ≈ 3000 frames/s at 80 % duty; `invalid` stays 0, counts match a run without CAN | T | — | ⏳ E |
@@ -59,4 +60,4 @@ Status: ✅ verified · ⚠️ partly verified (the limit is stated) · ⏳ plan
 
 ## Reading the gaps
 
-The ⚠️ and ⏳ rows are the open work, kept here on purpose: SAFE-01…03 are Phase 2's exit criterion, and GW-01 is a known defect with a planned fix. What the host tests cannot reach at all (wiring, timing, the real motor) is listed in [`test/README.md`](../test/README.md#what-the-tests-dont-cover).
+The ⚠️ and ⏳ rows are the open work, kept here on purpose: SAFE-01…03 are Phase 2's exit criterion, and GW-01's one reset after a flash or replug is accepted. What the host tests cannot reach at all (wiring, timing, the real motor) is listed in [`test/README.md`](../test/README.md#what-the-tests-dont-cover).

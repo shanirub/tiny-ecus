@@ -74,7 +74,7 @@ idf.py build
 idf.py -p /dev/ttyACM0 flash monitor   # Ctrl+] exits the monitor
 ```
 
-Both boards blink their onboard LED at 1 Hz. The gateway still logs a heartbeat every 5 s; the wheel node instead has a text console on the same USB port (see [`tools/README.md`](../tools/README.md)). On the ESP32-CAM the blinking red LED faces the expansion board, so only its glow is visible at the edge between the boards.
+Both boards blink their onboard LED at 1 Hz. Each has a text console on the same USB port (see [`tools/README.md`](../tools/README.md)). On the ESP32-CAM the blinking red LED faces the expansion board, so only its glow is visible at the edge between the boards.
 
 Both boards normally enter the bootloader on their own (auto-reset over DTR/RTS). If flashing fails to connect:
 - **ESP32-C3:** hold BOOT, tap RESET, release BOOT, then flash again.

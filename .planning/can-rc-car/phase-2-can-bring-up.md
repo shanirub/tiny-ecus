@@ -103,6 +103,7 @@ Wiring diagram (2026-11-05): [`docs/images/phase2-a-wiring.png`](../../docs/imag
 2. Gateway commands (C.1): `STATUS` (uptime, version, heap, CAN state, last status age), `CAN` (state, TEC/REC, frame counters, bus-off count), `CANMON ON|OFF` (prints each received frame as a line with its own prefix, like `T,` for telemetry). `DRIVE` and `STOP` are added in E, when the frames exist.
 3. `tools/nodelink.py`: `open_port()` takes a board type. For the CAM, find on the bench the DTR/RTS state that neither resets the ESP32 nor holds IO0 low, and record it in `findings.md`. Host tests for the new parsing (`CANMON` lines).
 **Done when:** `HELP`, `STATUS` and `CAN` answer through `send_cmd.py` on `/dev/ttyUSB0`, and opening/closing the port neither resets the gateway nor leaves it in download mode (checked with a bounded read).
+**Status (2026-11-08):** bench-checked on branch `phase2/c-console` (progress log). The DTR/RTS answer turned out to be "neither": the port is left at B0 instead (findings). The first open after a flash or replug resets the gateway once.
 
 ### D. `tiny_proto`: frames from the DBC (PR; host-only, can go before B)
 1. `components/tiny_proto/tiny_proto.dbc` (the DBC above) and the generated `tiny_proto.c/.h`: `cantools generate_c_source --no-floating-point-numbers --database-name tiny_proto`. Pin `cantools==45.1.2` in `tools/requirements-test.txt` so regeneration is deterministic.
@@ -144,7 +145,7 @@ Wiring diagram (2026-11-05): [`docs/images/phase2-a-wiring.png`](../../docs/imag
 
 ## Unverified (check during implementation)
 - `gpio_install_isr_service()` passing `ESP_INTR_FLAG_LEVEL3` through to the allocator on the C3 (E.5 of the code; check the GPIO driver source or the return value).
-- The DTR/RTS state that is safe with the MB's auto-reset circuit (C.3).
+- ~~The DTR/RTS state that is safe with the MB's auto-reset circuit (C.3)~~: none is, since Linux raises both on open; leaving the port at B0 avoids it (findings, 2026-11-08).
 - Whether the TWAI acceptance filter suppresses the RX interrupt entirely for rejected frames (expected; E.5's stress design relies on it, so the stress frames are ones the filter accepts).
 - ~~The generated code cross-compiles for the ESP32 and C3~~: checked 2026-11-04 with `riscv32-esp-elf-gcc` and `xtensa-esp32-elf-gcc`, `-Wall -Wextra -Werror`, clean. (Inside an IDF project build it's first compiled when a firmware requires it, in B/C/E.)
 - Which MB male pin is IO13/IO14 (read off at wiring).

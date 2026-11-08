@@ -9,7 +9,7 @@ A CAN bring-up app for both boards (Phase 2 item B): it sends a counter frame ev
 
 The bus runs at 500 kbit/s. Wiring: `docs/images/phase2-a-wiring.png`.
 
-There is no console yet: the mode is chosen when building (Kconfig, menu `can_probe`). A console comes with `tiny_console` (Phase 2 item C).
+There is no console: the mode is chosen when building (Kconfig, menu `can_probe`).
 
 **Flashing it replaces the wheel node firmware**, so nothing drives the DRV8833's pins on the C3 board: keep the motor supply off while `can_probe` runs there.
 
@@ -54,4 +54,4 @@ The counter frame is 4 bytes, the counter as a little-endian `uint32`, so `02000
 
 ## Reading the output
 
-Never run `idf.py monitor`; read for a fixed time instead. On the C3, `tools/nodelink.py`'s `open_port()` opens the port without resetting it. On the ESP32-CAM-MB, opening the port always restarts the gateway (the reset is in the USB-serial adapter's wiring); open it once with DTR and RTS low and keep it open for the whole run. A proper fix for the gateway is part of item C.
+Never run `idf.py monitor`; read for a fixed time instead. On the C3, `tools/nodelink.py`'s `open_port()` opens the port without resetting it. On the ESP32-CAM-MB, `open_port(port, "cam")` does the same (it leaves the port at B0; see `tools/README.md`, "The port"); the first open after a flash still resets the board once.

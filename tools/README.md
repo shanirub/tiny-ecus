@@ -1,13 +1,13 @@
 # Bench tools
 
-Python programs that talk to the wheel node's console over USB. Only one program can hold the port at a time.
+Python programs that talk to a node's console over USB: the wheel node's, and with `send_cmd.py --board cam` the gateway's. Only one program can hold the port at a time.
 
 | Tool | What it is for |
 |---|---|
 | `live.py` | at the bench: live plot and status, and a command line; runs until you quit it |
 | `send_cmd.py` | scripted: send commands, print each reply, exit |
 | `plot_run.py` | scripted: record telemetry for a fixed time, save a CSV and a PNG under `logs/` |
-| `nodelink.py` | shared by the three: opening the port, sending, splitting the input into lines and telemetry rows |
+| `nodelink.py` | shared by the three: opening the port, sending, splitting the input into lines, telemetry rows and the gateway's `CANMON` frames |
 | `pi_figure.py` | no port: redraws the README's PI figure (`docs/images/pi-speed-control.png`) from the two runs kept in `docs/data/` |
 
 `send_cmd.py` and `plot_run.py` always end by themselves, so scripts (and Claude) use them. `live.py` is interactive and never ends by itself.
@@ -58,7 +58,11 @@ Columns the tool doesn't know (from newer firmware) appear in the status line as
 tools/.venv/bin/python tools/send_cmd.py STATUS "HELP TELEM"
 ```
 
-Sends each command and prints its one-line reply (`OK ...` or `ERR ...`). Exits non-zero if any reply was `ERR` or missing.
+Sends each command and prints its one-line reply (`OK ...` or `ERR ...`). Exits non-zero if any reply was `ERR` or missing. For the gateway add `--board cam` (port `/dev/ttyUSB0`):
+
+```sh
+tools/.venv/bin/python tools/send_cmd.py --board cam STATUS CAN
+```
 
 ## plot_run.py
 
@@ -71,6 +75,8 @@ Switches telemetry on, records it for a fixed time, then saves a CSV and a PNG u
 ## The port
 
 All three open the port in a way that doesn't reset the C3: DTR high, RTS low (see `open_port()` in `nodelink.py`). `idf.py monitor` does reset it, which is useful to see the boot log, but it never ends by itself.
+
+The gateway's ESP32-CAM-MB resets the ESP32 whenever RTS is on, and Linux turns RTS and DTR on at every open, except when the port's speed setting is B0. So `open_port(port, "cam")` leaves the port at B0 (the CH340 keeps sending at 115200). The first open after a flash or after plugging the board in sets this up, which resets the gateway once; later opens don't.
 
 ## Tests
 
