@@ -90,7 +90,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 ### Phase 5: Power system + chassis integration
 - [ ] Motors are already mounted (Phase 0 F.6, done before Phase 3); this phase does the electrical integration
 - [ ] Phase 0 E.3 and E.4 (moved 2026-10-17): check each MP1584 buck output before anything connects to it (method in `phase-0-foundations.md`); check and charge the 18650 cells. The buck rule applies earlier if any bench setup uses a buck first
-- [ ] Move from bench breadboards to soldered wiring: each side pod (option D) on a perfboard, the C3 in female headers (socketed), plug-in connectors (JST-type) between modules, heat shrink and tie-downs at every joint; motor power on heavier wire with soldered or screw-terminal joints
+- [ ] Move from bench breadboards to soldered wiring: each side pod (option D) on a perfboard, the C3 in female headers (socketed), plug-in connectors (JST-type) between modules, heat shrink and tie-downs at every joint; motor power on heavier wire with soldered or screw-terminal joints (may be replaced by carrier PCBs, open option: `option-wheel-node-pcb.md`; perfboard order on hold until decided)
 - [ ] Battery chain: 2S holder with PCM → fuse → switch → 5 V buck logic rail and motor rail, with bulk and motor caps
 - [ ] Measure stall and start current
 - [ ] Energy returned to the motor rail (noted 2026-11-01, Phase 1 D.4 added fast decay): in fast decay the motor current flows back into the supply during every PWM off-time, and any decay mode does the same when a spinning motor is reversed or braked hard. On the bench PSU at no load it is a few tens of mA for microseconds. On the battery the cells normally absorb it, but if the PCM, fuse or switch opens while the motors turn, it can only charge the bulk caps and VM rises. Check before driving on the battery: VM stays below the DRV8833's 10.8 V maximum (2S full = 8.4 V, 2.4 V margin) during reversals and with the switch opened mid-run (logic analyzer can't see it: use the meter's peak/min-max or a scope if available), and size the bulk caps for it. The car uses slow decay (decided 2026-11-01 from D.4.5), so the per-pulse return is small; reversals, hard braking and an opened switch remain
@@ -112,7 +112,7 @@ Detail: [`phase-1-one-wheel-node.md`](phase-1-one-wheel-node.md)
 
 Order note: Phases 4 and 5 can swap. Driving on the floor sooner is more motivating; syncing first keeps everything on the bench longer.
 
-Future (not committed): image processing, an Android app, a Raspberry Pi CAN sniffer, custom PCBs.
+Future (not committed): image processing, an Android app, a Raspberry Pi CAN sniffer, custom PCBs. A carrier PCB for the wheel nodes is an open option, discussed 2026-11-14, not decided: [`option-wheel-node-pcb.md`](option-wheel-node-pcb.md) (if adopted, it replaces the Phase 5 perfboards and may move to Phase 3).
 
 ## Key Questions
 1. How is node identity assigned: NVS written at provisioning, or strap pins? (Phase 3)

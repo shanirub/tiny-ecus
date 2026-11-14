@@ -218,6 +218,10 @@
 - Wrote `phase-2-can-bring-up.md`; approved by the user 2026-11-04 and committed to `main`.
 - Item D (`tiny_proto`) on branch `phase2/d-proto` (user: start with D while the wiring waits until 2026-11-05): DBC, `generate.py` (cantools 45.1.2, timestamp line replaced so regeneration is deterministic; pinned in `tools/requirements-test.txt`), generated C committed, 13 host tests (sanitizers on), `tools/tests/test_tiny_proto_docs.py` (README tables/examples vs DBC, generated C up to date; 4 planted errors all caught), README with the tables moved out of the plan, index row, architecture link, `test/README.md`. Generated C cross-compiles clean for riscv32 and xtensa. Host tests 7/7 suites, tools tests 26 passed, all mutants killed.
 
+## Session: 2026-11-14 (Phase 2 status review; wheel-node PCB option)
+- Reviewed what's left in Phase 2: merge PR #17 (C), then E (wheel node on CAN, incl. E.5 stress check), then F (exit test); D's decoded-frame capture and SAFE-01…03 close with E/F.
+- Discussed a custom carrier PCB for the wheel nodes (user idea). Settled: carrier for the existing modules, not bare chips. Open: single-node vs pod board, timing (Phase 3 vs 5), spacer thread size; perfboard order on hold. Recorded as an open option in `option-wheel-node-pcb.md` (not a decision), pointers in `task_plan.md` (Future line, Phase 5 perfboard item), web-sourced prices in `findings.md`.
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|

@@ -272,3 +272,12 @@ See the "Decisions Made" table in `task_plan.md`, which is the source of truth.
 
 ### Locked-section length vs the encoder (2026-11-02, PR #9 review)
 - Moved to [`docs/design/encoder-timing-margin.md`](../../docs/design/encoder-timing-margin.md) (2026-11-05).
+
+### Wheel-node PCB: cost and lead time (2026-11-14, web search, unverified against a live quote)
+For the open option in `option-wheel-node-pcb.md`. Web content, so treat as rough data.
+- JLCPCB lists 5 two-layer boards ≤ 100 × 100 mm (1 oz, green) for $2; only one $2 offer per package. Whether the promo is still running today was not confirmed. Source: https://jlcpcb.com/blog/free-assembly-for-1-6-layer-pcbs-and-discounts-on-8-20-layer-pcba
+- Shipping is calculated at checkout from weight, destination and method; import charges come on top and JLCPCB doesn't estimate them. Source: https://jlcpcb.com/help/article/76-How-much-does-shipping-cost
+- Air-mail customs clearance can take 5–7 working days; contact support after 20 working days. Source: https://jlcpcb.com/help/article/Shipping-Methods-and-Delivery-Time
+- A 2026 comparison blog (secondary, US-based) estimates ≈ $33 landed for 5 boards with DHL ≈ $18. Source: https://pamfinds.pages.dev/guides/jlcpcb-vs-pcbway-vs-osh-park/
+- No Israel-specific JLCPCB rate or transit time found. Israeli import VAT threshold not checked.
+- Trace widths (IPC-2221, outer layer, computed by Claude): 3 A → 1.4 mm (1 oz, +10 °C) / 0.9 mm (1 oz, +20 °C); 6 A → 3.6 mm (1 oz, +10 °C). Table in `option-wheel-node-pcb.md`.
